@@ -44,3 +44,9 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 
 a:hover > .kpi-link { border-color: var(--lineH) !important; transform: translateY(-2px); }
+
+.ver-trecho {
+  font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none; border: 1px solid var(--line);
+  border-radius: 9px; padding: 8px 12px; white-space: nowrap; transition: border-color .18s ease, background .18s ease;
+}
+.ver-trecho:hover { border-color: var(--lineH); background: var(--s2); color: var(--ink); }

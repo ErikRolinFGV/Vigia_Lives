@@ -93,4 +93,14 @@ CUSTO = {
     "channels.list": 1,
     "liveChatMessages.list": 5,
     "search.list": 100,
+    "commentThreads.list": 1,
+    "playlistItems.list": 1,
 }
+
+# Todas as partes publicas do video numa chamada so: o custo do videos.list
+# e por chamada, nao por parte. Ficha, horarios e contadores saem juntos.
+PARTES_VIDEO = "snippet,liveStreamingDetails,statistics,contentDetails,topicDetails,status"
+
+# Concorrencia: de quanto em quanto tempo procurar outras lives no ar
+# durante a coleta. Cada busca custa 100 unidades (search.list).
+INTERVALO_CONCORRENCIA = 15 * 60

@@ -111,3 +111,29 @@ export function nomeLive(t: string | null | undefined, trechos = 2): string {
   return String(t).split("|").map(p => p.trim()).filter(Boolean).slice(0, trechos)
     .map(p => apelido(p, 200)).join(" · ");
 }
+
+/** "412 mil", "1,7 mi" — para contadores públicos grandes. */
+export function compacto(v: number | null | undefined): string {
+  if (v == null) return "—";
+  if (Math.abs(v) >= 1e6) return n(v / 1e6, v >= 1e7 ? 0 : 1) + " mi";
+  if (Math.abs(v) >= 1e4) return n(Math.round(v / 1e3)) + " mil";
+  return n(v);
+}
+
+export function brl(v: number | null | undefined): string {
+  return v == null ? "—" : "R$ " + n(v, 2);
+}
+
+/** "4 min", "1 h 05 min" para atrasos e diferenças curtas. */
+export function minutos(s: number | null | undefined): string {
+  if (s == null) return "—";
+  const m = Math.round(Math.abs(s) / 60);
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
+}
+
+/** Hora local "09:04" no fuso da conta. */
+export function hora(iso: string | null | undefined, tz: string): string {
+  if (!iso) return "—";
+  return dataHora(iso, tz).slice(6);
+}

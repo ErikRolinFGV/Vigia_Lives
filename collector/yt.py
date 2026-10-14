@@ -153,13 +153,9 @@ def _log(con, video_id, metodo, custo, status, itens, page_token, erro):
 
 # ---------------------------------------------------------------- endpoints
 
-def video(con, video_id):
+def video(con, video_id, part="snippet,liveStreamingDetails,statistics"):
     """1 unidade. Traz status da live, chat id, inicio real e estatisticas."""
-    d = chamar(
-        con, "videos.list",
-        {"part": "snippet,liveStreamingDetails,statistics", "id": video_id},
-        video_id=video_id,
-    )
+    d = chamar(con, "videos.list", {"part": part, "id": video_id}, video_id=video_id)
     itens = d.get("items", [])
     return itens[0] if itens else None
 
@@ -184,6 +180,63 @@ def canal(con, canal_id):
     )
     itens = d.get("items", [])
     return itens[0] if itens else None
+
+
+def comentarios(con, video_id, n=20):
+    """
+    Comentarios mais relevantes do video gravado (o YouTube ordena por
+    curtidas e respostas). 1 unidade. Devolve [] se os comentarios estao
+    desativados.
+    """
+    try:
+        d = chamar(con, "commentThreads.list",
+                   {"part": "snippet", "videoId": video_id, "order": "relevance",
+                    "maxResults": min(n, 100), "textFormat": "plainText"},
+                   video_id=video_id)
+    except ErroAPI as e:
+        if "commentsDisabled" in str(e) or "disabled comments" in str(e):
+            return []
+        raise
+    return d.get("items", [])
+
+
+def uploads(con, canal_id, ate=None, max_paginas=1):
+    """
+    Videos da playlist de uploads do canal (UC... -> UU...), do mais novo
+    para o mais antigo. 1 unidade por pagina de 50. Com `ate` (ISO), pagina
+    ate passar dessa data ou chegar a `max_paginas`.
+    """
+    playlist = "UU" + canal_id[2:]
+    ids, token = [], None
+    for _ in range(max_paginas):
+        params = {"part": "contentDetails", "playlistId": playlist, "maxResults": 50}
+        if token:
+            params["pageToken"] = token
+        d = chamar(con, "playlistItems.list", params)
+        mais_antigo = None
+        for i in d.get("items", []):
+            cd = i.get("contentDetails") or {}
+            if cd.get("videoId"):
+                ids.append(cd["videoId"])
+                mais_antigo = cd.get("videoPublishedAt") or mais_antigo
+        token = d.get("nextPageToken")
+        if not token or not ate or (mais_antigo and mais_antigo < ate):
+            break
+    return ids
+
+
+def lives_no_ar(con, categoria=None, idioma="pt", regiao="BR", n=10, video_id=None):
+    """
+    Outras transmissoes no ar agora, na mesma categoria e idioma.
+    search.list: 100 unidades. Devolve ids; o numero de espectadores sai de
+    um videos.list em seguida.
+    """
+    params = {"part": "id", "type": "video", "eventType": "live", "order": "viewCount",
+              "regionCode": regiao, "relevanceLanguage": idioma, "maxResults": n}
+    if categoria:
+        params["videoCategoryId"] = categoria
+    d = chamar(con, "search.list", params, video_id=video_id)
+    return [i["id"]["videoId"] for i in d.get("items", []) if i.get("id", {}).get("videoId")]
 
 
 def pagina_chat(con, live_chat_id, page_token=None, video_id=None):

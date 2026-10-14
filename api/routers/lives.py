@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from collector import yt
 
+from .. import secoes
 from ..deps import conexao
 from ..transmissoes import lives_do_canal, resumo_live, serie
 
@@ -169,3 +170,18 @@ def previsao(video_id: str, con: sqlite3.Connection = Depends(conexao)):
         "custo": custo, "cota_dia": COTA_DIA, "dia_cota": dia,
         "outras": outras, "reservado": reservado,
     }
+
+
+@router.get("/lives/{video_id}/secoes/{secao}")
+def secao(video_id: str, secao: str, versao: str = "interna", con: sqlite3.Connection = Depends(conexao)):
+    """
+    Uma secao da aba Dados. `versao=publica` tira texto de chat e qualquer
+    identificador de autor: e a mesma projecao que o link publico usa.
+    """
+    _live_ou_404(con, video_id)
+    f = secoes.SECOES.get(secao)
+    if not f:
+        raise HTTPException(404, f"seção desconhecida: {secao}")
+    if versao not in ("interna", "publica"):
+        raise HTTPException(422, "versao é 'interna' ou 'publica'")
+    return f(con, video_id, versao)

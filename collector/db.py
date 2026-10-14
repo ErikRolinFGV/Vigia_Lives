@@ -89,6 +89,52 @@ def migrar(con):
         id INTEGER PRIMARY KEY CHECK (id = 1),
         iniciado_em TEXT NOT NULL, ultimo_ciclo TEXT NOT NULL, pid INTEGER)""")
 
+    # v2: dados publicos do video e do canal, lidos durante e depois da live.
+    # fase: 'durante' (polling do coletor), 'pos' (jobs depois do fim, com
+    # rotulo '+1 h'...'+7 d') ou 'avulsa' (leitura fora de agenda, como a
+    # que completa uma coleta antiga).
+    con.executescript("""
+    CREATE TABLE IF NOT EXISTS video_snapshot (
+        video_id TEXT NOT NULL, coletado_em TEXT NOT NULL, fase TEXT NOT NULL,
+        rotulo TEXT, titulo TEXT, thumb_url TEXT,
+        views INTEGER, likes INTEGER, comentarios INTEGER,
+        bruto TEXT,
+        PRIMARY KEY (video_id, coletado_em, fase));
+    CREATE TABLE IF NOT EXISTS canal_snapshot (
+        canal_id TEXT NOT NULL, coletado_em TEXT NOT NULL,
+        video_id TEXT, fase TEXT, inscritos INTEGER, videos INTEGER,
+        PRIMARY KEY (canal_id, coletado_em));
+    CREATE TABLE IF NOT EXISTS pos_live_job (
+        video_id TEXT NOT NULL, tipo TEXT NOT NULL, rotulo TEXT NOT NULL,
+        executar_em TEXT NOT NULL, feito_em TEXT, erro TEXT,
+        PRIMARY KEY (video_id, tipo, rotulo));
+    -- comentario do video gravado. Autor so por pseudonimo: o handle fica
+    -- em autor_identidade, como o de quem escreve no chat.
+    CREATE TABLE IF NOT EXISTS comentario_top (
+        comentario_id TEXT PRIMARY KEY, video_id TEXT NOT NULL,
+        autor_pid TEXT, texto TEXT, likes INTEGER, respostas INTEGER,
+        publicado_em TEXT, coletado_em TEXT NOT NULL);
+    -- lives do canal lidas da playlist de uploads, vigiadas ou nao
+    CREATE TABLE IF NOT EXISTS video_publico (
+        video_id TEXT PRIMARY KEY, canal_id TEXT NOT NULL, titulo TEXT,
+        publicado_em TEXT, agendada_para TEXT, inicio TEXT, fim TEXT,
+        views INTEGER, likes INTEGER, comentarios INTEGER, coletado_em TEXT NOT NULL);
+    -- outras lives no ar no mesmo horario (search.list eventType=live)
+    CREATE TABLE IF NOT EXISTS concorrencia (
+        video_id TEXT NOT NULL, coletado_em TEXT NOT NULL, offset_segundos INTEGER,
+        rival_video_id TEXT NOT NULL, rival_canal TEXT, titulo TEXT, espectadores INTEGER,
+        PRIMARY KEY (video_id, coletado_em, rival_video_id));
+    CREATE TABLE IF NOT EXISTS cambio (
+        data TEXT NOT NULL, moeda TEXT NOT NULL, brl REAL NOT NULL,
+        PRIMARY KEY (data, moeda));
+    CREATE TABLE IF NOT EXISTS publicacao (
+        slug TEXT PRIMARY KEY, canal_slug TEXT NOT NULL, video_id TEXT NOT NULL,
+        emitido_em TEXT NOT NULL, revogado_em TEXT);
+    CREATE TABLE IF NOT EXISTS dossie (
+        video_id TEXT PRIMARY KEY, gerado_em TEXT NOT NULL, modelo TEXT NOT NULL,
+        conteudo TEXT NOT NULL);
+    """)
+
     # detectada_em: quando a plataforma soube da transmissao pela primeira
     # vez. E o que separa PERDIDA (sabiamos e ninguem coletou) de uma live
     # antiga que so apareceu depois de acabar (nao vigiada).
@@ -179,6 +225,26 @@ def registrar_autor(con, canal_autor_id, nome_exibicao, url_foto, video_id, pape
             papeis.get("membro_meses"),
             int(papeis.get("verificado", False)),
         ),
+    )
+    return autor_pid
+
+
+def registrar_identidade(con, canal_autor_id, nome_exibicao):
+    """
+    Pseudonimo de quem aparece fora do chat (autor de comentario do video).
+    Mesma fronteira de dado pessoal do chat: o nome fica so em
+    autor_identidade, com o mesmo expurgo programado.
+    """
+    autor_pid = pid(canal_autor_id)
+    expurgo = (
+        datetime.now(timezone.utc) + timedelta(days=config.RETENCAO_IDENTIDADE_DIAS)
+    ).isoformat(timespec="seconds")
+    con.execute(
+        """INSERT INTO autor_identidade
+             (autor_pid, canal_autor_id, nome_exibicao, url_foto, coletado_em, expurgar_em)
+           VALUES (?,?,?,NULL,?,?)
+           ON CONFLICT(autor_pid) DO UPDATE SET nome_exibicao=excluded.nome_exibicao""",
+        (autor_pid, canal_autor_id, nome_exibicao, agora(), expurgo),
     )
     return autor_pid
 

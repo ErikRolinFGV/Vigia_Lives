@@ -9,6 +9,7 @@ import { useSessao } from "../../state/sessao";
 import { derivar } from "./derivados";
 import { SecaoAudiencia, SecaoChat, SecaoQualidade, SecaoResumo } from "./secoesSerie";
 import { Agendada, Perdida } from "./Estados";
+import { SecaoApoio, SecaoComparacao, SecaoComunidade, SecaoConversa, SecaoDepois, SecaoModeracao, SecaoMomentos, SecaoPessoas, SecaoVideo } from "./secoesNovas";
 import { AoVivo } from "./AoVivo";
 import st from "./live.module.css";
 
@@ -110,9 +111,11 @@ function LiveColetada({ live, s, carregandoSerie }: { live: LiveDetalhe; s: Seri
             <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .25s ease-out both" }}>
               {carregandoSerie && live.tem_serie && !s ? <div className={st.carregando}>carregando a série…</div> : (
                 <>
-                  {sub === "resumo" && <SecaoResumo live={live} s={s} />}
-                  {sub === "audiencia" && s && <SecaoAudiencia live={live} s={s} />}
-                  {sub === "chat" && s && d && <SecaoChat s={s} d={d} />}
+                  {sub === "resumo" && <><SecaoResumo live={live} s={s} /><SecaoMomentos live={live} /></>}
+                  {sub === "audiencia" && s && <><SecaoAudiencia live={live} s={s} /><SecaoDepois live={live} /></>}
+                  {sub === "chat" && s && d && <><SecaoChat s={s} d={d} /><SecaoConversa live={live} /><SecaoModeracao live={live} /></>}
+                  {sub === "pessoas" && <><SecaoPessoas live={live} /><SecaoApoio live={live} /><SecaoComunidade live={live} /></>}
+                  {sub === "contexto" && <><SecaoVideo live={live} s={s} /><SecaoComparacao live={live} /></>}
                   {sub === "qualidade" && <SecaoQualidade live={live} s={s} d={d} />}
                 </>
               )}
