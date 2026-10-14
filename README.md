@@ -6,6 +6,20 @@ ela esta no ar, e gera um relatorio da live sem nenhuma chamada de LLM.
 O chat ao vivo **deixa de existir quando a live acaba**. A API nao devolve as
 mensagens depois. Por isso o coletor precisa estar rodando durante a transmissao.
 
+## v2: plataforma Vigia (em construcao)
+
+Interface web sobre o mesmo banco. Plano e decisoes em
+[docs/plano_v2.md](docs/plano_v2.md); design em `design_handoff_vigia_pesquisa/`.
+
+```
+pip install -e ".[api]"          # FastAPI + uvicorn, so para a API
+lives-api --reload               # API em http://127.0.0.1:8000 (docs em /api/docs)
+cd web && npm install && npm run dev   # front em http://localhost:5173
+```
+
+O login e de demonstracao: qualquer e-mail valido e senha com 6 ou mais
+caracteres entra. Com `npm run build`, a propria API passa a servir o front.
+
 ## Instalacao
 
 Passo a passo completo em **[INSTALL.md](INSTALL.md)**. Versao curta:

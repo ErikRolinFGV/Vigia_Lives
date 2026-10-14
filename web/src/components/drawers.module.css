@@ -1,0 +1,111 @@
+.painel {
+  height: 100%; background: var(--surface); border-left: 1px solid var(--line);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.painelConta { composes: painel; width: min(460px, 100%); animation: riseIn .24s cubic-bezier(.2, .8, .2, 1) both; }
+.painelAjuda { composes: painel; width: min(560px, 100%); padding: 28px 32px 48px; display: block; }
+
+.topo { display: flex; align-items: center; gap: 14px; padding: 22px 26px 18px; border-bottom: 1px solid var(--div); }
+.topoTitulo { font-family: Figtree, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.corpo { padding: 22px 26px; display: flex; flex-direction: column; gap: 22px; flex: 1; }
+.rodape { padding: 18px 26px 26px; border-top: 1px solid var(--div); }
+
+.fotoLabel { position: relative; width: 64px; height: 64px; flex: 0 0 64px; cursor: pointer; display: block; }
+.fotoSelo {
+  position: absolute; right: -2px; bottom: -2px; height: 22px; padding: 0 7px; border-radius: 99px;
+  background: var(--accent); border: 2px solid var(--surface); display: flex; align-items: center;
+  font-size: 10.5px; font-weight: 700; color: var(--onAccent);
+}
+.nomeLinha { display: flex; align-items: baseline; gap: 10px; margin-bottom: 3px; min-width: 0; }
+.nome { font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.editar { font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; flex: 0 0 auto; background: none; border: 0; padding: 0; }
+.editar:hover { text-decoration: underline; }
+.emailMono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.remover { display: inline-block; margin-top: 5px; font-size: 12px; color: var(--ink3); cursor: pointer; background: none; border: 0; padding: 0; }
+.remover:hover { color: var(--redInk); text-decoration: underline; }
+
+.grupo { display: flex; flex-direction: column; gap: 12px; }
+.campoLabel { font-size: 12.5px; color: var(--ink2); margin-bottom: 5px; }
+.nota { font-size: 12.5px; color: var(--ink3); text-wrap: pretty; }
+
+.plano {
+  background: var(--s2); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.chipOk {
+  font-size: 11.5px; font-weight: 600; color: var(--okInk); background: var(--okT);
+  border: 1px solid var(--okLine); border-radius: 99px; padding: 3px 10px;
+}
+.planoNome { font-family: Figtree, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.linhaKV { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.linhaKV > span:first-child { color: var(--ink2); }
+.barra { height: 8px; background: var(--line2); border-radius: 4px; overflow: hidden; }
+.barraFill { height: 100%; border-radius: 4px; }
+.sep { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--div); padding-top: 12px; }
+.fatura {
+  display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 9px; padding: 9px 12px; font-size: 13px;
+}
+.paga { font-size: 11.5px; font-weight: 600; color: var(--okInk); background: var(--okT); border-radius: 99px; padding: 2px 8px; }
+.acao { font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; background: none; border: 0; padding: 0; }
+.acao:hover { text-decoration: underline; }
+
+.notif {
+  display: flex; align-items: center; gap: 14px; padding: 11px 0; border: 0; border-bottom: 1px solid var(--div);
+  cursor: pointer; background: none; width: 100%; text-align: left;
+}
+.trilho { width: 40px; height: 24px; flex: 0 0 40px; border-radius: 99px; position: relative; transition: background .2s ease; }
+.bolinha {
+  position: absolute; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface);
+  box-shadow: 0 1px 3px rgba(23, 20, 15, .25); transition: left .2s cubic-bezier(.2, .8, .2, 1);
+}
+
+.seg {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--s3);
+  border: 1px solid var(--line); border-radius: 11px;
+}
+.segOpt {
+  padding: 8px 10px; border-radius: 8px; text-align: center; font-size: 13.5px; font-weight: 600;
+  cursor: pointer; border: 0; transition: background .18s ease;
+}
+.select { appearance: auto; cursor: pointer; }
+.tzEx {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink3); background: var(--s3);
+  border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px;
+}
+
+.acesso { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--div); }
+.acessoForm {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--div);
+  animation: riseIn .2s ease-out both;
+}
+
+.trocar {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line);
+  border-radius: 12px; cursor: pointer; background: none; width: 100%; text-align: left;
+  transition: border-color .18s ease, background .18s ease;
+}
+.trocar:hover { border-color: var(--lineH); background: var(--s2); }
+
+.caixa { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.caixaPerigo { composes: caixa; border-color: var(--redLine); gap: 10px; }
+.okMsg {
+  font-size: 12.5px; color: var(--okInk); background: var(--okT); border: 1px solid var(--okLine);
+  border-radius: 8px; padding: 8px 10px; text-wrap: pretty;
+}
+.sairConta {
+  width: 100%; padding: 13px; border-radius: 11px; border: 1px solid var(--redLine); background: var(--redT);
+  text-align: center; font-size: 14.5px; font-weight: 700; color: var(--ink); cursor: pointer;
+}
+
+/* ajuda */
+.ajudaTopo { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.ajudaTitulo { font-family: Figtree, sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.alerta { background: var(--redT); border: 1px solid var(--redLine); border-radius: 12px; padding: 17px 19px; margin-bottom: 26px; }
+.passo { display: flex; gap: 14px; align-items: flex-start; }
+.passoN {
+  width: 26px; height: 26px; flex: 0 0 26px; border-radius: 8px; background: var(--s3); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-family: Figtree, sans-serif; font-size: 13px;
+  font-weight: 700; color: var(--ink2);
+}
+.estado { border-radius: 9px; padding: 9px 12px; border: 1px solid; }

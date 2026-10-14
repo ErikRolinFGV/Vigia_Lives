@@ -1,0 +1,44 @@
+/* Base global e animações do protótipo. As cores vêm das variáveis de
+   tokens.ts; os valores após a vírgula são só fallback do tema claro. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg, #EFEBE1);
+  color: var(--ink, #17140F);
+  transition: background .3s ease;
+  font-family: Figtree, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line2); }
+a:hover { color: var(--ink2); text-decoration-color: currentColor; }
+
+button { font: inherit; color: inherit; }
+input, select, textarea { font: inherit; color: inherit; }
+
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+@keyframes pulseDot { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+@keyframes drawIn { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes riseIn { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+@keyframes growY { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+@keyframes ring { 0% { opacity: .5; transform: scale(1) } 80% { opacity: 0; transform: scale(3.4) } 100% { opacity: 0; transform: scale(3.4) } }
+@keyframes sweep { 0% { transform: translateX(-120%) } 100% { transform: translateX(420%) } }
+@keyframes msgIn { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+@keyframes morphA {
+  0%, 100% { d: path("M0 300 C120 290 180 240 300 250 C420 260 480 160 600 170 C720 180 800 120 900 130 C1000 140 1120 90 1200 100") }
+  50% { d: path("M0 324 C120 300 180 196 300 222 C420 248 480 212 600 148 C720 84 800 156 900 104 C1000 52 1120 132 1200 62") }
+}
+
+.view-in { animation: viewIn .34s cubic-bezier(.2, .8, .2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

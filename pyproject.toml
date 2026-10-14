@@ -27,6 +27,13 @@ dashboard = [
     "pandas>=2.0",
     "plotly>=5.18",
 ]
+# API da plataforma v2 (o coletor continua so com a biblioteca padrao):
+#   pip install -e ".[api]"
+api = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "python-multipart>=0.0.12",
+]
 # Analise com LLM, a camada que entra depois da camada 0:
 #   pip install -e ".[llm]"
 llm = [
@@ -45,9 +52,10 @@ lives-report  = "collector.report:main"
 lives-quota   = "collector.quota:main"
 lives-agenda  = "collector.agenda:main"
 lives-demo    = "collector.seed_demo:main"
+lives-api     = "api.main:main"
 
 [tool.setuptools]
-packages = ["collector"]
+packages = ["collector", "api", "api.routers"]
 
 [tool.setuptools.package-data]
 collector = []

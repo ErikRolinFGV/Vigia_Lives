@@ -12,6 +12,12 @@ Decisões fechadas com o Erik:
 - Tema claro (paleta "1a · quente") + tema escuro, trocável pelo usuário.
   Os tokens dos dois temas já existem em `temaVars()` no protótipo.
 - Cota diária ignorada nesta fase, mas custo por método continua em `coleta_log`.
+- Dossiê fixo, mas com o insight de apoio reescrito com os números reais
+  (R$ 0,00 em Super Chat, 3 novos membros, 1 assinatura presenteada).
+- Sem lives fictícias: agenda real da aba /streams. A tela "ao vivo" tem um
+  modo **replay da coleta de 08/09**, sinalizado como replay na tela.
+- Repositório público (github.com/ErikRolinFGV/Vigia_Lives): `docs/*.docx`,
+  `Claude outputs/` e `*.zip` ficam fora do git.
 
 ---
 

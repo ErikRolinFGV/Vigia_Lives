@@ -1,0 +1,42 @@
+.app { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+
+.header {
+  position: sticky; top: 0; z-index: 30; background: var(--surface);
+  border-bottom: 1px solid var(--line); display: flex; justify-content: center;
+}
+.headerIn {
+  width: 100%; max-width: 1180px; padding: 0 24px; display: flex; align-items: center;
+  gap: 14px; height: 58px;
+}
+.marca { display: flex; align-items: center; gap: 9px; cursor: pointer; flex: 0 0 auto; text-decoration: none; }
+.wordmark { font-family: Figtree, sans-serif; font-weight: 700; font-size: 19px; letter-spacing: -.03em; color: var(--ink); }
+
+.crumbs { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.crumb { display: flex; align-items: center; gap: 8px; }
+.crumbNum { flex: 0 0 auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: var(--ink2); }
+.crumbLabel {
+  font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px;
+  text-decoration: none;
+}
+a.crumbLabel:hover { text-decoration: underline; text-decoration-color: var(--line2); }
+.tag {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 5px; border: 1px solid;
+  border-radius: 99px; padding: 2px 8px;
+}
+.tagDot { width: 6px; height: 6px; border-radius: 50%; animation: pulseDot 2s infinite; }
+.tagTxt { font-size: 11px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+
+.direita { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+
+.main { flex: 1; display: flex; flex-direction: column; }
+
+/* telas estreitas: o status "coleta de pé" e o nome da conta são os primeiros a sair */
+@media (max-width: 900px) {
+  .direita > div:first-child { display: none; }
+}
+@media (max-width: 640px) {
+  .headerIn { gap: 10px; padding: 0 16px; }
+  .wordmark { display: none; }
+  .crumbs { display: none; }
+  .headerIn > button:first-of-type { display: none; }
+}

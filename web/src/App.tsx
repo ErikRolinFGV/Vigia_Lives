@@ -1,0 +1,20 @@
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AppLayout, Protegido } from "./components/AppLayout";
+import { Login, Recuperar } from "./pages/Login";
+import { Plataformas } from "./pages/Plataformas";
+import { Canais } from "./pages/Canais";
+
+export function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/recuperar" element={<Recuperar />} />
+      <Route path="/plataformas" element={<Protegido><Plataformas /></Protegido>} />
+      <Route path="/yt" element={<Protegido><AppLayout /></Protegido>}>
+        <Route index element={<Navigate to="canais" replace />} />
+        <Route path="canais" element={<Canais />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/yt/canais" replace />} />
+    </Routes>
+  );
+}

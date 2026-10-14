@@ -17,13 +17,18 @@ def agora():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def conectar():
+def conectar(multithread=False):
+    """
+    multithread=True e para a API: o FastAPI pode abrir a conexao numa
+    thread e usar em outra. Cada request continua com a sua conexao.
+    """
     # arquivo de tamanho zero conta como inexistente: e o que sobra
     # quando uma execucao anterior morreu antes de aplicar o schema
     primeira_vez = (not config.CAMINHO_DB.exists()
                     or config.CAMINHO_DB.stat().st_size == 0)
     config.CAMINHO_DB.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(config.CAMINHO_DB)
+    con = sqlite3.connect(config.CAMINHO_DB, check_same_thread=not multithread,
+                          timeout=15)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     con.execute("PRAGMA journal_mode = WAL")
@@ -31,15 +36,24 @@ def conectar():
         con.executescript(config.CAMINHO_SCHEMA.read_text(encoding="utf-8"))
         con.commit()
         print(f"[db] banco criado em {config.CAMINHO_DB}")
-    else:
-        migrar(con)
+    migrar(con)
     return con
+
+
+def _colunas(con, tabela):
+    return {r[1] for r in con.execute(f"PRAGMA table_info({tabela})")}
+
+
+def _add_coluna(con, tabela, coluna, tipo):
+    if coluna not in _colunas(con, tabela):
+        con.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {tipo}")
 
 
 def migrar(con):
     """
     Migracao leve e idempotente, para bancos criados antes de uma coluna
-    ou tabela existir. Roda em toda conexao e nao toca em dado nenhum.
+    ou tabela existir. Roda em toda conexao, e idempotente e so preenche
+    colunas novas na primeira vez que elas aparecem.
     """
     con.execute("""CREATE TABLE IF NOT EXISTS enquete (
         enquete_id TEXT PRIMARY KEY, video_id TEXT NOT NULL,
@@ -48,11 +62,25 @@ def migrar(con):
         atualizado_em TEXT)""")
     con.execute("""CREATE INDEX IF NOT EXISTS idx_enquete_live
                    ON enquete(video_id, offset_segundos)""")
-    cols = {r[1] for r in con.execute("PRAGMA table_info(mensagem)")}
-    if "bruto" not in cols:
-        # guarda o snippet original de eventos que nao sao texto simples.
-        # E a apolice contra o proximo campo que a API tiver e o codigo ignorar.
-        con.execute("ALTER TABLE mensagem ADD COLUMN bruto TEXT")
+    # guarda o snippet original de eventos que nao sao texto simples.
+    # E a apolice contra o proximo campo que a API tiver e o codigo ignorar.
+    _add_coluna(con, "mensagem", "bruto", "TEXT")
+
+    # v2: canal vigiado. Vigiar e uma assinatura sobre o canal; parar de
+    # vigiar preenche removido_em e nao apaga coleta nenhuma.
+    novo_vigiado = "vigiado" not in _colunas(con, "canal")
+    _add_coluna(con, "canal", "vigiado", "INTEGER NOT NULL DEFAULT 0")
+    _add_coluna(con, "canal", "vigiado_desde", "TEXT")
+    _add_coluna(con, "canal", "removido_em", "TEXT")
+    _add_coluna(con, "canal", "foto_url", "TEXT")      # snippet.thumbnails
+    _add_coluna(con, "canal", "foto_local", "TEXT")    # upload do usuario
+    if novo_vigiado:
+        # canais que ja tem coleta estavam sob vigilancia desde a primeira
+        con.execute(
+            """UPDATE canal SET vigiado = 1, vigiado_desde = (
+                   SELECT MIN(COALESCE(l.coleta_inicio, l.criado_em)) FROM live l
+                   WHERE l.canal_id = canal.canal_id)
+               WHERE EXISTS (SELECT 1 FROM live l WHERE l.canal_id = canal.canal_id)""")
     con.commit()
 
 
