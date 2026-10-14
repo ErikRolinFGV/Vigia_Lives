@@ -3,6 +3,7 @@ import { AppLayout, Protegido } from "./components/AppLayout";
 import { Login, Recuperar } from "./pages/Login";
 import { Plataformas } from "./pages/Plataformas";
 import { Canais } from "./pages/Canais";
+import { CanalPagina } from "./pages/Canal";
 
 export function App() {
   return (
@@ -13,6 +14,7 @@ export function App() {
       <Route path="/yt" element={<Protegido><AppLayout /></Protegido>}>
         <Route index element={<Navigate to="canais" replace />} />
         <Route path="canais" element={<Canais />} />
+        <Route path="canais/:id" element={<CanalPagina />} />
       </Route>
       <Route path="*" element={<Navigate to="/yt/canais" replace />} />
     </Routes>

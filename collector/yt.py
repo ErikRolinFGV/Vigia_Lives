@@ -164,6 +164,19 @@ def video(con, video_id):
     return itens[0] if itens else None
 
 
+def videos(con, ids, part="snippet,liveStreamingDetails,statistics"):
+    """
+    1 unidade para ate 50 ids: o custo do videos.list e por chamada, nao
+    por video. Ler a agenda de um canal em lote custa o mesmo que ler uma
+    live so.
+    """
+    saida = []
+    for i in range(0, len(ids), 50):
+        d = chamar(con, "videos.list", {"part": part, "id": ",".join(ids[i:i + 50])})
+        saida += d.get("items", [])
+    return saida
+
+
 def canal(con, canal_id):
     d = chamar(
         con, "channels.list",

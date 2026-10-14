@@ -81,6 +81,20 @@ def migrar(con):
                    SELECT MIN(COALESCE(l.coleta_inicio, l.criado_em)) FROM live l
                    WHERE l.canal_id = canal.canal_id)
                WHERE EXISTS (SELECT 1 FROM live l WHERE l.canal_id = canal.canal_id)""")
+    _add_coluna(con, "canal", "agenda_lida_em", "TEXT")
+
+    # batimento do vigia: uma linha so, atualizada a cada ciclo. E o que a
+    # interface consulta antes de dizer "coleta de pe".
+    con.execute("""CREATE TABLE IF NOT EXISTS vigia_batimento (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        iniciado_em TEXT NOT NULL, ultimo_ciclo TEXT NOT NULL, pid INTEGER)""")
+
+    # detectada_em: quando a plataforma soube da transmissao pela primeira
+    # vez. E o que separa PERDIDA (sabiamos e ninguem coletou) de uma live
+    # antiga que so apareceu depois de acabar (nao vigiada).
+    if "detectada_em" not in _colunas(con, "live"):
+        _add_coluna(con, "live", "detectada_em", "TEXT")
+        con.execute("UPDATE live SET detectada_em = COALESCE(coleta_inicio, criado_em)")
     con.commit()
 
 

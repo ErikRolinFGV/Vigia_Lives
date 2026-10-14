@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useSessao } from "../state/sessao";
+import { useSaude } from "../state/saude";
 import { ContaBotao, Logo, ThemeToggle } from "./basicos";
 import { ContaDrawer } from "./ContaDrawer";
 import { AjudaDrawer } from "./AjudaDrawer";
@@ -44,6 +45,7 @@ export function AppLayout() {
   const [ajuda, setAjuda] = useState(false);
   const [conta, setConta] = useState(false);
   const nav = useNavigate();
+  const dePe = !!useSaude()?.vigia.de_pe;
 
   const todos: Crumb[] = [{ label: "Canais", to: crumbs.length ? "/yt/canais" : undefined }, ...crumbs];
 
@@ -85,9 +87,11 @@ export function AppLayout() {
             </nav>
 
             <div className={s.direita}>
-              <div className={u.pill}>
-                <span className={u.dot} style={{ background: "#1F9D55", animation: "pulseDot 2.4s ease-in-out infinite" }} />
-                <span className="mono" style={{ fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap" }}>coleta de pé</span>
+              <div className={u.pill} title={dePe ? "O vigia está lendo a agenda dos canais" : "O vigia não está rodando: nenhuma live será coletada até ele subir"}>
+                <span className={u.dot} style={dePe
+                  ? { background: "#1F9D55", animation: "pulseDot 2.4s ease-in-out infinite" }
+                  : { background: "var(--amb)" }} />
+                <span className="mono" style={{ fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap" }}>{dePe ? "coleta de pé" : "vigia parado"}</span>
               </div>
               <ThemeToggle />
               <button type="button" className={u.helpBtn} onClick={() => setAjuda(true)} title="O que é e como usar">?</button>
