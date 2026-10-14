@@ -1,0 +1,19 @@
+.env
+.venv/
+data/
+reports/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# fora do repositorio publico
+Claude outputs/
+docs/*.docx
+*.zip
+
+# front e api (v2)
+node_modules/
+web/dist/
+uploads/

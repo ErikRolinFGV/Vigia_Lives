@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <title>Monitor de Lives Caze TV</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+:root{
+  --ground:#F6F8F8;
+  --surface:#FFFFFF;
+  --surface-2:#EDF1F2;
+  --ink:#131A1D;
+  --ink-2:#3C4A50;
+  --muted:#66787F;
+  --rule:#D8E0E2;
+  --rule-strong:#B9C6CA;
+  --accent:#0B6E77;
+  --accent-soft:#D3EBEC;
+  --signal:#C42B33;
+  --signal-soft:#F7DFE0;
+  --warn:#9A6A10;
+  --warn-soft:#F6E9CE;
+  --ok:#2F6B45;
+
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+  --maxw:1180px;
+  --colw:66ch;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1113;
+    --surface:#131A1D;
+    --surface-2:#182125;
+    --ink:#E7EEEF;
+    --ink-2:#B6C4C8;
+    --muted:#8398A0;
+    --rule:#233034;
+    --rule-strong:#33454A;
+    --accent:#4FCFC9;
+    --accent-soft:#123334;
+    --signal:#FF6068;
+    --signal-soft:#3A1B1E;
+    --warn:#E2A83F;
+    --warn-soft:#332714;
+    --ok:#63BE8B;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1113;
+  --surface:#131A1D;
+  --surface-2:#182125;
+  --ink:#E7EEEF;
+  --ink-2:#B6C4C8;
+  --muted:#8398A0;
+  --rule:#233034;
+  --rule-strong:#33454A;
+  --accent:#4FCFC9;
+  --accent-soft:#123334;
+  --signal:#FF6068;
+  --signal-soft:#3A1B1E;
+  --warn:#E2A83F;
+  --warn-soft:#332714;
+  --ok:#63BE8B;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+  margin:0;
+}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px 120px}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:1px solid var(--rule);
+  padding:56px 0 30px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:11.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  align-items:center;
+}
+.livedot{
+  display:inline-flex;align-items:center;gap:7px;
+  color:var(--signal);font-weight:600;
+}
+.livedot::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--signal);
+}
+h1{
+  font-family:var(--f-display);
+  font-weight:700;
+  font-size:clamp(2.4rem,5.6vw,4rem);
+  line-height:1.02;
+  letter-spacing:-.025em;
+  margin:0;
+  text-wrap:balance;
+  max-width:16ch;
+}
+.standfirst{
+  font-size:1.22rem;
+  color:var(--ink-2);
+  max-width:58ch;
+  margin:0;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:10px 30px;
+  font-family:var(--f-mono);font-size:12px;color:var(--muted);
+  padding-top:6px;
+}
+.meta b{color:var(--ink-2);font-weight:500}
+
+/* ---------- layout ---------- */
+.doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:56px;padding-top:48px;align-items:start}
+@media (max-width:900px){.doc{grid-template-columns:1fr;gap:0}}
+
+nav.toc{position:sticky;top:28px;font-family:var(--f-mono);font-size:12px;line-height:1.5}
+@media (max-width:900px){
+  nav.toc{position:static;border:1px solid var(--rule);border-radius:2px;padding:18px;margin:28px 0 8px;background:var(--surface)}
+}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+nav.toc a{
+  color:var(--muted);text-decoration:none;display:grid;
+  grid-template-columns:26px 1fr;gap:6px;
+}
+nav.toc a span{color:var(--rule-strong)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent)}
+nav.toc a:hover span{color:var(--accent)}
+
+main{min-width:0;display:flex;flex-direction:column;gap:0}
+
+section{padding:0 0 8px;scroll-margin-top:24px}
+section + section{margin-top:64px;border-top:1px solid var(--rule);padding-top:42px}
+.sechead{display:flex;gap:16px;align-items:baseline;margin:0 0 22px}
+.secnum{
+  font-family:var(--f-mono);font-size:12px;font-weight:600;
+  color:var(--accent);letter-spacing:.08em;padding-top:.45em;
+}
+h2{
+  font-family:var(--f-display);font-weight:600;
+  font-size:clamp(1.45rem,2.7vw,2rem);line-height:1.12;
+  letter-spacing:-.018em;margin:0;text-wrap:balance;
+}
+h3{
+  font-family:var(--f-display);font-weight:600;font-size:1.06rem;
+  letter-spacing:-.005em;margin:34px 0 10px;
+}
+h4{
+  font-family:var(--f-mono);font-weight:600;font-size:11.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  margin:26px 0 8px;
+}
+p{margin:0 0 16px;max-width:var(--colw)}
+ul,ol{max-width:var(--colw);margin:0 0 16px;padding-left:1.15em}
+li{margin-bottom:7px}
+li::marker{color:var(--rule-strong)}
+strong{font-weight:600}
+code{
+  font-family:var(--f-mono);font-size:.845em;
+  background:var(--surface-2);padding:1.5px 5px;border-radius:2px;
+  color:var(--ink-2);
+}
+a{color:var(--accent)}
+
+/* ---------- key callout ---------- */
+.thesis{
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-top:3px solid var(--accent);
+  border-radius:2px;
+  padding:26px 28px;
+  max-width:none;
+  margin:0 0 28px;
+}
+.thesis p{font-size:1.12rem;margin:0;max-width:62ch}
+.thesis p + p{margin-top:12px}
+
+.flag{
+  border-left:3px solid var(--warn);
+  background:var(--warn-soft);
+  padding:16px 20px;border-radius:0 2px 2px 0;
+  margin:24px 0;max-width:none;
+}
+.flag.crit{border-left-color:var(--signal);background:var(--signal-soft)}
+.flag h4{margin:0 0 6px;color:var(--warn)}
+.flag.crit h4{color:var(--signal)}
+.flag p{margin:0;font-size:.96rem;max-width:64ch}
+.flag p + p{margin-top:10px}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;margin:22px 0 26px;border:1px solid var(--rule);border-radius:2px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+caption{
+  text-align:left;font-family:var(--f-mono);font-size:11px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+  padding:14px 18px 0;
+}
+th{
+  font-family:var(--f-display);font-weight:600;font-size:.78rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:14px 18px;border-bottom:1px solid var(--rule-strong);
+  white-space:nowrap;
+}
+td{padding:12px 18px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th.num{text-align:right}
+tr.bad td{background:var(--signal-soft)}
+tr.good td{background:var(--accent-soft)}
+.tag{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;padding:2.5px 7px;border-radius:2px;
+  white-space:nowrap;font-weight:500;
+}
+.tag.pub{background:var(--accent-soft);color:var(--accent)}
+.tag.oauth{background:var(--warn-soft);color:var(--warn)}
+.tag.no{background:var(--signal-soft);color:var(--signal)}
+
+/* ---------- pipeline diagram ---------- */
+.figure{margin:30px 0 34px}
+.figcap{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin:12px 0 0;
+}
+.pipe{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+  overflow-x:auto;
+}
+@media (max-width:760px){.pipe{grid-template-columns:1fr}}
+.stage{
+  background:var(--surface);border:1px solid var(--rule);
+  border-radius:2px;padding:16px 16px 18px;position:relative;
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+}
+.stage.live{border-color:var(--signal);box-shadow:inset 0 2px 0 var(--signal)}
+.stage .st-n{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.11em;
+  color:var(--muted);text-transform:uppercase;
+}
+.stage .st-t{font-family:var(--f-display);font-weight:600;font-size:.98rem;line-height:1.2}
+.stage .st-d{font-size:.855rem;color:var(--ink-2);line-height:1.45}
+.stage .st-c{
+  font-family:var(--f-mono);font-size:10.5px;color:var(--muted);
+  border-top:1px dashed var(--rule);padding-top:8px;margin-top:auto;
+}
+.storerow{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px;
+}
+@media (max-width:760px){.storerow{grid-template-columns:1fr}}
+.store{
+  background:var(--surface-2);border:1px dashed var(--rule-strong);
+  border-radius:2px;padding:11px 14px;font-family:var(--f-mono);
+  font-size:11px;color:var(--ink-2);line-height:1.5;
+}
+.store b{display:block;color:var(--ink);font-weight:600;letter-spacing:.04em;margin-bottom:3px}
+
+/* ---------- timeline mock ---------- */
+.tlbox{
+  background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+  padding:20px 20px 16px;overflow-x:auto;
+}
+.tlgrid{display:grid;grid-template-columns:82px minmax(0,1fr);gap:0 14px;align-items:center;min-width:560px}
+.tllab{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);text-align:right;
+}
+.tllab b{display:block;color:var(--ink-2);font-weight:500}
+.tlaxis{
+  grid-column:2;display:flex;justify-content:space-between;
+  font-family:var(--f-mono);font-size:10px;color:var(--muted);
+  border-top:1px solid var(--rule);padding-top:6px;margin-top:4px;
+}
+
+/* ---------- svg da timeline: cores via CSS, nunca via atributo ---------- */
+.gv-a{stop-color:var(--accent);stop-opacity:.26}
+.gv-b{stop-color:var(--accent);stop-opacity:0}
+.ln{fill:none}
+.ln-v{stroke:var(--accent)}
+.ln-c{stroke:var(--ink-2);opacity:.75}
+.ln-d{stroke:var(--signal)}
+.ln-base{stroke:var(--rule)}
+.pk{fill:var(--signal)}
+
+/* ---------- layered analysis ---------- */
+.layers{display:flex;flex-direction:column;gap:10px;margin:24px 0 28px}
+.layer{
+  display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:16px;
+  align-items:center;background:var(--surface);border:1px solid var(--rule);
+  border-radius:2px;padding:14px 18px;
+}
+@media (max-width:700px){.layer{grid-template-columns:1fr;gap:6px}}
+.layer .lname{font-family:var(--f-display);font-weight:600;font-size:.92rem}
+.layer .ldesc{font-size:.87rem;color:var(--ink-2);line-height:1.45}
+.layer .lcost{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;
+}
+.bar{height:4px;border-radius:2px;background:var(--accent);margin-top:5px}
+
+/* ---------- code ---------- */
+pre{
+  background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+  padding:16px 18px;overflow-x:auto;font-family:var(--f-mono);
+  font-size:12.5px;line-height:1.6;color:var(--ink-2);margin:18px 0 24px;
+}
+pre b{color:var(--accent);font-weight:500}
+pre i{color:var(--muted);font-style:normal}
+
+/* ---------- steps ---------- */
+ol.steps{list-style:none;padding:0;counter-reset:s;max-width:none;display:flex;flex-direction:column;gap:0}
+ol.steps li{
+  counter-increment:s;display:grid;grid-template-columns:34px minmax(0,1fr);
+  gap:16px;padding:16px 0;border-bottom:1px solid var(--rule);margin:0;
+}
+ol.steps li:last-child{border-bottom:none}
+ol.steps li::before{
+  content:counter(s,decimal-leading-zero);
+  font-family:var(--f-mono);font-size:11.5px;font-weight:600;
+  color:var(--accent);padding-top:.35em;
+}
+ol.steps .sbody{max-width:var(--colw)}
+ol.steps .sbody b{font-family:var(--f-display);display:block;margin-bottom:2px;font-size:.98rem}
+ol.steps .sbody span{font-size:.92rem;color:var(--ink-2)}
+
+/* ---------- footer ---------- */
+footer{
+  margin-top:72px;border-top:1px solid var(--rule);padding-top:24px;
+  font-family:var(--f-mono);font-size:11.5px;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between;
+}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">
+    <span class="livedot">Proposta técnica</span>
+    <span>Caze TV</span>
+    <span>YouTube Live</span>
+    <span>v0.1</span>
+  </div>
+  <h1>Monitor de Lives Caze TV</h1>
+  <p class="standfirst">Arquitetura e modelo de dados de uma plataforma que captura o que a live apaga: fluxo de audiência, chat, doações e engajamento, minuto a minuto.</p>
+  <div class="meta">
+    <span>Documento de <b>arquitetura</b></span>
+    <span>Escopo: <b>MVP, dados públicos</b></span>
+    <span>Stack: <b>Python, SQLite, LLM, Streamlit</b></span>
+    <span>Agosto de 2026</span>
+  </div>
+</header>
+
+<div class="doc">
+
+<nav class="toc" aria-label="Sumário">
+  <ol>
+    <li><a href="#s1"><span>01</span>A tese</a></li>
+    <li><a href="#s2"><span>02</span>O que dá para capturar</a></li>
+    <li><a href="#s3"><span>03</span>A restrição que define tudo</a></li>
+    <li><a href="#s4"><span>04</span>Pipeline</a></li>
+    <li><a href="#s5"><span>05</span>Modelo de dados</a></li>
+    <li><a href="#s6"><span>06</span>Camada de análise</a></li>
+    <li><a href="#s7"><span>07</span>LGPD</a></li>
+    <li><a href="#s8"><span>08</span>Setup do zero</a></li>
+    <li><a href="#s9"><span>09</span>Fora do MVP</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="s1">
+  <div class="sechead"><span class="secnum">01</span><h2>A tese</h2></div>
+
+  <div class="thesis">
+    <p>O produto não é um coletor de dados do YouTube. É <strong>uma linha do tempo única</strong> onde audiência, chat, doações e sentimento ficam alinhados no mesmo eixo de segundos, ancorados no instante em que a live começou.</p>
+    <p>Tudo no desenho abaixo existe para servir a essa linha do tempo. É ela que responde a pergunta que a Caze TV realmente tem: <em>o que aconteceu no minuto 47 que fez 30 mil pessoas saírem</em>, e o que fez outras 12 mil chegarem no minuto 62.</p>
+  </div>
+
+  <p>Um dashboard de números agregados no fim da live (pico de espectadores, total de mensagens, soma de Super Chat) é o que qualquer painel genérico já entrega, e não orienta decisão de conteúdo. O valor está na correlação temporal, porque é ela que transforma dado em pauta: qual bloco segurou audiência, qual convidado gerou conversa, qual momento converteu atenção em doação.</p>
+
+  <div class="figure">
+    <div class="tlbox">
+      <div class="tlgrid">
+        <div class="tllab"><b>Audiência</b>simultânea</div>
+        <svg viewBox="0 0 900 74" width="100%" height="74" preserveAspectRatio="none" role="img" aria-label="Curva de espectadores simultâneos ao longo da live, com dois picos e queda no encerramento">
+          <defs>
+            <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
+              <stop class="gv-a" offset="0%"/>
+              <stop class="gv-b" offset="100%"/>
+            </linearGradient>
+          </defs>
+          <polygon fill="url(#gv)" points="0,74 0.0,65.8 50.0,60.5 100.0,50.0 150.0,38.2 200.0,31.3 250.0,28.6 275.0,25.4 290.0,19.8 300.0,16.4 310.0,15.9 325.0,20.7 340.0,25.5 360.0,27.4 400.0,27.4 450.0,27.4 500.0,27.4 525.0,25.3 540.0,18.5 555.0,11.2 560.0,11.1 575.0,17.9 590.0,25.1 605.0,27.2 640.0,26.9 670.0,24.1 695.0,21.0 710.0,21.1 730.0,23.6 755.0,26.4 775.0,27.4 800.0,31.7 850.0,40.1 900.0,48.4 900,74"/>
+          <polyline class="ln ln-v" fill="none" stroke-width="1.6" stroke-linejoin="round" points="0.0,65.8 50.0,60.5 100.0,50.0 150.0,38.2 200.0,31.3 250.0,28.6 275.0,25.4 290.0,19.8 300.0,16.4 310.0,15.9 325.0,20.7 340.0,25.5 360.0,27.4 400.0,27.4 450.0,27.4 500.0,27.4 525.0,25.3 540.0,18.5 555.0,11.2 560.0,11.1 575.0,17.9 590.0,25.1 605.0,27.2 640.0,26.9 670.0,24.1 695.0,21.0 710.0,21.1 730.0,23.6 755.0,26.4 775.0,27.4 800.0,31.7 850.0,40.1 900.0,48.4"/>
+          <circle cx="557" cy="11" class="pk" r="3"/>
+          <circle cx="303" cy="16" class="pk" r="3"/>
+        </svg>
+
+        <div class="tllab"><b>Chat</b>msg / min</div>
+        <svg viewBox="0 0 900 52" width="100%" height="52" preserveAspectRatio="none" role="img" aria-label="Volume de mensagens por minuto, com dois picos coincidentes com os picos de audiência">
+          <polyline class="ln ln-c" fill="none" stroke-width="1.2" stroke-linejoin="round" opacity=".75" points="0.0,49.7 30.0,46.2 60.0,44.1 90.0,44.8 120.0,43.2 150.0,40.1 180.0,38.4 210.0,37.3 240.0,36.9 270.0,37.2 285.0,33.5 295.0,25.1 305.0,15.6 310.0,16.5 320.0,28.5 335.0,34.8 360.0,36.5 400.0,37.5 440.0,37.6 480.0,37.1 520.0,36.3 540.0,33.0 550.0,16.3 557.0,5.8 562.0,7.5 570.0,25.5 580.0,33.6 600.0,36.8 640.0,37.0 670.0,36.5 685.0,32.4 700.0,23.8 710.0,25.4 725.0,34.2 750.0,35.7 790.0,37.6 830.0,39.8 870.0,41.4 900.0,44.6"/>
+        </svg>
+
+        <div class="tllab"><b>Super Chat</b>R$ / min</div>
+        <svg viewBox="0 0 900 40" width="100%" height="40" preserveAspectRatio="none" role="img" aria-label="Fluxo de doações por minuto, concentrado nos picos">
+          <line class="ln-base" x1="0" y1="38.5" x2="900" y2="38.5" stroke-width="1"/>
+          <polyline class="ln ln-d" fill="none" stroke-width="1.5" stroke-linejoin="round" points="0.0,38.5 295.0,38.5 305.0,35.3 312.0,22.0 320.0,26.7 330.0,38.2 430.0,38.4 445.0,32.8 450.0,31.3 460.0,35.8 475.0,38.5 550.0,38.5 560.0,28.8 566.0,8.9 572.0,14.0 580.0,38.0 690.0,38.5 705.0,29.3 712.0,24.2 725.0,37.3 740.0,38.5 900.0,38.5"/>
+        </svg>
+
+        <div class="tlaxis">
+          <span>00:00</span><span>00:45</span><span>01:30</span><span>02:15</span><span>03:00</span>
+        </div>
+      </div>
+    </div>
+    <p class="figcap">Saída alvo do MVP. Três séries, um eixo, ancoradas em <code>live.inicio_real</code>. Os pontos vermelhos são momentos detectados automaticamente, cada um com link direto para o timestamp do vídeo.</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sechead"><span class="secnum">02</span><h2>O que dá para capturar</h2></div>
+
+  <p>A separação entre o que é público e o que exige autorização do canal não é um detalhe técnico, é a variável comercial da proposta. Vale entrar na conversa com a Caze TV já sabendo o que cada nível de acesso entrega.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Fontes de dado por nível de acesso</caption>
+      <thead>
+        <tr>
+          <th>Dado</th>
+          <th>Endpoint</th>
+          <th>Acesso</th>
+          <th class="num">Custo</th>
+          <th>Observação decisiva</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mensagens do chat, autor e papel</td>
+          <td><code>liveChatMessages.list</code></td>
+          <td><span class="tag pub">Público</span></td>
+          <td class="num">5</td>
+          <td>Só existe durante a transmissão. Não coletou, perdeu.</td>
+        </tr>
+        <tr>
+          <td>Super Chat e Super Sticker com valor</td>
+          <td><code>liveChatMessages.list</code></td>
+          <td><span class="tag pub">Público</span></td>
+          <td class="num">5</td>
+          <td>Vem embutido na mesma chamada do chat, em <code>superChatDetails</code>. Não precisa de endpoint separado.</td>
+        </tr>
+        <tr>
+          <td>Histórico de Super Chat dos últimos 30 dias</td>
+          <td><code>superChatEvents.list</code></td>
+          <td><span class="tag oauth">OAuth</span></td>
+          <td class="num">1</td>
+          <td>Rede de segurança para lives que a coleta perdeu, mas só 30 dias e só com login do canal.</td>
+        </tr>
+        <tr>
+          <td>Espectadores simultâneos</td>
+          <td><code>videos.list</code> <span style="color:var(--muted)">liveStreamingDetails</span></td>
+          <td><span class="tag pub">Público</span></td>
+          <td class="num">1</td>
+          <td>Só por amostragem periódica. A API não guarda a série histórica.</td>
+        </tr>
+        <tr>
+          <td>Views, likes e comentários finais</td>
+          <td><code>videos.list</code> <span style="color:var(--muted)">statistics</span></td>
+          <td><span class="tag pub">Público</span></td>
+          <td class="num">1</td>
+          <td>Coletado depois do fim, e recoletado em D+1 e D+7.</td>
+        </tr>
+        <tr>
+          <td>Curva de retenção de audiência</td>
+          <td><code>audienceWatchRatio</code></td>
+          <td><span class="tag oauth">OAuth</span></td>
+          <td class="num">0</td>
+          <td>O cruzamento mais forte do projeto: retenção contra o que estava sendo dito no chat naquele ponto.</td>
+        </tr>
+        <tr>
+          <td>Origem de tráfego, dispositivo, geografia, demografia</td>
+          <td>YouTube Analytics API</td>
+          <td><span class="tag oauth">OAuth</span></td>
+          <td class="num">0</td>
+          <td>Cota separada da Data API. É o conjunto que interessa a branding.</td>
+        </tr>
+        <tr>
+          <td>Identidade real do espectador</td>
+          <td>não existe endpoint</td>
+          <td><span class="tag no">Indisponível</span></td>
+          <td class="num">n/a</td>
+          <td>Demografia só existe agregada. Nenhum caminho legítimo entrega perfil individual.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flag">
+    <h4>Ponto de negociação</h4>
+    <p>A Analytics API roda em cota própria e não consome as 10 mil unidades diárias da Data API. Ou seja: liberar o acesso não custa nada em orçamento técnico para a Caze TV, custa só uma decisão de confiança. Vale enquadrar o pedido assim na reunião, e pedir perfil de <strong>analista</strong>, não de administrador, que é o menor privilégio que resolve.</p>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="sechead"><span class="secnum">03</span><h2>A restrição que define tudo</h2></div>
+
+  <p>Aqui há uma correção importante em relação à premissa inicial do projeto. A cota de 10 mil unidades por dia <em>não</em> deixa margem confortável para monitorar várias lives simultâneas, porque o chat custa 5 unidades por chamada e uma live de futebol é longa.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Consumo de cota, live de 3 horas, apenas o coletor de chat</caption>
+      <thead>
+        <tr><th>Intervalo de polling</th><th class="num">Chamadas</th><th class="num">Unidades</th><th class="num">% da cota diária</th><th>Veredito</th></tr>
+      </thead>
+      <tbody>
+        <tr class="bad"><td>5 s</td><td class="num">2.160</td><td class="num">10.800</td><td class="num">108%</td><td>Estoura antes da live acabar</td></tr>
+        <tr class="bad"><td>10 s</td><td class="num">1.080</td><td class="num">5.400</td><td class="num">54%</td><td>Uma live e meia por dia</td></tr>
+        <tr><td>15 s</td><td class="num">720</td><td class="num">3.600</td><td class="num">36%</td><td>Duas lives por dia</td></tr>
+        <tr class="good"><td>20 s</td><td class="num">540</td><td class="num">2.700</td><td class="num">27%</td><td>Três lives por dia, com folga</td></tr>
+        <tr><td>30 s</td><td class="num">360</td><td class="num">1.800</td><td class="num">18%</td><td>Quatro lives, latência alta demais para tempo real</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>O que salva o desenho é uma propriedade da API que costuma passar batida: <strong>polling mais espaçado não perde mensagem nenhuma</strong>. Cada resposta traz um <code>nextPageToken</code>, e a chamada seguinte devolve tudo o que entrou no chat desde aquele ponto, até <code>maxResults</code> de 2.000 por página. Espaçar o polling troca latência por cota, não troca completude por cota.</p>
+
+  <p>Isso define a decisão de arquitetura central do coletor:</p>
+
+  <div class="thesis">
+    <p><strong>Janela adaptativa.</strong> O coletor abre em 20 segundos. Se a resposta voltar saturada, acima de 1.800 itens, ele encurta a janela e pagina em sequência até esvaziar o backlog. Se voltar quase vazia, ele alarga até 40 segundos. Cota vai para onde tem conversa, e o intervalo mínimo devolvido pela própria API em <code>pollingIntervalMillis</code> é sempre respeitado como piso.</p>
+  </div>
+
+  <div class="flag crit">
+    <h4>Verificar antes de escrever o coletor</h4>
+    <p>A API ganhou o método <code>liveChatMessages.streamList</code>, que mantém uma conexão aberta e empurra mensagens em vez de exigir polling. A documentação pública não declara o custo em unidades. Se o custo for por <em>conexão</em> e não por mensagem entregue, o gargalo de cota descrito acima simplesmente desaparece e o coletor fica mais simples e mais próximo do tempo real.</p>
+      <p>Por isso a tabela <code>coleta_log</code> existe desde a primeira versão do schema: ela registra método, horário e custo estimado de cada chamada, e permite medir o consumo real no painel do Google Cloud contra o esperado. É a primeira medição a fazer na live de teste.</p>
+  </div>
+
+  <h3>As outras três restrições</h3>
+  <ul>
+    <li><strong>O chat é efêmero.</strong> Quando a live encerra, <code>liveChatId</code> deixa de resolver e as mensagens somem da API. Não existe coleta retroativa. Isso torna a confiabilidade do agendador uma questão de produto, não de infraestrutura: coletor que não subiu é live inteira perdida.</li>
+    <li><strong>Descobrir que a live começou custa caro.</strong> O <code>search.list</code> passou a ter cota própria e apertada, cerca de 100 chamadas por dia. Checar o canal a cada 15 minutos consome praticamente tudo. O caminho barato é o feed RSS público do canal, <code>youtube.com/feeds/videos.xml?channel_id=UC...</code>, que não consome cota nenhuma, seguido de um <code>videos.list</code> de 1 unidade para confirmar se aquele vídeo está ao vivo. No MVP, a URL da live também pode ser colada na mão.</li>
+    <li><strong>Espectadores simultâneos são amostra, não série.</strong> A resolução da curva de audiência é uma escolha nossa, não um dado que existe pronto. A 30 segundos, uma live de 3 horas custa 360 unidades e rende 360 pontos, resolução suficiente para detectar quedas e picos.</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <div class="sechead"><span class="secnum">04</span><h2>Pipeline</h2></div>
+
+  <p>Cinco componentes, quatro deles rodando em momentos diferentes do ciclo de vida da live. A separação importa porque só um deles tem prazo de validade: o coletor de chat precisa estar de pé exatamente enquanto a transmissão acontece.</p>
+
+  <div class="figure">
+    <div class="pipe">
+      <div class="stage">
+        <span class="st-n">Antes · contínuo</span>
+        <span class="st-t">Vigia</span>
+        <span class="st-d">Lê o feed RSS do canal e confirma com <code>videos.list</code> se o vídeo entrou ao vivo. Cria a linha em <code>live</code> e dispara os workers.</span>
+        <span class="st-c">RSS grátis + 1 un</span>
+      </div>
+      <div class="stage live">
+        <span class="st-n">Durante · crítico</span>
+        <span class="st-t">Coletor de chat</span>
+        <span class="st-d">Loop com janela adaptativa e <code>pageToken</code> persistido a cada iteração. Grava em lote. Se o processo cair, retoma exatamente de onde parou.</span>
+        <span class="st-c">5 un por chamada</span>
+      </div>
+      <div class="stage live">
+        <span class="st-n">Durante</span>
+        <span class="st-t">Sonda de audiência</span>
+        <span class="st-d">A cada 30 s, grava espectadores simultâneos, views e likes com o offset em segundos desde o início real.</span>
+        <span class="st-c">1 un por chamada</span>
+      </div>
+      <div class="stage">
+        <span class="st-n">Depois</span>
+        <span class="st-t">Fechamento</span>
+        <span class="st-d">Detecta o fim, calcula duração e cobertura da coleta, busca estatísticas finais e, se houver OAuth, puxa retenção e dimensões do Analytics.</span>
+        <span class="st-c">1 un + Analytics</span>
+      </div>
+    </div>
+
+    <div class="storerow">
+      <div class="store"><b>live · canal</b>metadados e âncora de tempo</div>
+      <div class="store"><b>mensagem · autor</b>bruto, imutável, idempotente por <code>msg_id</code></div>
+      <div class="store"><b>snapshot_audiencia</b>série temporal</div>
+      <div class="store"><b>analytics_*</b>preenchido só com OAuth</div>
+    </div>
+    <p class="figcap">Coleta. Os dois blocos marcados em vermelho só funcionam ao vivo e não têm segunda chance.</p>
+  </div>
+
+  <h3>Decisões de engenharia que não são óbvias</h3>
+
+  <h4>Idempotência por chave natural</h4>
+  <p>O <code>msg_id</code> da API é a chave primária de <code>mensagem</code>. Isso significa que reprocessar uma página inteira, depois de uma queda de rede ou de um retry, é inofensivo: o banco rejeita a duplicata. Sem isso, cada instabilidade de conexão vira contagem inflada no dashboard.</p>
+
+  <h4>Checkpoint do pageToken</h4>
+  <p>O <code>pageToken</code> é gravado em <code>coleta_log</code> a cada iteração. Um coletor que morre às 21h47 sobe de novo às 21h48 e continua a partir do token, sem buraco. É a diferença entre um protótipo e algo que a Caze TV pode ligar num jogo de verdade.</p>
+
+  <h4>Escrita concorrente em SQLite</h4>
+  <p>Dois workers escrevendo no mesmo arquivo pede <code>PRAGMA journal_mode=WAL</code> e <code>busy_timeout</code> generoso, com um escritor por live. Isso segura confortavelmente uma live. Duas ou três simultâneas com chat pesado é o ponto natural de migração para Postgres, e o schema já está escrito para atravessar essa fronteira sem reescrita.</p>
+
+  <h4>Cobertura como métrica de primeira classe</h4>
+  <p>A tabela <code>live</code> guarda <code>cobertura_pct</code>, a fração da transmissão que a coleta realmente acompanhou. Sem esse campo, ninguém consegue distinguir um vale no gráfico causado por silêncio do público de um vale causado por coletor caído. Um dashboard que não sabe a diferença mente para o cliente.</p>
+</section>
+
+<section id="s5">
+  <div class="sechead"><span class="secnum">05</span><h2>Modelo de dados</h2></div>
+
+  <p>Quinze tabelas em quatro blocos, escritas em SQLite mas com tipos e restrições que sobrevivem à migração para Postgres. O arquivo <code>schema.sql</code> acompanha este documento e já foi executado e testado.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Blocos do schema</caption>
+      <thead><tr><th>Bloco</th><th>Tabelas</th><th>Papel</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Coleta bruta</strong></td>
+          <td><code>canal</code>, <code>live</code>, <code>mensagem</code>, <code>snapshot_audiencia</code>, <code>estatistica_final</code></td>
+          <td>Fiel ao que a API devolveu. Nunca é reescrito por análise.</td>
+        </tr>
+        <tr>
+          <td><strong>Pessoas</strong></td>
+          <td><code>autor_identidade</code>, <code>autor</code>, <code>autor_papel_live</code></td>
+          <td>Fronteira de dado pessoal, isolada de propósito. Detalhe abaixo.</td>
+        </tr>
+        <tr>
+          <td><strong>Análise</strong></td>
+          <td><code>analise_mensagem</code>, <code>janela_agregada</code>, <code>momento</code></td>
+          <td>Derivado e descartável. Pode ser recalculado do zero a qualquer momento.</td>
+        </tr>
+        <tr>
+          <td><strong>Restrito e operação</strong></td>
+          <td><code>analytics_retencao</code>, <code>analytics_dimensao</code>, <code>coleta_log</code></td>
+          <td>Só preenchido com OAuth, mais a auditoria de chamadas e cota.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>A decisão estrutural: pseudonimização na origem</h3>
+
+  <p>Nome de canal e identificador do autor de cada mensagem são dados pessoais, mesmo sendo públicos. Em vez de tratar isso como um capítulo jurídico anexado no fim da proposta, o schema resolve na estrutura.</p>
+
+  <pre><i>-- toda a base referencia o pseudônimo, nunca a identidade</i>
+autor_identidade  <b>autor_pid</b>  canal_autor_id  nome_exibicao  expurgar_em
+                       │            <i>dado pessoal, retenção curta</i>
+                       │
+        ┌──────────────┴──────────────┬─────────────────────┐
+        ▼                             ▼                     ▼
+    autor                       mensagem              autor_papel_live
+  <i>comportamento</i>                <i>conteúdo</i>              <i>papel por live</i>
+
+<b>autor_pid = sha256(canal_do_autor + salt do projeto)</b></pre>
+
+  <p>A consequência prática: apagar <code>autor_identidade</code> anonimiza o banco inteiro e <em>nenhuma</em> análise quebra. Contagem de autores únicos, detecção de recorrência entre lives, fluxo de doações por perfil, tudo continua funcionando sobre o pseudônimo. A identidade só é necessária para dois casos reais, moderação e resposta a pedido de titular, e por isso tem <code>expurgar_em</code> como coluna obrigatória.</p>
+
+  <p>Vale dizer isso em voz alta na proposta comercial. Um projeto de consultoria que chega com privacidade desenhada na estrutura do banco, e não como parágrafo de rodapé, se apresenta de forma bem diferente diante de um cliente do porte da Caze TV.</p>
+
+  <h3>Outros três detalhes que valem a atenção</h3>
+  <ul>
+    <li><strong>Dinheiro em micros, sempre inteiro.</strong> A API devolve <code>amountMicros</code>, e é assim que fica armazenado. Ponto flutuante em valor de doação é erro de arredondamento acumulado, e num relatório para cliente isso é constrangimento garantido.</li>
+    <li><strong>Análise versionada por modelo e prompt.</strong> A chave de <code>analise_mensagem</code> é <code>(msg_id, modelo, prompt_versao)</code>. Trocar de modelo ou ajustar o prompt gera uma nova safra de análise ao lado da antiga, em vez de sobrescrever. Dá para comparar as duas e defender a escolha.</li>
+    <li><strong>Uma tabela genérica para as dimensões do Analytics.</strong> <code>analytics_dimensao</code> guarda linhas no formato dimensão mais valor, então acrescentar um novo corte pedido pela Caze TV é inserir dado, não criar tabela.</li>
+  </ul>
+</section>
+
+<section id="s6">
+  <div class="sechead"><span class="secnum">06</span><h2>Camada de análise</h2></div>
+
+  <p>Uma live grande de futebol produz na casa de dezenas a centenas de milhares de mensagens. Mandar cada mensagem individualmente para um modelo de linguagem é a forma mais rápida de tornar o projeto caro e lento sem ganho proporcional de qualidade. A saída é escalonar por custo, deixando o modelo para o que só ele resolve.</p>
+
+  <div class="layers">
+    <div class="layer">
+      <div><span class="lname">Camada 0</span><div class="bar" style="width:8%"></div></div>
+      <span class="ldesc">Determinística, sem modelo: contagem, emojis, termos, deduplicação, taxa por autor, similaridade entre mensagens. Já resolve spam e bot por heurística e elimina de 20 a 40 por cento do volume antes de qualquer chamada paga.</span>
+      <span class="lcost">custo zero</span>
+    </div>
+    <div class="layer">
+      <div><span class="lname">Camada 1</span><div class="bar" style="width:26%"></div></div>
+      <span class="ldesc">Classificação em lote: 200 mensagens por chamada, saída em JSON estruturado com sentimento, tópico e sinal de spam. Amostragem estratificada, com cobertura integral das janelas de pico e amostra das janelas mornas.</span>
+      <span class="lcost">o grosso do gasto</span>
+    </div>
+    <div class="layer">
+      <div><span class="lname">Camada 2</span><div class="bar" style="width:52%"></div></div>
+      <span class="ldesc">Rotulagem dos momentos detectados. O detector de pico é estatístico, por desvio padrão sobre a linha de base móvel. O modelo entra só depois, para dizer em uma frase o que estava sendo falado ali.</span>
+      <span class="lcost">dezenas de chamadas</span>
+    </div>
+    <div class="layer">
+      <div><span class="lname">Camada 3</span><div class="bar" style="width:100%"></div></div>
+      <span class="ldesc">Síntese narrativa da live inteira, escrita a partir dos agregados e dos momentos, nunca do chat bruto. É o texto que vai para o relatório da Caze TV.</span>
+      <span class="lcost">uma chamada</span>
+    </div>
+  </div>
+
+  <div class="flag">
+    <h4>Detecção de pico antes de qualquer LLM</h4>
+    <p>Picos saem de estatística, não de modelo: janela de 60 segundos, média móvel de 10 minutos, e sinaliza o que passa de dois desvios padrão acima da base. Cada momento vira uma linha em <code>momento</code> com <code>url_timestamp</code> já montada, então quem lê o relatório clica e cai no segundo exato do vídeo. Isso é barato, é auditável e é o recurso que mais impressiona numa demonstração.</p>
+  </div>
+
+  <h3>Uma métrica própria vale mais que dez métricas emprestadas</h3>
+  <p>A coluna <code>taxa_participacao</code> em <code>janela_agregada</code> é a razão entre autores únicos e espectadores simultâneos na mesma janela. Ela separa duas situações que o total de mensagens confunde: muita gente assistindo calada e pouca gente muito engajada. Para uma conversa de branding, essa distinção é justamente o ponto, porque diz se a audiência está presente ou apenas ligada.</p>
+</section>
+
+<section id="s7">
+  <div class="sechead"><span class="secnum">07</span><h2>LGPD</h2></div>
+
+  <p>Vale registrar aqui, com a ressalva de que isto é organização técnica do tema e não parecer jurídico. Numa proposta formal de consultoria, a revisão por alguém da área é passo obrigatório antes de assinar.</p>
+
+  <div class="tablewrap">
+    <table>
+      <caption>Enquadramento a definir em contrato</caption>
+      <thead><tr><th>Questão</th><th>Posição do desenho</th></tr></thead>
+      <tbody>
+        <tr><td>Quem é controlador</td><td>A Caze TV, dona do canal e da finalidade. O projeto atua como operador, tratando dado por conta e ordem dela. Isso precisa estar escrito no contrato, não subentendido.</td></tr>
+        <tr><td>Base legal</td><td>Interesse legítimo é o caminho natural para dado público de chat, com teste de proporcionalidade documentado. Consentimento individual de cada espectador é inviável na prática.</td></tr>
+        <tr><td>Minimização</td><td>Nome de exibição e foto entram porque servem à moderação. Nada além disso é coletado, e nenhum enriquecimento com fonte externa é feito.</td></tr>
+        <tr><td>Retenção</td><td><code>autor_identidade</code> tem prazo curto e coluna <code>expurgar_em</code> obrigatória. O restante da base já nasce pseudonimizado e pode ser guardado indefinidamente.</td></tr>
+        <tr><td>Direitos do titular</td><td>Pedido de exclusão resolve apagando uma linha em <code>autor_identidade</code>. As análises agregadas permanecem íntegras, porque não dependem da identidade.</td></tr>
+        <tr><td>Decisão automatizada</td><td>A classificação de spam é sinal para moderação humana, nunca punição automática. Vale deixar explícito, porque é o ponto onde este tipo de sistema costuma escorregar.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sechead"><span class="secnum">08</span><h2>Setup do zero</h2></div>
+
+  <p>Do nada até a primeira mensagem gravada em banco. Os passos 1 a 4 valem para dados públicos, e são suficientes para o protótipo. O passo 5 só entra quando a Caze TV liberar o Analytics.</p>
+
+  <ol class="steps">
+    <li><div class="sbody"><b>Projeto no Google Cloud</b><span>Em <code>console.cloud.google.com</code>, criar um projeto dedicado, por exemplo <code>cazetv-monitor</code>. Projeto separado mantém a cota isolada de qualquer outro experimento.</span></div></li>
+    <li><div class="sbody"><b>Habilitar a YouTube Data API v3</b><span>Em APIs e serviços, ativar a Data API v3. A YouTube Analytics API fica para o passo 5.</span></div></li>
+    <li><div class="sbody"><b>Gerar a chave de API</b><span>Em Credenciais, criar uma chave e restringi-la à Data API v3. Chave resolve tudo que é público, sem login de ninguém. Guardar em <code>.env</code>, e <code>.env</code> no <code>.gitignore</code> desde o primeiro commit.</span></div></li>
+    <li><div class="sbody"><b>Ambiente Python</b><span>Python 3.11 ou superior, ambiente virtual, e <code>pip install google-api-python-client python-dotenv streamlit pandas plotly</code>. Rodar o <code>schema.sql</code> uma vez para criar o banco.</span></div></li>
+    <li><div class="sbody"><b>OAuth para o Analytics</b><span>Habilitar a YouTube Analytics API, configurar a tela de consentimento, criar um Client ID do tipo aplicativo para desktop e pedir o escopo <code>yt-analytics.readonly</code>. Alguém com perfil de analista do canal da Caze TV faz o login uma única vez, e o refresh token fica guardado. Sem esse passo, as tabelas <code>analytics_*</code> ficam vazias e todo o resto funciona igual.</span></div></li>
+    <li><div class="sbody"><b>Live de teste</b><span>Apontar o coletor para qualquer live pública movimentada antes de usar uma da Caze TV. O objetivo dessa rodada é medir consumo real de cota contra o previsto, verificar o custo do <code>streamList</code> e calibrar a janela adaptativa com chat de verdade.</span></div></li>
+  </ol>
+</section>
+
+<section id="s9">
+  <div class="sechead"><span class="secnum">09</span><h2>Fora do MVP</h2></div>
+
+  <p>Escopo de MVP se defende tanto pelo que fica de fora quanto pelo que entra. Estes itens estão desenhados, mas não construídos, e servem como roteiro de expansão numa conversa de financiamento.</p>
+
+  <ul>
+    <li><strong>Twitch.</strong> O schema já tem <code>plataforma</code> em <code>canal</code>, e o IRC da Twitch entrega chat sem cota e sem o problema de efemeridade. É a segunda plataforma natural, e a que exige menos reescrita.</li>
+    <li><strong>Comparação entre lives.</strong> Com meia dúzia de transmissões no banco, a pergunta deixa de ser o que aconteceu nesta live e passa a ser o que difere entre elas: formato, horário, convidado, adversário.</li>
+    <li><strong>Alerta em tempo real.</strong> Notificar a produção durante a transmissão quando a audiência cai além do esperado. Depende de linha de base histórica, então precisa de lives acumuladas antes de existir.</li>
+    <li><strong>Painel para o comercial.</strong> Doação por bloco, retenção por patrocinador, tempo de exposição de marca. É a camada que transforma o produto de ferramenta de conteúdo em ferramenta de receita, e provavelmente é ela que sustenta o pedido de financiamento.</li>
+  </ul>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <span>Monitor de Lives Caze TV · documento de arquitetura v0.1</span>
+  <span>Custos de cota conferidos na documentação da YouTube Data API em agosto de 2026</span>
+</footer>
+
+</div>
+</body>
+</html>

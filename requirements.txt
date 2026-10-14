@@ -1,0 +1,14 @@
+# O coletor nao tem dependencia externa: roda com a biblioteca padrao do
+# Python 3.9 ou superior. Este arquivo existe para deixar isso explicito
+# e para ser o lugar onde uma dependencia futura entra.
+#
+# Para instalar o projeto e ganhar os comandos lives-coletar, lives-report,
+# lives-quota e lives-demo:
+#
+#     pip install -e .
+#
+# Extras opcionais, so quando forem necessarios:
+#
+#     pip install -e ".[dashboard]"   # streamlit, pandas, plotly
+#     pip install -e ".[llm]"         # cliente da API de LLM
+#     pip install -e ".[dev]"         # pytest, ruff

@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lives-monitor"
+version = "0.1.0"
+description = "Coletor e analisador de lives do YouTube: chat, doacoes e curva de audiencia"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietario" }
+authors = [{ name = "Erik Rolin" }]
+keywords = ["youtube", "live", "chat", "analytics", "audiencia"]
+
+# Nenhuma dependencia obrigatoria, de proposito.
+# O coletor usa apenas a biblioteca padrao do Python: urllib para falar
+# com a API, sqlite3 para o banco, json e statistics para a analise.
+# Isso mantem a instalacao trivial em qualquer maquina e deixa o custo
+# em unidades de cota de cada chamada explicito no codigo.
+dependencies = []
+
+[project.optional-dependencies]
+# Instale so quando for construir o dashboard:
+#   pip install -e ".[dashboard]"
+dashboard = [
+    "streamlit>=1.30",
+    "pandas>=2.0",
+    "plotly>=5.18",
+]
+# Analise com LLM, a camada que entra depois da camada 0:
+#   pip install -e ".[llm]"
+llm = [
+    "anthropic>=0.40",
+]
+# Ferramentas de desenvolvimento:
+#   pip install -e ".[dev]"
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+lives-coletar = "collector.collector:main"
+lives-report  = "collector.report:main"
+lives-quota   = "collector.quota:main"
+lives-agenda  = "collector.agenda:main"
+lives-demo    = "collector.seed_demo:main"
+
+[tool.setuptools]
+packages = ["collector"]
+
+[tool.setuptools.package-data]
+collector = []
+
+[tool.ruff]
+line-length = 100
