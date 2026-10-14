@@ -167,3 +167,31 @@ export type SecComparacao = {
   contadores_em: string | null;
   concorrencia: { quando: string; total: number; lista: { canal: string; titulo: string; espectadores: number; esta: boolean }[] } | null;
 };
+
+// ---- relatório final, publicação
+
+export type Dossie = {
+  gerado_em: string; modelo: string;
+  veredito: string; veredito_sub: string;
+  insights: { titulo: string; texto: string; base: string }[];
+  recomendacao: string;
+  achados: { rotulo: string; valor: string; unidade: string; cor: "aud" | "msg" | "part" | "ink3"; bar: number; texto: string }[];
+  entrada: string[]; nao_entrada: string[];
+};
+export type EstadoDossie = { gerado: boolean; dossie: Dossie | null };
+
+export type Publicacao = { canal_slug: string; slug: string; emitido_em: string; caminho: string };
+export type EstadoPublicacao = { publicada: Publicacao | null; proposta: { canal_slug: string; slug: string; caminho: string } };
+
+export type RelatorioPublico = {
+  canal: { nome: string; handle: string | null; foto: string | null };
+  titulo: string; inicio: string | null; duracao_s: number | null; janela_coletada_s: number | null;
+  cobertura: number | null; acompanhada: number | null;
+  pico: number | null; pessoas: number; mensagens: number;
+  momentos: Momento[];
+  serie: { t: number[]; esp: (number | null)[]; part: (number | null)[] } | null;
+  comunidade: SecComunidade;
+  dossie: Omit<Dossie, "entrada" | "nao_entrada"> | null;
+  publicado: { em: string; autor_nome: string | null; instituicao: string | null; orcid: string | null };
+  url_video: string;
+};

@@ -6,19 +6,26 @@ ela esta no ar, e gera um relatorio da live sem nenhuma chamada de LLM.
 O chat ao vivo **deixa de existir quando a live acaba**. A API nao devolve as
 mensagens depois. Por isso o coletor precisa estar rodando durante a transmissao.
 
-## v2: plataforma Vigia (em construcao)
+## v2: plataforma Vigia
 
 Interface web sobre o mesmo banco. Plano e decisoes em
 [docs/plano_v2.md](docs/plano_v2.md); design em `design_handoff_vigia_pesquisa/`.
 
 ```
 pip install -e ".[api]"          # FastAPI + uvicorn, so para a API
-lives-api --reload               # API em http://127.0.0.1:8000 (docs em /api/docs)
+lives-api                        # API em http://127.0.0.1:8000 (docs em /api/docs)
+lives-vigia                      # vigia: le agendas e sobe um coletor por live no ar
 cd web && npm install && npm run dev   # front em http://localhost:5173
 ```
 
+Sao tres processos. Sem o `lives-vigia` rodando nada e coletado, e a
+interface diz isso ("vigia parado") em vez de fingir que esta de pe.
 O login e de demonstracao: qualquer e-mail valido e senha com 6 ou mais
 caracteres entra. Com `npm run build`, a propria API passa a servir o front.
+
+Relatorio publico: depois de gerar o dossie de uma transmissao, "Publicar
+link" cria `/r/{canal}/{nome-da-live-data}`, que abre sem login e so le
+agregados (sem cota, custo, texto de chat ou autor).
 
 ## Instalacao
 

@@ -137,6 +137,10 @@ def migrar(con):
         video_id TEXT PRIMARY KEY, gerado_em TEXT NOT NULL, modelo TEXT NOT NULL,
         conteudo TEXT NOT NULL);
     """)
+    # quem publicou o relatorio aparece no rodape do link publico
+    _add_coluna(con, "publicacao", "autor_nome", "TEXT")
+    _add_coluna(con, "publicacao", "instituicao", "TEXT")
+    _add_coluna(con, "publicacao", "orcid", "TEXT")
 
     # detectada_em: quando a plataforma soube da transmissao pela primeira
     # vez. E o que separa PERDIDA (sabiamos e ninguem coletou) de uma live

@@ -108,7 +108,7 @@ tabela `cambio(data, moeda, brl)` preenchida quando aparecer moeda não-BRL.
 
 A versão pública é uma **projeção no backend**, não um filtro de interface.
 
-## 4. Etapas
+## 4. Etapas (todas implementadas em 14/10/2026)
 
 0. Base: `git init`, scaffolding `web/` e `api/`, tokens dos dois temas,
    header, login falso, plataformas, ajuda e conta.
@@ -135,3 +135,23 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   mudanças de título, concorrência, moderação) aparecem como "não consta"
   nas duas lives antigas. Recuperável hoje: comentários, lives anteriores,
   ficha do vídeo, inscritos atuais, foto do canal.
+
+## 6. Decisões tomadas durante a implementação
+
+- Cobertura aparece em dois números: cobertura da janela coletada (chat sem
+  buraco) e fração da transmissão acompanhada. Transmissão vira PARCIAL se
+  qualquer um ficar abaixo de 90%, ou se a coleta fechar com a live no ar.
+- Participação = autores distintos na janela ÷ espectadores (definição do
+  README), não mensagens ÷ espectadores.
+- Mensagens e pessoas contam só o que foi escrito durante a transmissão
+  (offset ≥ 0), sem eventos de moderação: 3.125 mensagens e 1.018 pessoas
+  em Brasil × Canadá.
+- Título de live coletada é o que ela tinha no ar; renomeação posterior
+  aparece em "Mudanças" como feita depois da live.
+- Dossiê `regra-v1`: texto fixo escolhido pelo que os números mostram,
+  todos os números calculados. Nenhuma mensagem de chat entra.
+- Análise de conversa (`lexico-v1`) é heurística local: tom por léxico,
+  idioma por palavras funcionais. Marcas "Vivo" e "Claro" fora da lista
+  (palavras comuns em português).
+- Concorrência filtrada pelo idioma declarado do vídeo: o
+  `relevanceLanguage` do search.list é só preferência.

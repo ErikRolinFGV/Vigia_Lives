@@ -6,12 +6,14 @@ import { Canais } from "./pages/Canais";
 import { CanalPagina } from "./pages/Canal";
 import { LivePagina } from "./pages/live/LivePagina";
 import { Replay } from "./pages/live/AoVivo";
+import { Publico } from "./pages/Publico";
 
 export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar" element={<Recuperar />} />
+      <Route path="/r/:canal/:slug" element={<Publico />} />
       <Route path="/plataformas" element={<Protegido><Plataformas /></Protegido>} />
       <Route path="/yt" element={<Protegido><AppLayout /></Protegido>}>
         <Route index element={<Navigate to="canais" replace />} />

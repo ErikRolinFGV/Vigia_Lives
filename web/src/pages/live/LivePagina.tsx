@@ -11,6 +11,7 @@ import { SecaoAudiencia, SecaoChat, SecaoQualidade, SecaoResumo } from "./secoes
 import { Agendada, Perdida } from "./Estados";
 import { SecaoApoio, SecaoComparacao, SecaoComunidade, SecaoConversa, SecaoDepois, SecaoModeracao, SecaoMomentos, SecaoPessoas, SecaoVideo } from "./secoesNovas";
 import { AoVivo } from "./AoVivo";
+import { Relatorio, useDossie } from "./Relatorio";
 import st from "./live.module.css";
 
 const NOMES_SUB: Record<SubAba, string> = {
@@ -46,16 +47,18 @@ export function LivePagina() {
   if (l.estado === "agendada") return <Agendada live={l} />;
   if (l.estado === "perdida") return <Perdida live={l} />;
   if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} reler={() => { live.recarregar(); serie.recarregar(); }} />;
-  return <LiveColetada live={l} s={serie.dados} carregandoSerie={serie.carregando} />;
+  return <LiveColetada live={l} serie={serie.dados} carregandoSerie={serie.carregando} />;
 }
 
-function LiveColetada({ live, s, carregandoSerie }: { live: LiveDetalhe; s: Serie | null; carregandoSerie: boolean }) {
+function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; serie: Serie | null; carregandoSerie: boolean }) {
+  const s = serie;
   const { conta } = useSessao();
   const [q, setQ] = useSearchParams();
   const aba = q.get("aba") === "relatorio" ? "relatorio" : "dados";
   const pedido = q.get("sub") as SubAba | null;
   const sub: SubAba = pedido && live.subabas.includes(pedido) ? pedido : "resumo";
-  const d = useMemo(() => (s ? derivar(s) : null), [s]);
+  const d = useMemo(() => (serie ? derivar(serie) : null), [serie]);
+  const dos = useDossie(live.id);
 
   const ir = (p: Record<string, string>) => setQ(prev => {
     const n = new URLSearchParams(prev);
@@ -96,7 +99,9 @@ function LiveColetada({ live, s, carregandoSerie }: { live: LiveDetalhe; s: Seri
 
         <div className={st.abas} role="tablist">
           <button type="button" role="tab" aria-selected={aba === "dados"} className={st.aba} data-ativa={aba === "dados"} onClick={() => ir({ aba: "dados" })}>Dados da coleta</button>
-          <button type="button" role="tab" aria-selected={aba === "relatorio"} className={st.aba} data-ativa={aba === "relatorio"} onClick={() => ir({ aba: "relatorio" })}>Relatório final · não gerado</button>
+          <button type="button" role="tab" aria-selected={aba === "relatorio"} className={st.aba} data-ativa={aba === "relatorio"} onClick={() => ir({ aba: "relatorio" })}>
+            {dos.dados?.gerado ? "Relatório final ✓" : "Relatório final · não gerado"}
+          </button>
         </div>
 
         {aba === "dados" ? (
@@ -122,7 +127,7 @@ function LiveColetada({ live, s, carregandoSerie }: { live: LiveDetalhe; s: Seri
             </div>
           </div>
         ) : (
-          <div className={st.carregando}>O relatório final entra na etapa 5.</div>
+          <Relatorio live={live} s={serie} estado={dos.dados} recarregar={dos.recarregar} />
         )}
       </div>
     </div>

@@ -50,3 +50,15 @@ a:hover > .kpi-link { border-color: var(--lineH) !important; transform: translat
   border-radius: 9px; padding: 8px 12px; white-space: nowrap; transition: border-color .18s ease, background .18s ease;
 }
 .ver-trecho:hover { border-color: var(--lineH); background: var(--s2); color: var(--ink); }
+
+.botao-escuro {
+  font-family: Figtree, sans-serif; font-size: 16px; font-weight: 700; color: var(--onAccent); background: var(--accent);
+  border: 0; border-radius: 10px; padding: 14px 22px; cursor: pointer; transition: background .18s ease, transform .18s ease;
+}
+.botao-escuro:hover { background: var(--accentH); transform: translateY(-2px); }
+.botao-escuro:disabled { opacity: .6; cursor: default; transform: none; }
+.botao-claro {
+  font-size: 14px; font-weight: 600; color: var(--ink2); border: 1px solid var(--line2); background: transparent;
+  border-radius: 9px; padding: 10px 16px; cursor: pointer; transition: border-color .18s ease, background .18s ease;
+}
+.botao-claro:hover { border-color: var(--lineH); background: var(--surface); }
