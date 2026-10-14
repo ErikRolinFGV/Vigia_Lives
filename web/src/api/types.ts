@@ -20,7 +20,9 @@ export type LiveResumo = {
   coleta_inicio: string | null;
   coleta_fim: string | null;
   duracao_s: number | null;
-  cobertura: number | null;
+  cobertura: number | null;         // % da janela do coletor sem buraco
+  janela_coletada_s: number | null; // quanto tempo o coletor esteve ligado
+  acompanhada: number | null;       // % da transmissão inteira que a janela cobriu
   pico: number | null;
   mensagens: number;
   detectada_em: string | null;
@@ -52,3 +54,31 @@ export type ListaCanais = { limite_slots: number; em_uso: number; canais: Canal[
 
 export type ItemAgenda = LiveResumo & { canal_id: string; canal: string };
 export type Agenda = { proximas: ItemAgenda[]; recentes: ItemAgenda[] };
+
+export type Momento = { t: number; tipo: "pico_chat" | "pico_audiencia" | "pico_doacao" | "queda_audiencia" | "virada_sentimento"; magnitude: number; url: string };
+
+export type LiveDetalhe = Omit<LiveResumo, "numero" | "estado"> & {
+  numero: number | null;
+  estado: EstadoLive | null;
+  canal: { id: string; nome: string; handle: string | null };
+  pessoas: number;
+  mensagens_live: number;
+  cota_unidades: number;
+  momentos: Momento[];
+  tem_serie: boolean;
+  tem_chat: boolean;
+  subabas: SubAba[];
+  url: string;
+};
+
+export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade";
+
+export type Serie = { t: number[]; esp: (number | null)[]; mpm: number[]; part: (number | null)[]; cota: number[] };
+
+export type Previsao = {
+  unidades_hora: number; unidades_hora_medida: boolean;
+  duracao_estimada_s: number; duracao_do_canal: boolean;
+  custo: number; cota_dia: number; dia_cota: string | null;
+  outras: { id: string; titulo: string; canal: string; agendada_para: string; custo: number }[];
+  reservado: number;
+};

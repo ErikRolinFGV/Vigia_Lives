@@ -42,3 +42,5 @@ input, select, textarea { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+a:hover > .kpi-link { border-color: var(--lineH) !important; transform: translateY(-2px); }

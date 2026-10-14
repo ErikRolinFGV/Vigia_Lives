@@ -23,6 +23,9 @@ export function duracao(s: number | null | undefined): string {
   return `${h}h${String(m).padStart(2, "0")}`;
 }
 
+// Siglas que o título traz em caixa alta e devem continuar assim.
+const SIGLAS = new Set(["FIFA", "CNN", "PSG", "LDU", "VAR", "RB", "UEFA", "CBF", "NBA", "NFL", "UFC", "EUA", "CPI", "STF", "PT", "PL"]);
+
 /**
  * O título do YouTube é longo e cheio de qualificador; o que identifica a
  * transmissão para uma pessoa é o confronto ou a fase. Porte de apelido().
@@ -34,7 +37,7 @@ export function apelido(t: string | null | undefined, max = 26): string {
   const low = ["de", "da", "do", "das", "dos", "e"];
   s = s.toLowerCase().split(/\s+/).map((w, i) => {
     if (w === "×") return w;
-    if (/^cnn$/.test(w)) return "CNN";
+    if (SIGLAS.has(w.toUpperCase())) return w.toUpperCase();
     if (i > 0 && low.includes(w)) return w;
     return w.charAt(0).toUpperCase() + w.slice(1);
   }).join(" ");

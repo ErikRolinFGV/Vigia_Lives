@@ -33,7 +33,10 @@ def estado(l):
         return "no_ar"
     if l["coleta_inicio"]:
         cob = l["cobertura_pct"]
-        return "parcial" if cob is not None and cob < LIMIAR_PARCIAL else "coletada"
+        acomp = acompanhada_pct(l)
+        if (cob is not None and cob < LIMIAR_PARCIAL) or (acomp is not None and acomp < LIMIAR_PARCIAL):
+            return "parcial"
+        return "coletada"
     if l["status"] == "agendada":
         return "agendada"
     detectada, fim = _ts(l["detectada_em"]), _ts(l["fim_real"])
@@ -42,6 +45,28 @@ def estado(l):
     if detectada and fim and detectada <= fim:
         return "perdida"
     return None
+
+
+def janela_coletada_s(l):
+    """Segundos em que o coletor esteve ligado durante a transmissao."""
+    a = max(filter(None, [_ts(l["coleta_inicio"]), _ts(l["inicio_real"])]), default=None)
+    b = min(filter(None, [_ts(l["coleta_fim"]), _ts(l["fim_real"])]), default=None)
+    if not a or not b or b <= a:
+        return None
+    return int((b - a).total_seconds())
+
+
+def acompanhada_pct(l):
+    """
+    Quanto da transmissao inteira a coleta acompanhou. Diferente de
+    cobertura_pct, que mede so a janela em que o coletor estava ligado: uma
+    coleta perfeita de 1h48 numa live de 6h51 tem cobertura 99,7% e
+    acompanhou 26% da transmissao. A tela mostra os dois.
+    """
+    janela, dur = janela_coletada_s(l), l["duracao_segundos"]
+    if not janela or not dur:
+        return None
+    return round(min(100.0, 100.0 * janela / dur), 1)
 
 
 def _ordem(l):
@@ -94,6 +119,8 @@ def resumo_live(d):
         "coleta_fim": d["coleta_fim"],
         "duracao_s": duracao,
         "cobertura": d["cobertura_pct"],
+        "janela_coletada_s": janela_coletada_s(d),
+        "acompanhada": acompanhada_pct(d),
         "pico": d["pico"],
         "mensagens": d["n_msgs"],
         "detectada_em": d["detectada_em"],
@@ -142,7 +169,21 @@ def serie(con, video_id):
 
     esp = [round(soma[i] / cont[i]) if cont[i] else None for i in range(n)]
     part = [round(len(autores[i]) / esp[i], 6) if esp[i] else None for i in range(n)]
-    return {"t": [(b0 + i) * JANELA for i in range(n)], "esp": esp, "mpm": mpm, "part": part}
+
+    # unidades de cota gastas em cada janela, pelo horario de cada chamada.
+    # E o que permite a tela ao vivo (e o replay) mostrar o custo acumulado
+    # real em vez de uma regra de tres.
+    cota = [0] * n
+    l = con.execute("SELECT inicio_real FROM live WHERE video_id=?", (video_id,)).fetchone()
+    t0 = _ts(l["inicio_real"]) if l else None
+    if t0:
+        for c in con.execute("SELECT chamado_em, custo_unidades FROM coleta_log WHERE video_id=?", (video_id,)):
+            tc = _ts(c["chamado_em"])
+            if not tc:
+                continue
+            b = int((tc - t0).total_seconds()) // JANELA - b0
+            cota[min(max(b, 0), n - 1)] += c["custo_unidades"]
+    return {"t": [(b0 + i) * JANELA for i in range(n)], "esp": esp, "mpm": mpm, "part": part, "cota": cota}
 
 
 def agora_iso():
