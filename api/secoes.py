@@ -462,7 +462,8 @@ def _ficha(b):
 def video(con, video_id, versao):
     l = _live(con, video_id)
     snaps = con.execute("SELECT * FROM video_snapshot WHERE video_id=? ORDER BY coletado_em", (video_id,)).fetchall()
-    ultimo = _bruto(snaps[-1]) if snaps else {}
+    com_bruto = [x for x in snaps if x["bruto"]]
+    ultimo = _bruto(com_bruto[-1]) if com_bruto else {}
     publicado = (ultimo.get("snippet") or {}).get("publishedAt")
     ag, ini, fim = yt.parse_ts(l["agendada_para"]), yt.parse_ts(l["inicio_real"]), yt.parse_ts(l["fim_real"])
     pub = yt.parse_ts(publicado)
@@ -518,7 +519,7 @@ def video(con, video_id, versao):
             "hoje": canal["avulsa"]["inscritos"] if "avulsa" in canal else None,
             "hoje_em": canal["avulsa"]["coletado_em"] if "avulsa" in canal else None,
         },
-        "ficha": _ficha(ultimo) if snaps else None,
+        "ficha": _ficha(ultimo) if com_bruto else None,
     }
 
 

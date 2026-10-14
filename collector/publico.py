@@ -49,14 +49,21 @@ def registrar_video(con, item, fase, rotulo=None):
     """Grava uma leitura do video. `item` e um elemento de videos.list."""
     snip = item.get("snippet", {})
     stats = item.get("statistics", {})
+    bruto = json.dumps({k: item.get(k) for k in ("snippet", "contentDetails", "topicDetails", "status", "liveStreamingDetails")},
+                       ensure_ascii=False)[:20000]
+    if fase == "durante":
+        # leitura de minuto a minuto: o JSON inteiro so quando titulo ou
+        # thumbnail mudam (ou na primeira); o resto sao os contadores
+        ant = con.execute("""SELECT titulo, thumb_url FROM video_snapshot WHERE video_id=? AND fase='durante'
+                             ORDER BY coletado_em DESC LIMIT 1""", (item["id"],)).fetchone()
+        if ant and ant["titulo"] == snip.get("title") and ant["thumb_url"] == _thumb(snip):
+            bruto = None
     con.execute(
         """INSERT OR REPLACE INTO video_snapshot
              (video_id, coletado_em, fase, rotulo, titulo, thumb_url, views, likes, comentarios, bruto)
            VALUES (?,?,?,?,?,?,?,?,?,?)""",
         (item["id"], db.agora(), fase, rotulo, snip.get("title"), _thumb(snip),
-         _int(stats.get("viewCount")), _int(stats.get("likeCount")), _int(stats.get("commentCount")),
-         json.dumps({k: item.get(k) for k in ("snippet", "contentDetails", "topicDetails", "status", "liveStreamingDetails")},
-                    ensure_ascii=False)[:20000]),
+         _int(stats.get("viewCount")), _int(stats.get("likeCount")), _int(stats.get("commentCount")), bruto),
     )
     con.commit()
 
@@ -145,12 +152,28 @@ def registrar_concorrencia(con, video_id, offset_segundos, categoria=None, idiom
         if esp is None:
             continue
         snip = item.get("snippet", {})
+        if item["id"] != video_id and not _mesmo_idioma(snip, idioma):
+            continue
         con.execute(
             """INSERT OR REPLACE INTO concorrencia
                  (video_id, coletado_em, offset_segundos, rival_video_id, rival_canal, titulo, espectadores)
                VALUES (?,?,?,?,?,?,?)""",
             (video_id, agora, offset_segundos, item["id"], snip.get("channelTitle"), snip.get("title"), esp))
     con.commit()
+
+
+def _mesmo_idioma(snip, idioma):
+    """
+    relevanceLanguage do search.list e so preferencia: vem live em hindi numa
+    busca em portugues. Vale o idioma que o canal declara no video; sem
+    declaracao, o titulo precisa ser em escrita latina.
+    """
+    declarado = (snip.get("defaultAudioLanguage") or snip.get("defaultLanguage") or "").lower()
+    if declarado:
+        return declarado.startswith(idioma)
+    titulo = snip.get("title") or ""
+    letras = [c for c in titulo if c.isalpha()]
+    return bool(letras) and sum(1 for c in letras if ord(c) < 0x250) / len(letras) > 0.9
 
 
 # ---------------------------------------------------------------- depois da live

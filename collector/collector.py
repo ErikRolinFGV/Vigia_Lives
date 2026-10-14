@@ -23,10 +23,11 @@ import time
 from datetime import datetime, timezone
 
 try:  # instalado como pacote
-    from . import config, db, yt
+    from . import config, db, publico, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
+    import publico
     import yt
 
 _parar = False
@@ -47,11 +48,18 @@ def log(msg):
 
 # ------------------------------------------------------------------ live
 
-def sincronizar_live(con, video_id):
-    """Le videos.list e atualiza o estado da live no banco. Custa 1 unidade."""
-    item = yt.video(con, video_id)
+def sincronizar_live(con, video_id, registrar=False):
+    """
+    Le videos.list e atualiza o estado da live no banco. Custa 1 unidade.
+    Pede todas as partes publicas de uma vez (o custo e por chamada): com
+    registrar=True a leitura vira um video_snapshot, que e de onde saem as
+    mudancas de titulo e thumbnail durante a live.
+    """
+    item = yt.video(con, video_id, part=config.PARTES_VIDEO)
     if not item:
         return None
+    if registrar:
+        publico.registrar_video(con, item, "durante")
     snip = item.get("snippet", {})
     lsd = item.get("liveStreamingDetails", {})
     stats = item.get("statistics", {})
@@ -90,6 +98,8 @@ def sincronizar_live(con, video_id):
         if lsd.get("concurrentViewers") else None,
         "views": int(stats["viewCount"]) if stats.get("viewCount") else None,
         "likes": int(stats["likeCount"]) if stats.get("likeCount") else None,
+        "categoria": snip.get("categoryId"),
+        "idioma": (snip.get("defaultAudioLanguage") or "pt")[:2],
     }
 
 
@@ -132,6 +142,22 @@ def esperar_live(con, canal_id, intervalo=120):
                 return info
         time.sleep(intervalo)
     return None
+
+
+def _tentar(o_que, f):
+    """Leitura acessoria: falhar nao pode derrubar a coleta do chat."""
+    try:
+        return f()
+    except yt.ErroCota:
+        log(f"{o_que}: cota esgotada, seguindo sem")
+    except Exception as e:
+        log(f"{o_que}: falhou ({e}), seguindo")
+    return None
+
+
+def _parada_pedida(con, video_id):
+    r = con.execute("SELECT parar_pedido_em FROM live WHERE video_id=?", (video_id,)).fetchone()
+    return bool(r and r["parar_pedido_em"])
 
 
 # ------------------------------------------------------------------ chat
@@ -207,7 +233,11 @@ def coletar(con, info, limite_minutos=None):
         log("essa live nao tem chat ativo, so a serie de audiencia sera coletada")
 
     inicio_dt = yt.parse_ts(info["inicio_real"])
-    db.upsert_live(con, video_id, info["canal_id"], coleta_inicio=db.agora())
+    db.upsert_live(con, video_id, info["canal_id"])
+    # um coletor que o vigia reinicia no meio da live continua a mesma coleta:
+    # o inicio original fica, o fim e o pedido de parada antigos saem
+    con.execute("""UPDATE live SET coleta_inicio = COALESCE(coleta_inicio, ?),
+                   parar_pedido_em = NULL, coleta_fim = NULL WHERE video_id=?""", (db.agora(), video_id))
     con.commit()
 
     janela = config.JANELA_PADRAO
@@ -222,6 +252,9 @@ def coletar(con, info, limite_minutos=None):
     ultimo_poll = None
     fim_previsto = t0 + limite_minutos * 60 if limite_minutos else None
 
+    proxima_concorrencia = t0 + 5 * 60   # primeira busca depois de 5 min no ar
+    _tentar("inscritos antes", lambda: publico.registrar_canal(con, info["canal_id"], video_id, "antes"))
+
     log(f"coletando '{info['titulo']}' | janela inicial {janela}s")
 
     while not _parar:
@@ -229,11 +262,21 @@ def coletar(con, info, limite_minutos=None):
         if fim_previsto and agora_s >= fim_previsto:
             log("limite de tempo atingido")
             break
+        if _parada_pedida(con, video_id):
+            log("encerramento pedido pela interface")
+            break
+
+        # ---- concorrencia (search.list, 100 unidades + videos.list, 1)
+        if agora_s >= proxima_concorrencia and inicio_dt:
+            off = int((datetime.now(timezone.utc) - inicio_dt).total_seconds())
+            _tentar("concorrencia", lambda: publico.registrar_concorrencia(
+                con, video_id, off, categoria=info.get("categoria"), idioma=info.get("idioma") or "pt"))
+            proxima_concorrencia = agora_s + config.INTERVALO_CONCORRENCIA
 
         # ---- audiencia (videos.list, 1 unidade)
         if agora_s >= proxima_audiencia:
             try:
-                atual = sincronizar_live(con, video_id)
+                atual = sincronizar_live(con, video_id, registrar=True)
             except yt.ErroCota as e:
                 log(f"COTA ESGOTADA: {e}")
                 break
@@ -357,6 +400,11 @@ def coletar(con, info, limite_minutos=None):
 
     db.consolidar_autores(con, video_id)
     con.commit()
+
+    _tentar("inscritos depois", lambda: publico.registrar_canal(con, info["canal_id"], video_id, "depois"))
+    if final and final["fim_real"]:
+        publico.agendar_pos_live(con, video_id, final["fim_real"])
+        log("leituras de depois da live agendadas: +1 h ate +7 d")
 
     gasto = con.execute(
         "SELECT COALESCE(SUM(custo_unidades),0) u, COUNT(*) n FROM coleta_log WHERE video_id=?",

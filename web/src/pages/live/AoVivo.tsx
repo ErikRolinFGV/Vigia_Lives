@@ -3,7 +3,8 @@
 //  - replay: a série de uma coleta encerrada avança janela a janela, como
 //    avançou no dia. A tela diz que é replay em todo momento.
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { api } from "../../api/client";
 import type { LiveDetalhe, Serie } from "../../api/types";
 import { SerieChart } from "../../components/charts";
 import { hhmm, n, nomeLive, dataCurta } from "../../lib/format";
@@ -20,23 +21,34 @@ function ultimoNaoNulo<T>(a: (T | null)[], ate: number): T | null {
   return null;
 }
 
-export function AoVivo({ live, serie, replay = false }: { live: LiveDetalhe; serie: Serie | null; replay?: boolean }) {
+export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetalhe; serie: Serie | null; replay?: boolean; reler?: () => void }) {
   const { conta } = useSessao();
-  const nav = useNavigate();
   const total = serie?.t.length ?? 0;
   // o replay começa a 40% da transmissão, como no protótipo: dá contexto
   // sem obrigar a esperar o começo morno da live
   const [li, setLi] = useState(() => (replay ? Math.max(0, Math.floor(total * 0.4)) : total - 1));
 
+  const [encerrando, setEncerrando] = useState<"" | "pedido" | string>("");
   useEffect(() => { if (!replay) setLi(total - 1); }, [replay, total]);
   useEffect(() => {
     if (!replay) {
-      const iv = setInterval(() => nav(0), RELER_MS);   // coleta real: relê a página
+      if (!reler) return;
+      const iv = setInterval(reler, RELER_MS);   // coleta real: relê cabeçalho e série
       return () => clearInterval(iv);
     }
     const iv = setInterval(() => setLi(i => Math.min(total - 1, i + 1)), PASSO_REPLAY_MS);
     return () => clearInterval(iv);
-  }, [replay, total, nav]);
+  }, [replay, total, reler]);
+
+  const encerrar = async () => {
+    if (!confirm("Encerrar a coleta agora? O que já foi capturado fica salvo; o resto da transmissão não será coletado.")) return;
+    try {
+      await api(`/lives/${live.id}/encerrar`, { method: "POST" });
+      setEncerrando("pedido");
+    } catch (e) {
+      setEncerrando((e as Error).message);
+    }
+  };
 
   if (!serie || total === 0) {
     return (
@@ -86,7 +98,12 @@ export function AoVivo({ live, serie, replay = false }: { live: LiveDetalhe; ser
             <span className="mono" style={{ fontSize: 12.5, color: "var(--ink3)" }}>
               {live.canal.nome} · {replay ? `minuto ${hhmm(serie.t[fim])} da transmissão` : `coletando há ${hhmm(decorrido).replace(":", " h ")} min`}
             </span>
-            {!replay && <button type="button" className={st.botao} style={{ marginLeft: "auto" }} disabled title="Encerrar coleta entra junto com o vigia (etapa 4)">Encerrar coleta</button>}
+            {!replay && (
+              <button type="button" className={st.botao} style={{ marginLeft: "auto" }} disabled={encerrando === "pedido"} onClick={encerrar}>
+                {encerrando === "pedido" ? "Encerrando…" : "Encerrar coleta"}
+              </button>
+            )}
+            {encerrando && encerrando !== "pedido" && <span style={{ fontSize: 12.5, color: "var(--redInk)" }}>{encerrando}</span>}
           </div>
           <div style={{ height: 2, background: "var(--track)", borderRadius: 2, overflow: "hidden", marginBottom: 13 }}>
             <div style={{ width: "24%", height: "100%", background: "var(--red)", borderRadius: 2, animation: "sweep 2.4s cubic-bezier(.4,0,.6,1) infinite" }} />

@@ -53,6 +53,7 @@ lives-quota   = "collector.quota:main"
 lives-agenda  = "collector.agenda:main"
 lives-demo    = "collector.seed_demo:main"
 lives-api     = "api.main:main"
+lives-vigia   = "collector.vigia:main"
 
 [tool.setuptools]
 packages = ["collector", "api", "api.routers"]

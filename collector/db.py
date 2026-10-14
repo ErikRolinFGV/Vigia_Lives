@@ -82,6 +82,9 @@ def migrar(con):
                    WHERE l.canal_id = canal.canal_id)
                WHERE EXISTS (SELECT 1 FROM live l WHERE l.canal_id = canal.canal_id)""")
     _add_coluna(con, "canal", "agenda_lida_em", "TEXT")
+    _add_coluna(con, "canal", "uploads_lidos_em", "TEXT")
+    # a interface pede para encerrar; o coletor confere a cada volta do loop
+    _add_coluna(con, "live", "parar_pedido_em", "TEXT")
 
     # batimento do vigia: uma linha so, atualizada a cada ciclo. E o que a
     # interface consulta antes de dizer "coleta de pe".

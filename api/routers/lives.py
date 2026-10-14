@@ -185,3 +185,17 @@ def secao(video_id: str, secao: str, versao: str = "interna", con: sqlite3.Conne
     if versao not in ("interna", "publica"):
         raise HTTPException(422, "versao é 'interna' ou 'publica'")
     return f(con, video_id, versao)
+
+
+@router.post("/lives/{video_id}/encerrar", status_code=202)
+def encerrar(video_id: str, con: sqlite3.Connection = Depends(conexao)):
+    """
+    Pede ao coletor que encerre. Ele confere o pedido a cada volta do loop,
+    fecha o banco e calcula a cobertura; o que ja foi capturado fica.
+    """
+    l = _live_ou_404(con, video_id)
+    if not l["coleta_inicio"] or l["coleta_fim"]:
+        raise HTTPException(409, "não há coleta em andamento nesta transmissão")
+    con.execute("UPDATE live SET parar_pedido_em=? WHERE video_id=?", (datetime.now(timezone.utc).isoformat(timespec="seconds"), video_id))
+    con.commit()
+    return {"pedido": True}

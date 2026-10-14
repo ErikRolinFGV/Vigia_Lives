@@ -45,7 +45,7 @@ export function LivePagina() {
 
   if (l.estado === "agendada") return <Agendada live={l} />;
   if (l.estado === "perdida") return <Perdida live={l} />;
-  if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} />;
+  if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} reler={() => { live.recarregar(); serie.recarregar(); }} />;
   return <LiveColetada live={l} s={serie.dados} carregandoSerie={serie.carregando} />;
 }
 

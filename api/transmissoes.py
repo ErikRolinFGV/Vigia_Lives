@@ -34,6 +34,10 @@ def estado(l):
     if l["coleta_inicio"]:
         cob = l["cobertura_pct"]
         acomp = acompanhada_pct(l)
+        # coleta fechada com a live ainda no ar: o resto da transmissao ja
+        # esta ficando sem coleta, mesmo antes de saber a duracao final
+        if l["status"] == "ao_vivo":
+            return "parcial"
         if (cob is not None and cob < LIMIAR_PARCIAL) or (acomp is not None and acomp < LIMIAR_PARCIAL):
             return "parcial"
         return "coletada"
