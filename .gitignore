@@ -17,3 +17,4 @@ docs/*.docx
 node_modules/
 web/dist/
 uploads/
+*.tsbuildinfo
