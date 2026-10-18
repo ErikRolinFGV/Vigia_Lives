@@ -20,6 +20,10 @@ cd web && npm install && npm run dev   # front em http://localhost:5173
 
 Sao tres processos. Sem o `lives-vigia` rodando nada e coletado, e a
 interface diz isso ("vigia parado") em vez de fingir que esta de pe.
+O botao "vigia parado · ligar" no cabecalho sobe o vigia pela propria
+interface (saida em `data/vigia.log`) e, rodando, desliga: o pedido vai
+pelo banco e o vigia sai em segundos. Coletas em andamento seguem ate o
+fim da live.
 O login e de demonstracao: qualquer e-mail valido e senha com 6 ou mais
 caracteres entra. Com `npm run build`, a propria API passa a servir o front.
 

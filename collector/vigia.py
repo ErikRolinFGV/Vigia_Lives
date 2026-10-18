@@ -4,6 +4,9 @@ Vigia: o processo que ninguem chama e que nao pode parar.
     lives-vigia                 # roda ate Ctrl+C
     lives-vigia --ciclo 30      # segundos entre ciclos (padrao 60)
 
+Tambem sobe e para pela interface (POST /api/operacao/vigia/ligar|desligar):
+desligar grava um pedido no banco, e o vigia sai sozinho em poucos segundos.
+
 A cada ciclo:
   1. grava o batimento (a interface so diz "coleta de pe" se ele existir)
   2. le a agenda de cada canal vigiado: a cada 5 min, ou a cada ciclo se
@@ -68,9 +71,28 @@ def batimento(con, iniciado_em):
     con.execute(
         """INSERT INTO vigia_batimento (id, iniciado_em, ultimo_ciclo, pid) VALUES (1,?,?,?)
            ON CONFLICT(id) DO UPDATE SET iniciado_em=excluded.iniciado_em,
-             ultimo_ciclo=excluded.ultimo_ciclo, pid=excluded.pid""",
+             ultimo_ciclo=excluded.ultimo_ciclo, pid=excluded.pid, encerrado_em=NULL""",
         (iniciado_em, db.agora(), os.getpid()))
     con.commit()
+
+
+def _pedido_parar(con):
+    """A interface pediu para desligar?"""
+    r = con.execute("SELECT parar_pedido_em FROM vigia_batimento WHERE id = 1").fetchone()
+    return bool(r and r[0])
+
+
+def _esperar(con, segundos):
+    """Dorme ate o proximo ciclo; Ctrl+C ou pedido da interface interrompem."""
+    global _parar
+    for i in range(segundos):
+        if _parar:
+            return
+        if i % 5 == 0 and _pedido_parar(con):
+            log("a interface pediu para desligar")
+            _parar = True
+            return
+        time.sleep(1)
 
 
 def _live_quente(con, canal_id):
@@ -167,25 +189,25 @@ def main():
 
     con = db.conectar()
     iniciado = db.agora()
+    # pedido de parada antigo nao vale para este processo
+    con.execute("UPDATE vigia_batimento SET parar_pedido_em = NULL WHERE id = 1")
+    con.commit()
     log(f"de pé. Ciclo de {a.ciclo}s. Ctrl+C para parar.")
     while not _parar:
         try:
             ciclo(con, iniciado)
         except yt.ErroCota as e:
             log(f"COTA ESGOTADA: {e}. Tento de novo em 15 min.")
-            for _ in range(15 * 60):
-                if _parar:
-                    break
-                time.sleep(1)
+            _esperar(con, 15 * 60)
             continue
         except Exception as e:
             log(f"ciclo falhou ({type(e).__name__}: {e}), sigo no próximo")
-        for _ in range(a.ciclo):
-            if _parar:
-                break
-            time.sleep(1)
-    # sai sem batimento novo: em 5 min a interface passa a dizer "vigia parado"
+        _esperar(con, a.ciclo)
+    # os coletores em andamento seguem ate o fim de cada live
+    con.execute("UPDATE vigia_batimento SET encerrado_em = ?, parar_pedido_em = NULL WHERE id = 1", (db.agora(),))
+    con.commit()
     con.close()
+    log("parado")
 
 
 if __name__ == "__main__":

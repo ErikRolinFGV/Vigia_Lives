@@ -91,6 +91,10 @@ def migrar(con):
     con.execute("""CREATE TABLE IF NOT EXISTS vigia_batimento (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         iniciado_em TEXT NOT NULL, ultimo_ciclo TEXT NOT NULL, pid INTEGER)""")
+    # a interface pede para desligar; o vigia confere a cada poucos segundos
+    # e, ao sair, marca encerrado_em (a interface nao espera os 5 min)
+    _add_coluna(con, "vigia_batimento", "parar_pedido_em", "TEXT")
+    _add_coluna(con, "vigia_batimento", "encerrado_em", "TEXT")
 
     # v2: dados publicos do video e do canal, lidos durante e depois da live.
     # fase: 'durante' (polling do coletor), 'pos' (jobs depois do fim, com

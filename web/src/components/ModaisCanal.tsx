@@ -2,7 +2,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client";
 import type { Canal, CanalDetalhe } from "../api/types";
-import { apelido } from "../lib/format";
+import { apelido, ha } from "../lib/format";
+import { definirSaude, recarregarSaude } from "../state/saude";
+import type { Saude } from "../state/saude";
+import { usePlano } from "../state/plano";
 import { Erro } from "./basicos";
 import { Modal, btnAcao, btnCancelar } from "./Modal";
 import u from "./ui.module.css";
@@ -143,6 +146,65 @@ export function PararModal({ canal, fechar, parado }: { canal: Canal; fechar: ()
         <button type="button" style={btnCancelar} onClick={fechar}>Cancelar</button>
         <button type="button" disabled={enviando} style={{ ...btnAcao(true, "var(--red)"), color: "#FFFFFF" }} onClick={confirmar}>
           {enviando ? "Parando…" : "Parar e liberar o slot"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Liga ou desliga o vigia (o processo que sobe os coletores). */
+export function VigiaModal({ saude, fechar }: { saude: Saude | null; fechar: () => void }) {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const { emUso } = usePlano();
+  const dePe = !!saude?.vigia.de_pe;
+  const ativas = saude?.coletas_ativas ?? 0;
+
+  const confirmar = async () => {
+    setEnviando(true);
+    setErro("");
+    try {
+      definirSaude(await api<Saude>(`/operacao/vigia/${dePe ? "desligar" : "ligar"}`, { method: "POST" }));
+      fechar();
+    } catch (err) {
+      setErro((err as Error).message);
+      recarregarSaude();
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <Modal fechar={fechar} largura={500} estilo={{ boxShadow: "var(--cardShadow)" }}>
+      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>{dePe ? "Desligar o vigia?" : "Ligar o vigia"}</div>
+      <div style={{ fontSize: 13.5, color: "var(--ink3)", marginBottom: 18 }}>
+        {dePe
+          ? `Rodando ${ha(saude?.vigia.desde ?? null)}.`
+          : "O vigia acompanha os canais e começa a coletar sozinho quando uma live sobe."}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+        {dePe ? (
+          <>
+            <Item m="×" tom="red">Lives que começarem com o vigia desligado não serão coletadas. O chat ao vivo não pode ser recuperado depois.</Item>
+            {ativas > 0
+              ? <Item m="✓" tom="ok">{`${ativas === 1 ? "A coleta em andamento continua" : `As ${ativas} coletas em andamento continuam`} até o fim da live. Para parar antes, use "Encerrar coleta" na própria live.`}</Item>
+              : <Item m="·" tom="neutro">Nenhuma coleta em andamento agora.</Item>}
+            <Item m="✓" tom="ok">Coletas, relatórios e links publicados continuam disponíveis.</Item>
+          </>
+        ) : (
+          <>
+            <Item m="✓" tom="ok">{`Lê a agenda ${emUso === 1 ? "do canal vigiado" : `dos ${emUso} canais vigiados`} a cada 5 minutos, gastando pouca cota.`}</Item>
+            <Item m="✓" tom="ok">Quando uma live entra no ar, sobe um coletor para ela. Uma live de 3 h gasta cerca de 2.700 das 10.000 unidades diárias.</Item>
+            <Item m="·" tom="neutro">Só vigia enquanto este computador e a API estiverem ligados.</Item>
+          </>
+        )}
+      </div>
+      {erro && <div style={{ marginBottom: 14 }}><Erro texto={erro} /></div>}
+      <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+        <button type="button" style={btnCancelar} onClick={fechar}>Cancelar</button>
+        <button type="button" disabled={enviando} onClick={confirmar}
+          style={dePe ? { ...btnAcao(!enviando, "var(--red)"), color: "#FFFFFF" } : { ...btnAcao(!enviando, "var(--ok)"), color: "#FFFFFF" }}>
+          {enviando ? (dePe ? "Desligando…" : "Ligando…") : (dePe ? "Desligar o vigia" : "Ligar o vigia")}
         </button>
       </div>
     </Modal>

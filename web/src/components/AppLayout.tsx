@@ -5,6 +5,7 @@ import { useSaude } from "../state/saude";
 import { ContaBotao, Logo, ThemeToggle } from "./basicos";
 import { ContaDrawer } from "./ContaDrawer";
 import { AjudaDrawer } from "./AjudaDrawer";
+import { VigiaModal } from "./ModaisCanal";
 import u from "./ui.module.css";
 import s from "./layout.module.css";
 
@@ -45,7 +46,12 @@ export function AppLayout() {
   const [ajuda, setAjuda] = useState(false);
   const [conta, setConta] = useState(false);
   const nav = useNavigate();
-  const dePe = !!useSaude()?.vigia.de_pe;
+  const [vigia, setVigia] = useState(false);
+  const saude = useSaude();
+  const v = saude?.vigia;
+  const dePe = !!v?.de_pe;
+  const rotulo = v?.parando ? "desligando…" : v?.ligando ? "ligando…" : dePe ? "coleta de pé" : "vigia parado";
+  const transicao = !!(v?.parando || v?.ligando);
 
   const todos: Crumb[] = [{ label: "Canais", to: crumbs.length ? "/yt/canais" : undefined }, ...crumbs];
 
@@ -87,12 +93,15 @@ export function AppLayout() {
             </nav>
 
             <div className={s.direita}>
-              <div className={u.pill} title={dePe ? "O vigia está lendo a agenda dos canais" : "O vigia não está rodando: nenhuma live será coletada até ele subir"}>
-                <span className={u.dot} style={dePe
+              <button type="button" className={u.pillBtn} disabled={!saude || transicao} onClick={() => setVigia(true)}
+                style={!saude || transicao ? { cursor: "default" } : undefined}
+                title={dePe ? "O vigia está lendo a agenda dos canais. Clique para desligar." : "O vigia não está rodando: nenhuma live será coletada até ele subir. Clique para ligar."}>
+                <span className={u.dot} style={dePe && !v?.parando
                   ? { background: "#1F9D55", animation: "pulseDot 2.4s ease-in-out infinite" }
-                  : { background: "var(--amb)" }} />
-                <span className="mono" style={{ fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap" }}>{dePe ? "coleta de pé" : "vigia parado"}</span>
-              </div>
+                  : { background: "var(--amb)", animation: transicao ? "pulseDot 1.2s ease-in-out infinite" : undefined }} />
+                <span className="mono" style={{ fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap" }}>{rotulo}</span>
+                {saude && !transicao && <span style={{ fontSize: 11, color: "var(--ink3)" }}>{dePe ? "desligar" : "ligar"}</span>}
+              </button>
               <ThemeToggle />
               <button type="button" className={u.helpBtn} onClick={() => setAjuda(true)} title="O que é e como usar">?</button>
               <ContaBotao onClick={() => setConta(true)} />
@@ -106,6 +115,7 @@ export function AppLayout() {
 
         {conta && <ContaDrawer fechar={() => setConta(false)} mostrarTrocar />}
         {ajuda && <AjudaDrawer fechar={() => setAjuda(false)} />}
+        {vigia && <VigiaModal saude={saude} fechar={() => setVigia(false)} />}
       </div>
     </ShellCtx.Provider>
   );
