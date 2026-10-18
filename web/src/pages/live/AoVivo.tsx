@@ -2,6 +2,7 @@
 //  - coleta em andamento: a série vem da API e é relida periodicamente;
 //  - replay: a série de uma coleta encerrada avança janela a janela, como
 //    avançou no dia. A tela diz que é replay em todo momento.
+import { AvisoMesmoJogo, AvisoTrechos, BotaoYouTube } from "../../components/Ligacoes";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../api/client";
@@ -98,8 +99,10 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
             <span className="mono" style={{ fontSize: 12.5, color: "var(--ink3)" }}>
               {live.canal.nome} · {replay ? `minuto ${hhmm(serie.t[fim])} da transmissão` : `coletando há ${hhmm(decorrido).replace(":", " h ")} min`}
             </span>
+            <span style={{ marginLeft: "auto" }} />
+            <BotaoYouTube url={live.url} />
             {!replay && (
-              <button type="button" className={st.botao} style={{ marginLeft: "auto" }} disabled={encerrando === "pedido"} onClick={encerrar}>
+              <button type="button" className={st.botao} disabled={encerrando === "pedido"} onClick={encerrar}>
                 {encerrando === "pedido" ? "Encerrando…" : "Encerrar coleta"}
               </button>
             )}
@@ -110,6 +113,8 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
           </div>
           <h1 className={st.titulo}>{nomeLive(live.titulo, 3)}</h1>
         </div>
+
+        {!replay && <><AvisoTrechos live={live} /><AvisoMesmoJogo live={live} /></>}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 16, marginBottom: 16 }}>
           <div style={kpi("var(--audT)", "var(--audLine)")}>

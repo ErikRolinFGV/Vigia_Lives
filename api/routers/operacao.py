@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from collector import config, db, yt
+from collector import config, db, processo, yt
 
 from ..deps import LIMITE_SLOTS, conexao
 
@@ -40,26 +40,7 @@ def _batimento(con):
 
 
 def _processo_vivo(pid) -> bool:
-    """O processo existe nesta maquina? Na duvida, responde que sim."""
-    if not pid:
-        return True
-    if sys.platform == "win32":
-        import ctypes
-        k = ctypes.windll.kernel32
-        h = k.OpenProcess(0x1000, False, int(pid))  # PROCESS_QUERY_LIMITED_INFORMATION
-        if not h:
-            return False
-        codigo = ctypes.c_ulong()
-        ok = k.GetExitCodeProcess(h, ctypes.byref(codigo))
-        k.CloseHandle(h)
-        return not ok or codigo.value == 259  # STILL_ACTIVE
-    try:
-        os.kill(int(pid), 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        pass
-    return True
+    return processo.vivo(pid)
 
 
 def _de_pe(b) -> bool:
@@ -82,9 +63,17 @@ def saude(con: sqlite3.Connection = Depends(conexao)):
     ultima = con.execute("SELECT MAX(chamado_em) FROM coleta_log").fetchone()[0]
     b = _batimento(con)
     de_pe = _de_pe(b)
-    ativas = con.execute(
-        "SELECT COUNT(*) FROM live WHERE coleta_inicio IS NOT NULL AND coleta_fim IS NULL"
-    ).fetchone()[0]
+    # um coletor por video: a lista mostra o que esta rodando e quanto gasta,
+    # para nao parecer que a mesma live esta sendo coletada duas vezes
+    hora = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
+    coletas = [dict(r) for r in con.execute(
+        """SELECT l.video_id id, l.titulo, l.coleta_inicio desde, c.nome canal,
+                  (SELECT COALESCE(SUM(custo_unidades), 0) FROM coleta_log g WHERE g.video_id = l.video_id) unidades,
+                  (SELECT COALESCE(SUM(custo_unidades), 0) FROM coleta_log g
+                   WHERE g.video_id = l.video_id AND g.chamado_em >= ?) ultima_hora
+           FROM live l JOIN canal c ON c.canal_id = l.canal_id
+           WHERE l.coleta_inicio IS NOT NULL AND l.coleta_fim IS NULL ORDER BY l.coleta_inicio""", (hora,))]
+    ativas = len(coletas)
     return {
         "api": "ok",
         "vigia": {
@@ -97,6 +86,7 @@ def saude(con: sqlite3.Connection = Depends(conexao)):
             "ligando": not de_pe and _subindo(),
         },
         "coletas_ativas": ativas,
+        "coletas": coletas,
         "ultima_chamada_youtube": ultima,
     }
 

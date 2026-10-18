@@ -7,7 +7,8 @@ export type Plano = {
   em_uso: number;
 };
 
-export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida";
+// perdida: devia ser coletada e não foi (falha). nao_escolhida: ninguém escolheu coletar (decisão).
+export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida" | "nao_escolhida";
 
 export type LiveResumo = {
   id: string;
@@ -27,7 +28,17 @@ export type LiveResumo = {
   mensagens: number;
   detectada_em: string | null;
   ao_vivo: boolean;   // no ar segundo o YouTube; com estado "perdida", sem coletor
+  coletar: boolean;                 // entra na coleta (escolha da live ou modo do canal)
+  coletar_escolha: boolean | null;  // escolha feita nesta live; null = segue o canal
+  // trecho de um vídeo que carregou mais de uma transmissão (id "V~n");
+  // ini/fim em segundos desde o início do vídeo, fim null = até o fim
+  trecho: { n: number; total: number; video_id: string; ini: number; fim: number | null } | null;
+  nucleo: string;   // título sem "AO VIVO"/campeonato: identifica o mesmo jogo
 };
+
+export type Ligada = { id: string; titulo: string | null; estado: EstadoLive; inicio?: string | null; fim?: string | null; trecho: LiveResumo["trecho"] };
+
+export type ModoColeta = "todas" | "escolhidas";
 
 export type Canal = {
   id: string;
@@ -38,12 +49,14 @@ export type Canal = {
   vigiado: boolean;
   vigiado_desde: string | null;
   agenda_lida_em: string | null;
+  modo_coleta: ModoColeta;
   estado: "no_ar" | "fora_do_ar" | "aguardando";
   no_ar: LiveResumo | null;
   proxima: LiveResumo | null;
   ultima: LiveResumo | null;
   n_coletadas: number;
   n_perdidas: number;
+  n_nao_escolhidas: number;
   cobertura_media: number | null;
   pico: number | null;
 };
@@ -53,7 +66,13 @@ export type CanalDetalhe = Canal & { lives: LiveResumo[] };
 export type ListaCanais = { limite_slots: number; em_uso: number; canais: Canal[] };
 
 export type ItemAgenda = LiveResumo & { canal_id: string; canal: string };
-export type Agenda = { proximas: ItemAgenda[]; recentes: ItemAgenda[] };
+export type CotaDia = {
+  dia: string;              // data do dia de cota (meia-noite do Pacífico)
+  lives: { id: string; titulo: string | null; canal: string; agendada_para: string; custo: number; fim_estimado: string }[];
+  estimado: number; gasto: number; agenda: number; total: number; limite: number;
+  pico_simultaneas: number; pico_em: string | null;
+};
+export type Agenda = { proximas: ItemAgenda[]; recentes: ItemAgenda[]; cota: CotaDia[] };
 
 export type Momento = { t: number; tipo: "pico_chat" | "pico_audiencia" | "pico_doacao" | "queda_audiencia" | "virada_sentimento"; magnitude: number; url: string };
 
@@ -69,6 +88,8 @@ export type LiveDetalhe = Omit<LiveResumo, "numero" | "estado"> & {
   tem_chat: boolean;
   subabas: SubAba[];
   url: string;
+  mesmo_jogo: Ligada[];   // o mesmo conteúdo em outra transmissão do canal
+  trechos: Ligada[];      // os trechos do mesmo vídeo, inclusive este
 };
 
 export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade";
@@ -81,6 +102,7 @@ export type Previsao = {
   custo: number; cota_dia: number; dia_cota: string | null;
   outras: { id: string; titulo: string; canal: string; agendada_para: string; custo: number }[];
   reservado: number;
+  escolhida: boolean;  // não escolhida: custo é quanto custaria, fora do reservado
 };
 
 // ---- seções da aba Dados (api/secoes.py). Campo null = sem dado.

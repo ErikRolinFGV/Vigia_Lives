@@ -1,5 +1,8 @@
-// Estados sem coleta: transmissão perdida e transmissão agendada.
+// Estados sem coleta: perdida, não escolhida e agendada.
+import { useEffect } from "react";
 import { useApi } from "../../api/client";
+import { BotaoColetar } from "../../components/Coleta";
+import { BotaoYouTube } from "../../components/Ligacoes";
 import type { LiveDetalhe, Previsao } from "../../api/types";
 import { dataCurta, dataHora, duracao, ha, n, nomeLive, pct } from "../../lib/format";
 import { useSaude } from "../../state/saude";
@@ -15,9 +18,17 @@ function Selo({ texto, bg, bd, ink, dot }: { texto: string; bg: string; bd: stri
   );
 }
 
-export function Perdida({ live }: { live: LiveDetalhe }) {
+export function Perdida({ live, reler }: { live: LiveDetalhe; reler: () => void }) {
   const { conta } = useSessao();
   const agora = live.ao_vivo;
+  const dePe = !!useSaude()?.vigia.de_pe;
+  // no ar, escolhida e com o vigia de pé: o coletor sobe no próximo ciclo
+  const subindo = agora && dePe && live.coletar;
+  useEffect(() => {
+    if (!agora) return;
+    const t = window.setInterval(reler, 20_000);
+    return () => window.clearInterval(t);
+  }, [agora, reler]);
   const dur = live.duracao_s ?? (live.inicio ? Math.max(0, (Date.now() - new Date(live.inicio).getTime()) / 1000) : null);
   const janelas = dur ? Math.max(1, Math.round(dur / 60)) : 0;
   const janela = live.inicio
@@ -31,12 +42,15 @@ export function Perdida({ live }: { live: LiveDetalhe }) {
           {agora
             ? <Selo texto="NO AR SEM COLETA" bg="var(--redT)" bd="var(--redLine)" ink="var(--redInk)" dot="var(--red)" />
             : <Selo texto="LIVE PERDIDA" bg="var(--redT)" bd="var(--redLine)" ink="var(--redInk)" />}
+          <div style={{ marginBottom: 12 }}><BotaoYouTube url={live.url} /></div>
           <h1 className={st.h1} style={{ fontSize: "clamp(24px,3vw,32px)" }}>
             {agora ? "Esta transmissão está no ar e não está sendo coletada." : "Esta transmissão aconteceu e não foi coletada."}
           </h1>
           <p style={{ margin: 0, fontSize: 16.5, color: "var(--ink2)", maxWidth: "56ch", textWrap: "pretty" }}>
             {agora
-              ? "Cada minuto que passa sem coletor é chat que deixa de existir. O vigia não está de pé para subir um coletor."
+              ? subindo
+                ? "O vigia sobe um coletor no próximo ciclo, em até 1 minuto. Esta tela atualiza sozinha. O chat de antes disso não volta."
+                : "Cada minuto que passa sem coletor é chat que deixa de existir. O vigia não está de pé para subir um coletor."
               : "Não há chat, não há curva de audiência e não haverá relatório. O chat só existe enquanto a live está no ar, e essa janela fechou."}
           </p>
         </div>
@@ -47,7 +61,7 @@ export function Perdida({ live }: { live: LiveDetalhe }) {
             <div className={st.kv}><span>Canal</span><b>{live.canal.nome}</b></div>
             <div className={st.kv}><span>Transmissão</span><b style={{ textAlign: "right", maxWidth: "60%" }}>{nomeLive(live.titulo, 2)}</b></div>
             <div className={st.kv}><span>{agora ? "No ar desde" : "Janela perdida"}</span><b className={st.kvMono}>{janela}</b></div>
-            <div className={st.kv}><span>Motivo</span><b>nenhum coletor estava de pé</b></div>
+            <div className={st.kv}><span>Motivo</span><b>{subindo ? "coletor subindo" : "nenhum coletor estava de pé"}</b></div>
             <div className={st.kv}><span>Detectada em</span><b className={st.kvMono}>{dataHora(live.detectada_em, conta.tz)}, na aba de transmissões</b></div>
             <div className={st.kv}><span>Cota consumida</span><b className={st.kvMono} style={{ color: "var(--ink3)" }}>0 un. — nada foi coletado</b></div>
           </div>
@@ -88,7 +102,7 @@ export function Perdida({ live }: { live: LiveDetalhe }) {
   );
 }
 
-export function Agendada({ live }: { live: LiveDetalhe }) {
+export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void }) {
   const { conta } = useSessao();
   const { dados: p } = useApi<Previsao>(`/lives/${live.id}/previsao`);
   const dePe = !!useSaude()?.vigia.de_pe;
@@ -101,6 +115,7 @@ export function Agendada({ live }: { live: LiveDetalhe }) {
       <div className={st.medio}>
         <div style={{ padding: "36px 0 22px" }}>
           <Selo texto="AGENDADA" bg="var(--s3)" bd="var(--line)" ink="var(--ink2)" />
+          <div style={{ marginBottom: 12 }}><BotaoYouTube url={live.url} /></div>
           <h1 className={st.h1} style={{ fontSize: "clamp(23px,2.8vw,30px)", lineHeight: 1.18, marginBottom: 10, maxWidth: "56ch" }}>{nomeLive(live.titulo, 3)}</h1>
           <p className="mono" style={{ margin: 0, fontSize: 13, color: "var(--ink3)" }}>
             {live.canal.nome} · início previsto {dataHora(live.agendada_para, conta.tz)}
@@ -108,6 +123,19 @@ export function Agendada({ live }: { live: LiveDetalhe }) {
           </p>
         </div>
 
+        {!live.coletar ? (
+          <div className={st.cartao} style={{ borderLeft: "3px solid var(--line2)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>Esta live não vai ser coletada</div>
+              <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>
+                {live.coletar_escolha === false
+                  ? "Você tirou esta live da coleta. Ela não gasta cota e, quando acabar, aparece como não escolhida, não como perdida."
+                  : "O canal está no modo “só as escolhidas” e esta live não foi marcada. Ela não gasta cota."}
+              </div>
+            </div>
+            <BotaoColetar l={live} mudou={reler} />
+          </div>
+        ) : (
         <div className={st.cartao} style={{ borderLeft: `3px solid ${dePe ? "var(--ok)" : "var(--amb)"}`, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <span style={{ width: 34, height: 34, flex: "0 0 34px", borderRadius: "50%", background: dePe ? "var(--okT)" : "var(--ambT)", border: `1px solid ${dePe ? "var(--okLine)" : "var(--ambLine)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: dePe ? "var(--ok)" : "var(--amb)", animation: dePe ? "pulseDot 2s infinite" : "none" }} />
@@ -120,12 +148,14 @@ export function Agendada({ live }: { live: LiveDetalhe }) {
                 : "O vigia está parado. Se ele não estiver de pé quando a transmissão subir, ela será perdida: o chat não pode ser coletado depois."}
             </div>
           </div>
+          <BotaoColetar l={live} mudou={reler} />
         </div>
+        )}
 
         {p && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16, marginBottom: 16 }}>
             <div className={st.cartao} style={{ marginBottom: 0, padding: "20px 22px" }}>
-              <div className={st.rotulo} style={{ marginBottom: 12 }}>Custo estimado da coleta</div>
+              <div className={st.rotulo} style={{ marginBottom: 12 }}>{p.escolhida ? "Custo estimado da coleta" : "Quanto custaria coletar"}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12 }}>
                 <span className={st.grande}>{n(p.custo)}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>unidades</span>
               </div>
@@ -150,7 +180,7 @@ export function Agendada({ live }: { live: LiveDetalhe }) {
               </div>
               <div className={st.trilho}><div style={{ width: Math.min(100, resPct) + "%", height: "100%", background: resPct > 85 ? "var(--red)" : "var(--aud)", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} /></div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--div)", paddingTop: 12 }}>
-                <div className={st.kv} style={{ fontSize: 13.5 }}><span>Esta transmissão</span><b className="mono tnum" style={{ fontSize: 13 }}>~{n(p.custo)} un.</b></div>
+                <div className={st.kv} style={{ fontSize: 13.5 }}><span>Esta transmissão</span><b className="mono tnum" style={{ fontSize: 13, color: p.escolhida ? undefined : "var(--ink4)" }}>{p.escolhida ? `~${n(p.custo)} un.` : "não escolhida"}</b></div>
                 {p.outras.map(o => (
                   <div key={o.id} className={st.kv} style={{ fontSize: 13.5, borderTop: 0, paddingTop: 0 }}>
                     <span>{o.canal} · {dataHora(o.agendada_para, conta.tz).slice(6)}</span><b className="mono tnum" style={{ fontSize: 13 }}>~{n(o.custo)} un.</b>
@@ -165,6 +195,44 @@ export function Agendada({ live }: { live: LiveDetalhe }) {
                 {" "}O dia da cota vira à meia-noite do horário do Pacífico.
               </div>
             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** No ar ou encerrada sem coleta porque ninguém escolheu coletar: decisão, não falha. */
+export function NaoEscolhida({ live, reler }: { live: LiveDetalhe; reler: () => void }) {
+  const { conta } = useSessao();
+  const agora = live.ao_vivo;
+  const dePe = !!useSaude()?.vigia.de_pe;
+  return (
+    <div className={`${st.pagina} view-in`}>
+      <div className={st.estreito}>
+        <div style={{ padding: "36px 0 22px" }}>
+          <Selo texto={agora ? "NO AR · NÃO ESCOLHIDA" : "NÃO ESCOLHIDA"} bg="transparent" bd="var(--line2)" ink="var(--ink3)" />
+          <div style={{ marginBottom: 12 }}><BotaoYouTube url={live.url} /></div>
+          <h1 className={st.h1} style={{ fontSize: "clamp(23px,2.8vw,30px)", lineHeight: 1.18, marginBottom: 10, maxWidth: "56ch" }}>{nomeLive(live.titulo, 3)}</h1>
+          <p style={{ margin: 0, fontSize: 16, color: "var(--ink2)", maxWidth: "58ch", textWrap: "pretty" }}>
+            {agora
+              ? "Esta live está no ar e não foi escolhida para coleta. Ainda dá para coletar daqui em diante; o chat de antes não volta."
+              : "Esta live não foi escolhida para coleta, então não há chat, curva de audiência nem relatório. Não é uma falha: foi uma escolha, e ela não gastou cota."}
+          </p>
+        </div>
+        <div className={st.cartao} style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+          <div className={st.kv}><span>Canal</span><b>{live.canal.nome}</b></div>
+          <div className={st.kv}><span>{agora ? "No ar desde" : "Transmitida em"}</span><b className={st.kvMono}>{dataHora(live.inicio || live.agendada_para, conta.tz)}{!agora && live.duracao_s ? ` · ${duracao(live.duracao_s)}` : ""}</b></div>
+          <div className={st.kv}><span>Por quê</span><b>{live.coletar_escolha === false ? "tirada da coleta" : "canal coleta só as escolhidas"}</b></div>
+        </div>
+        {agora && (
+          <div className={st.cartao} style={{ borderLeft: "3px solid var(--red)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 220, fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>
+              {dePe
+                ? "O vigia sobe um coletor no próximo ciclo, em até 1 minuto. A coleta gasta cota a partir daí."
+                : "O vigia está parado: ligue-o no topo da página para a coleta começar."}
+            </div>
+            <BotaoColetar l={live} mudou={reler} />
           </div>
         )}
       </div>

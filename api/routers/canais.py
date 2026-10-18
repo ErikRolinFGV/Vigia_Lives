@@ -11,7 +11,8 @@ from pydantic import BaseModel
 from collector import config, db, vigilancia, yt
 
 from ..deps import LIMITE_SLOTS, conexao
-from ..transmissoes import lives_do_canal, resumo_live
+from ..transmissoes import lives_do_canal, resumo_live, vai_coletar
+from .lives import cota_por_dia
 
 router = APIRouter(tags=["canais"])
 
@@ -78,7 +79,8 @@ def _visao_canal(con, c):
     # e o pior estado possivel, e a tela precisa dizer isso, nao "fora do ar".
     no_ar = next((l for l in lives if l["estado"] == "no_ar"), None)         or next((l for l in lives if l["status"] == "ao_vivo"), None)
     agora = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    proximas = sorted((l for l in lives if l["estado"] == "agendada"
+    # a proxima que vai virar coleta; as nao escolhidas ficam so na agenda
+    proximas = sorted((l for l in lives if l["estado"] == "agendada" and vai_coletar(l)
                        and (l["agendada_para"] or "") >= agora[:16]),
                       key=lambda l: l["agendada_para"] or "")
     picos = [l["pico"] for l in coletadas if l["pico"]]
@@ -93,12 +95,14 @@ def _visao_canal(con, c):
         "vigiado": bool(c["vigiado"]) and not c["removido_em"],
         "vigiado_desde": c["vigiado_desde"],
         "agenda_lida_em": c["agenda_lida_em"],
+        "modo_coleta": c["modo_coleta"] or "todas",
         "estado": "no_ar" if no_ar else ("aguardando" if not lives else "fora_do_ar"),
         "no_ar": resumo_live(no_ar) if no_ar else None,
         "proxima": resumo_live(proximas[0]) if proximas else None,
         "ultima": resumo_live(ultima) if ultima else None,
         "n_coletadas": len(coletadas),
         "n_perdidas": sum(1 for l in lives if l["estado"] == "perdida"),
+        "n_nao_escolhidas": sum(1 for l in lives if l["estado"] == "nao_escolhida"),
         "cobertura_media": round(sum(cobs) / len(cobs), 1) if cobs else None,
         "pico": max(picos) if picos else None,
         "lives": [resumo_live(l) for l in lives],
@@ -132,13 +136,15 @@ def agenda(con: sqlite3.Connection = Depends(conexao)):
     for c in _vigiados(con):
         for l in lives_do_canal(con, c["canal_id"]):
             item = {"canal_id": c["canal_id"], "canal": c["nome"], **resumo_live(l)}
-            if l["estado"] == "no_ar" or (l["estado"] == "agendada" and (l["agendada_para"] or "") >= agora[:16]):
+            no_ar_sem_escolha = l["estado"] == "nao_escolhida" and l["status"] == "ao_vivo"
+            if l["estado"] == "no_ar" or no_ar_sem_escolha or (l["estado"] == "agendada" and (l["agendada_para"] or "") >= agora[:16]):
                 proximas.append(item)
             elif l["estado"] in ("coletada", "parcial", "perdida"):
                 recentes.append(item)
-    proximas.sort(key=lambda x: (x["estado"] != "no_ar", x["agendada_para"] or ""))
+    proximas.sort(key=lambda x: (not x["ao_vivo"], x["agendada_para"] or ""))
     recentes.sort(key=lambda x: x["inicio"] or x["agendada_para"] or "", reverse=True)
-    return {"proximas": proximas[:6], "recentes": recentes[:5]}
+    # a agenda inteira (nao so as 6 primeiras): e nela que se escolhe o que coletar
+    return {"proximas": proximas, "recentes": recentes[:5], "cota": cota_por_dia(con)}
 
 
 @router.get("/canais/{canal_id}")
@@ -183,6 +189,31 @@ def vigiar(corpo: NovoCanal, con: sqlite3.Connection = Depends(conexao)):
 def parar(canal_id: str, con: sqlite3.Connection = Depends(conexao)):
     _canal_ou_404(con, canal_id)
     vigilancia.parar(con, canal_id)
+
+
+class Modo(BaseModel):
+    modo: str
+
+
+@router.put("/canais/{canal_id}/modo")
+def mudar_modo(canal_id: str, corpo: Modo, con: sqlite3.Connection = Depends(conexao)):
+    """
+    'todas': toda live do canal vira coleta (menos as tiradas uma a uma).
+    'escolhidas': so as marcadas. As escolhas feitas live a live ficam.
+    """
+    if corpo.modo not in ("todas", "escolhidas"):
+        raise HTTPException(422, "modo é 'todas' ou 'escolhidas'")
+    c = _canal_ou_404(con, canal_id)
+    # O modo vale daqui para a frente. Live que ja acabou guarda o modo da
+    # epoca: uma perdida com o vigia parado nao vira "nao escolhida" so
+    # porque o canal mudou de modo depois.
+    con.execute(
+        """UPDATE live SET coletar = ? WHERE canal_id = ? AND coletar IS NULL
+           AND status NOT IN ('agendada', 'ao_vivo')""",
+        (1 if (c["modo_coleta"] or "todas") == "todas" else 0, canal_id))
+    con.execute("UPDATE canal SET modo_coleta = ? WHERE canal_id = ?", (corpo.modo, canal_id))
+    con.commit()
+    return _visao_canal(con, _canal_ou_404(con, canal_id))
 
 
 @router.post("/canais/{canal_id}/agenda")

@@ -50,7 +50,9 @@ export function AppLayout() {
   const saude = useSaude();
   const v = saude?.vigia;
   const dePe = !!v?.de_pe;
-  const rotulo = v?.parando ? "desligando…" : v?.ligando ? "ligando…" : dePe ? "coleta de pé" : "vigia parado";
+  const nColetas = saude?.coletas?.length ?? 0;
+  const rotulo = v?.parando ? "desligando…" : v?.ligando ? "ligando…"
+    : dePe ? (nColetas ? `coletando ${nColetas} ${nColetas === 1 ? "live" : "lives"}` : "coleta de pé") : "vigia parado";
   const transicao = !!(v?.parando || v?.ligando);
 
   const todos: Crumb[] = [{ label: "Canais", to: crumbs.length ? "/yt/canais" : undefined }, ...crumbs];

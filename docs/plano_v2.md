@@ -155,3 +155,89 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   (palavras comuns em português).
 - Concorrência filtrada pelo idioma declarado do vídeo: o
   `relevanceLanguage` do search.list é só preferência.
+- Escolha do que coletar (17/10): cada canal tem modo `todas` ou
+  `escolhidas`, e cada live pode ser marcada (`live.coletar` 1/0, NULL
+  segue o canal). Motivo: a CazéTV transmite num domingo mais lives do que
+  a cota de 10.000 unidades coleta. Live sem coleta por escolha é
+  NÃO ESCOLHIDA (neutra), não PERDIDA (falha). Mudar o modo vale daqui
+  para a frente: live encerrada guarda o modo da época.
+- Cota prevista por dia (`/cota/previsao` e `/agenda`): lives escolhidas
+  × duração mediana do canal × unidades/h medidas nas coletas do canal,
+  com o pico de lives simultâneas e o que já foi gasto no dia.
+
+## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
+
+Como ficou:
+- Trechos: `api/trechos.py` (id "V~n", corte detectado na troca do núcleo
+  do título durante a live, ajustável em `PUT /lives/{id}/divisao`, tabela
+  `divisao`). Numa requisição de trecho, visões TEMP com o nome das tabelas
+  mostram só a janela dele; seções, dossiê, exportação e link público
+  funcionam sem saber que é trecho. Dado do vídeo inteiro depois da live
+  (comentários, +1 h … +7 d) não entra em trecho; o vídeo inteiro segue no
+  id original.
+- Título da transmissão = o que ela tinha quando a coleta começou (o
+  coletor não sobrescreve mais a cada minuto).
+- "Mesmo jogo": `/lives/{id}` devolve `mesmo_jogo` (mesmo núcleo de título,
+  ±12 h) e `trechos`; a tela liga as transmissões e diz que não houve
+  coleta dobrada. `/operacao/saude` lista os coletores rodando e o gasto.
+- Filtro por situação na página do canal (`?filtro=`) e na agenda.
+- Concorrência: 1ª busca aos 10 min, depois de hora em hora, máx. 3 por live;
+  `CONCORRENCIA=0` desliga.
+- Agenda: agendada atrasada há mais de 2 h não deixa o canal "quente".
+- Vigia reiniciado: `live.coletor_pid`; com o processo vivo, não sobe outro.
+- Previsão: un./h medidas sem `search.list` + custo fixo das buscas + leitura
+  de agenda (~300 un./canal/dia).
+- Botão "Assistir no YouTube ↗" em todas as telas de transmissão (trecho
+  abre no minuto do corte).
+
+Registro original:
+
+Contexto: primeira coleta passiva com escolha de lives (Leeds × Man Utd,
+Canadá × Brasil e Lorient × Mônaco). Coleta sem erro, mas apareceram os
+pontos abaixo. Nada disso foi mexido durante a coleta.
+
+1. **Live renomeada no meio vira trechos.** A CazéTV reaproveitou o link
+   de Leeds × Man Utd (dy_KAxVd80M, no ar desde 08:45) e renomeou para
+   Canadá × Brasil às 11:54, quando o jogo acabou (a audiência cai de 322 mil
+   para 179 mil logo depois). Ao mesmo tempo encerrou a live agendada de
+   Canadá × Brasil (IXyPT6B-mtA, 44 min, 100% coletada).
+   - Detectar troca de título durante a coleta (o histórico está em
+     `video_snapshot`) e sugerir um corte ali, ajustável pelo analista.
+   - Cada trecho vira uma transmissão própria na lista do canal, com
+     estado próprio: o trecho de Leeds aparece **COLETADA, finalizada**
+     (08:45 → 11:54), não "no ar". Dados e relatório calculados só com o
+     que caiu na janela do trecho.
+   - O corte é metadado sobre o dado bruto (desfazer/mover sem perda).
+     Pessoas contam em cada trecho; à parte, quantas estiveram nos dois.
+   - Título exibido de cada trecho = título que o vídeo tinha naquele
+     trecho, com aviso "renomeada às 11:54".
+   - Ligar transmissões do mesmo jogo (trecho Canadá × Brasil e a live
+     de reserva), para não parecerem duplicadas.
+2. **Deixar claro que não há coleta dobrada.** Hoje a tela mostra duas
+   "Canadá × Brasil" (uma coletada, outra no ar) e parece que a mesma live
+   está sendo coletada duas vezes, com a cota caindo em dobro. Na verdade
+   são dois vídeos diferentes e a reserva já terminou. A interface precisa
+   mostrar isso: um coletor por vídeo, quais estão rodando agora e quanto
+   cada um gasta.
+3. **Filtro na lista de transmissões** (página do canal e agenda):
+   coletando agora / coletadas / vão ser coletadas / não escolhidas /
+   perdidas. Hoje fica difícil ver o que está em cada situação.
+4. **Busca de concorrência cara demais.** `search.list` custa 100 un. e
+   roda a cada 15 min por live: em Leeds foram 1.100 un., mais que o chat
+   (1.035). Fazer bem menos vezes (início e pico) ou deixar opcional.
+5. **Agenda relida a cada minuto.** Live presa como "agendada" no passado
+   (Valencia × Athletic de 17/10) deixa o canal "quente" para sempre: ~60
+   un./h à toa (450 un. até o meio-dia). Atrasada há mais de 2 h deixa de
+   contar como prestes a começar.
+6. **Vigia reiniciado sobe coletor duplicado.** O vigia guarda os
+   coletores só em memória; reiniciado no meio de uma live, não reconhece o
+   coletor que já roda e sobe outro para o mesmo vídeo. Conferir coleta
+   aberta com processo vivo (pid) antes de subir.
+7. **Previsão de cota** com os gastos medidos hoje: Leeds gastou ~860 un./h
+   contra 625 estimadas, e a previsão não somava a concorrência nem a
+   leitura de agenda.
+8. **Botão "Assistir no YouTube ↗"** na tela de transmissão sendo coletada
+   (e nas outras telas de transmissão): hoje não há link para a live. A API
+   já devolve `url` em `/lives/{id}`; abrir em nova aba, sem sair da tela.
+9. Depois de tudo: commit (o da escolha de lives ficou pendente para depois
+   de ver a coleta funcionar).

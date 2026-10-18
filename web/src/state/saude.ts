@@ -5,6 +5,7 @@ export type Saude = {
   api: string;
   vigia: { de_pe: boolean; desde: string | null; ultimo_ciclo: string | null; parando: boolean; ligando: boolean };
   coletas_ativas: number;
+  coletas: { id: string; titulo: string | null; desde: string; canal: string; unidades: number; ultima_hora: number }[];
   ultima_chamada_youtube: string | null;
 };
 

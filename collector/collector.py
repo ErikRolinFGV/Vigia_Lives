@@ -17,6 +17,7 @@ a live acaba. Nao ha como recuperar depois.
 """
 import argparse
 import json
+import os
 import signal
 import sys
 import time
@@ -75,9 +76,15 @@ def sincronizar_live(con, video_id, registrar=False):
     if inicio and fim:
         duracao = int((yt.parse_ts(fim) - yt.parse_ts(inicio)).total_seconds())
 
+    # O titulo da transmissao e o que ela tinha quando a coleta comecou. Se o
+    # canal renomeia no meio (a CazeTV reaproveitou o link de um jogo para
+    # outro) ou depois ("JOGO COMPLETO: ..."), a troca fica no historico do
+    # video (video_snapshot) e vira trecho/mudanca, nao some com o original.
+    ja = con.execute("SELECT titulo, coleta_inicio FROM live WHERE video_id=?", (video_id,)).fetchone()
+    manter = ja is not None and ja["coleta_inicio"] and ja["titulo"]
     db.upsert_live(
         con, video_id, canal_id,
-        titulo=snip.get("title"),
+        titulo=None if manter else snip.get("title"),
         live_chat_id=lsd.get("activeLiveChatId"),
         agendada_para=lsd.get("scheduledStartTime"),
         inicio_real=inicio,
@@ -236,8 +243,10 @@ def coletar(con, info, limite_minutos=None):
     db.upsert_live(con, video_id, info["canal_id"])
     # um coletor que o vigia reinicia no meio da live continua a mesma coleta:
     # o inicio original fica, o fim e o pedido de parada antigos saem
+    # coletor_pid: o vigia reiniciado reconhece este processo e nao sobe outro
     con.execute("""UPDATE live SET coleta_inicio = COALESCE(coleta_inicio, ?),
-                   parar_pedido_em = NULL, coleta_fim = NULL WHERE video_id=?""", (db.agora(), video_id))
+                   parar_pedido_em = NULL, coleta_fim = NULL, coletor_pid = ? WHERE video_id=?""",
+                (db.agora(), os.getpid(), video_id))
     con.commit()
 
     janela = config.JANELA_PADRAO
@@ -252,7 +261,8 @@ def coletar(con, info, limite_minutos=None):
     ultimo_poll = None
     fim_previsto = t0 + limite_minutos * 60 if limite_minutos else None
 
-    proxima_concorrencia = t0 + 5 * 60   # primeira busca depois de 5 min no ar
+    proxima_concorrencia = t0 + config.PRIMEIRA_CONCORRENCIA
+    buscas_concorrencia = 0
     _tentar("inscritos antes", lambda: publico.registrar_canal(con, info["canal_id"], video_id, "antes"))
 
     log(f"coletando '{info['titulo']}' | janela inicial {janela}s")
@@ -267,10 +277,12 @@ def coletar(con, info, limite_minutos=None):
             break
 
         # ---- concorrencia (search.list, 100 unidades + videos.list, 1)
-        if agora_s >= proxima_concorrencia and inicio_dt:
+        if (config.CONCORRENCIA_LIGADA and buscas_concorrencia < config.CONCORRENCIA_MAX
+                and agora_s >= proxima_concorrencia and inicio_dt):
             off = int((datetime.now(timezone.utc) - inicio_dt).total_seconds())
             _tentar("concorrencia", lambda: publico.registrar_concorrencia(
                 con, video_id, off, categoria=info.get("categoria"), idioma=info.get("idioma") or "pt"))
+            buscas_concorrencia += 1
             proxima_concorrencia = agora_s + config.INTERVALO_CONCORRENCIA
 
         # ---- audiencia (videos.list, 1 unidade)

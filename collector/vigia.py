@@ -12,7 +12,8 @@ A cada ciclo:
   2. le a agenda de cada canal vigiado: a cada 5 min, ou a cada ciclo se
      uma live esta para comecar (aba /streams e de graca; a confirmacao em
      lote com videos.list custa 1 unidade)
-  3. sobe um coletor para cada live no ar sem coletor
+  3. sobe um coletor para cada live no ar sem coletor (todas, ou so as
+     escolhidas, conforme o modo de coleta do canal)
   4. fecha coletas cujo processo morreu, para a live nao ficar "no ar"
      para sempre na interface
   5. roda os jobs vencidos de depois da live (+1 h ... +7 d)
@@ -30,10 +31,11 @@ import time
 from datetime import datetime, timedelta, timezone
 
 try:  # instalado como pacote
-    from . import config, db, publico, vigilancia, yt
+    from . import config, db, processo, publico, vigilancia, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
+    import processo
     import publico
     import vigilancia
     import yt
@@ -43,6 +45,7 @@ UPLOADS_CADA = timedelta(hours=24)
 # Perto do horario marcado, a agenda e lida a cada ciclo: o chat comeca
 # a existir quando a live sobe, nao quando o horario chega.
 JANELA_QUENTE = timedelta(minutes=15)
+ATRASO_MAX = timedelta(hours=2)
 
 _parar = False
 _coletores: dict[str, subprocess.Popen] = {}
@@ -96,12 +99,19 @@ def _esperar(con, segundos):
 
 
 def _live_quente(con, canal_id):
-    """Ha live agendada para comecar em breve (ou atrasada) neste canal?"""
-    limite = (_agora() + JANELA_QUENTE).isoformat(timespec="seconds")
+    """
+    Ha live agendada para comecar em breve (ou atrasada ha pouco) neste
+    canal? Atrasada ha mais de ATRASO_MAX nao conta: live apagada ou que
+    nunca subiu fica "agendada" no banco para sempre, e deixava o canal
+    quente o dia inteiro (agenda relida a cada minuto, ~60 un./h a toa).
+    """
+    agora = _agora()
+    limite = (agora + JANELA_QUENTE).isoformat(timespec="seconds")
+    piso = (agora - ATRASO_MAX).isoformat(timespec="seconds")
     return con.execute(
         """SELECT 1 FROM live WHERE canal_id=? AND status='agendada'
-           AND agendada_para IS NOT NULL AND agendada_para <= ? LIMIT 1""",
-        (canal_id, limite)).fetchone() is not None
+           AND agendada_para IS NOT NULL AND agendada_para <= ? AND agendada_para >= ? LIMIT 1""",
+        (canal_id, limite, piso)).fetchone() is not None
 
 
 def ler_agendas(con):
@@ -130,13 +140,20 @@ def ler_agendas(con):
 def subir_coletores(con):
     """Uma live no ar, de canal vigiado, sem coletor vivo: sobe um."""
     no_ar = con.execute(
-        """SELECT l.video_id, l.titulo FROM live l JOIN canal c ON c.canal_id = l.canal_id
+        """SELECT l.video_id, l.titulo, l.coleta_inicio, l.coleta_fim, l.coletor_pid
+           FROM live l JOIN canal c ON c.canal_id = l.canal_id
            WHERE l.status = 'ao_vivo' AND c.vigiado = 1 AND c.removido_em IS NULL
              -- encerrada pela interface: a decisao de parar vale ate o fim da live
-             AND l.parar_pedido_em IS NULL""").fetchall()
+             AND l.parar_pedido_em IS NULL
+             -- escolhida, ou o canal coleta todas e esta nao foi tirada
+             AND (l.coletar = 1 OR (l.coletar IS NULL AND c.modo_coleta = 'todas'))""").fetchall()
     for l in no_ar:
         p = _coletores.get(l["video_id"])
         if p and p.poll() is None:
+            continue
+        # coletor subido por um vigia anterior (reiniciado no meio da live):
+        # segue vivo, entao nao sobe outro para o mesmo video
+        if l["coleta_inicio"] and not l["coleta_fim"] and l["coletor_pid"] and processo.vivo(l["coletor_pid"]):
             continue
         log(f"live no ar: {l['titulo']} — subindo coletor")
         _coletores[l["video_id"]] = subprocess.Popen(
@@ -154,11 +171,13 @@ def fechar_orfas(con):
     que e o ultimo momento em que a coleta comprovadamente existia.
     """
     abertas = con.execute(
-        "SELECT video_id, canal_id FROM live WHERE coleta_inicio IS NOT NULL AND coleta_fim IS NULL").fetchall()
+        "SELECT video_id, canal_id, coletor_pid FROM live WHERE coleta_inicio IS NOT NULL AND coleta_fim IS NULL").fetchall()
     for l in abertas:
         p = _coletores.get(l["video_id"])
         if p and p.poll() is None:
             continue
+        if p is None and l["coletor_pid"] and processo.vivo(l["coletor_pid"]):
+            continue  # coletor de um vigia anterior, ainda rodando
         ultima = con.execute("SELECT MAX(chamado_em) FROM coleta_log WHERE video_id=?", (l["video_id"],)).fetchone()[0]
         # coletor recem-subido ainda sem chamada: espera o proximo ciclo
         if p is None and not _velho(ultima, timedelta(minutes=3)):

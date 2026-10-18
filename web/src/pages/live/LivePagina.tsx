@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { AvisoMesmoJogo, AvisoTrechos, BotaoYouTube } from "../../components/Ligacoes";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import type { LiveDetalhe, Serie, SubAba } from "../../api/types";
@@ -8,7 +9,7 @@ import { apelido, dataLonga, duracao, nomeLive, pct } from "../../lib/format";
 import { useSessao } from "../../state/sessao";
 import { derivar } from "./derivados";
 import { SecaoAudiencia, SecaoChat, SecaoQualidade, SecaoResumo } from "./secoesSerie";
-import { Agendada, Perdida } from "./Estados";
+import { Agendada, NaoEscolhida, Perdida } from "./Estados";
 import { SecaoApoio, SecaoComparacao, SecaoComunidade, SecaoConversa, SecaoDepois, SecaoModeracao, SecaoMomentos, SecaoPessoas, SecaoVideo } from "./secoesNovas";
 import { AoVivo } from "./AoVivo";
 import { Relatorio, useDossie } from "./Relatorio";
@@ -44,8 +45,9 @@ export function LivePagina() {
   if (live.erro) return <div className={st.pagina}><div className={st.conteudo}><div className={st.erro}>{live.erro.message}</div></div></div>;
   if (!l) return <div className={st.pagina}><div className={`${st.conteudo} ${st.carregando}`}>carregando a transmissão…</div></div>;
 
-  if (l.estado === "agendada") return <Agendada live={l} />;
-  if (l.estado === "perdida") return <Perdida live={l} />;
+  if (l.estado === "agendada") return <Agendada live={l} reler={live.recarregar} />;
+  if (l.estado === "perdida") return <Perdida live={l} reler={live.recarregar} />;
+  if (l.estado === "nao_escolhida") return <NaoEscolhida live={l} reler={live.recarregar} />;
   if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} reler={() => { live.recarregar(); serie.recarregar(); }} />;
   return <LiveColetada live={l} serie={serie.dados} carregandoSerie={serie.carregando} />;
 }
@@ -90,12 +92,16 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
               <span className="tnum" style={{ color: "var(--okInk)" }}>cobertura {pct(live.cobertura)} na janela coletada</span>
             </div>
             {s && <Link to={`/yt/lives/${live.id}/replay`} className={st.replay}>Ver como foi ao vivo ↺</Link>}
+            <BotaoYouTube url={live.url} />
           </div>
           <h1 className={st.titulo}>
             {live.numero && <span className={st.num}>#{live.numero}</span>}
             {nomeLive(live.titulo, 3)}
           </h1>
         </div>
+
+        <AvisoTrechos live={live} />
+        <AvisoMesmoJogo live={live} />
 
         <div className={st.abas} role="tablist">
           <button type="button" role="tab" aria-selected={aba === "dados"} className={st.aba} data-ativa={aba === "dados"} onClick={() => ir({ aba: "dados" })}>Dados da coleta</button>

@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 
 from collector import yt
 
+from . import trechos
+
 # Abaixo disso a coleta e PARCIAL: ficou um buraco que o relatorio precisa
 # declarar. Acima, COLETADA.
 LIMIAR_PARCIAL = 90.0
@@ -19,15 +21,29 @@ def _ts(s):
     return yt.parse_ts(s) if s else None
 
 
+def vai_coletar(l):
+    """
+    A live entra na coleta? Escolha explicita (live.coletar) vale sobre o
+    modo do canal; sem escolha, segue o modo ('todas' coleta, 'escolhidas' nao).
+    """
+    if l["coletar"] is not None:
+        return bool(l["coletar"])
+    return (l["modo_coleta"] or "todas") == "todas"
+
+
 def estado(l):
     """
-    no_ar      coletor rodando agora
-    coletada   coleta feita, cobertura >= LIMIAR_PARCIAL
-    parcial    coleta feita, cobertura abaixo do limiar
-    agendada   anunciada, ainda nao comecou
-    perdida    a plataforma sabia da live e ninguem coletou
-    None       live que so foi descoberta depois de acabar: nao vigiada,
-               fica fora da lista do canal (aparece so na comparacao)
+    no_ar          coletor rodando agora
+    coletada       coleta feita, cobertura >= LIMIAR_PARCIAL
+    parcial        coleta feita, cobertura abaixo do limiar
+    agendada       anunciada, ainda nao comecou (escolhida ou nao: ver
+                   `coletar` no resumo)
+    perdida        devia ser coletada e ninguem coletou (vigia parado, PC
+                   desligado, cota): uma falha, e a tela diz isso
+    nao_escolhida  no ar ou encerrada sem coleta porque ninguem escolheu
+                   coletar: decisao, nao falha
+    None           live que so foi descoberta depois de acabar: nao vigiada,
+                   fica fora da lista do canal (aparece so na comparacao)
     """
     if l["coleta_inicio"] and not l["coleta_fim"]:
         return "no_ar"
@@ -44,10 +60,11 @@ def estado(l):
     if l["status"] == "agendada":
         return "agendada"
     detectada, fim = _ts(l["detectada_em"]), _ts(l["fim_real"])
+    sem_coleta = "perdida" if vai_coletar(l) else "nao_escolhida"
     if l["status"] == "ao_vivo":
-        return "perdida"
+        return sem_coleta
     if detectada and fim and detectada <= fim:
-        return "perdida"
+        return sem_coleta
     return None
 
 
@@ -82,22 +99,34 @@ def lives_do_canal(con, canal_id):
     Transmissoes listaveis do canal, com estado e numero sequencial
     (#1 = mais antiga). Agendadas entram no fim da sequencia.
     """
+    # main.*: numa requisicao de trecho as visoes temp mudam essas tabelas
     linhas = con.execute(
-        """SELECT l.*,
-                  (SELECT MAX(espectadores) FROM snapshot_audiencia s
+        """SELECT l.*, c.modo_coleta,
+                  (SELECT MAX(espectadores) FROM main.snapshot_audiencia s
                    WHERE s.video_id = l.video_id) AS pico,
-                  (SELECT COUNT(*) FROM mensagem m
+                  (SELECT COUNT(*) FROM main.mensagem m
                    WHERE m.video_id = l.video_id) AS n_msgs
-           FROM live l WHERE l.canal_id = ?""",
+           FROM main.live l JOIN canal c ON c.canal_id = l.canal_id
+           WHERE l.canal_id = ?""",
         (canal_id,)).fetchall()
     lista = []
     for l in linhas:
-        e = estado(l)
-        if e is None:
-            continue
-        d = dict(l)
-        d["estado"] = e
-        lista.append(d)
+        # video que carregou mais de uma transmissao: entra cada trecho
+        ts = trechos.trechos(con, l)
+        partes = [trechos.linha_trecho(l, t, len(ts)) for t in ts] if ts else [dict(l)]
+        for d in partes:
+            if ts:
+                lo = f"offset_segundos >= {d['_ini']}" if d["_trecho"] > 1 else "1"
+                hi = f"offset_segundos < {d['_fim']}" if d["_fim"] is not None else "1"
+                d["pico"] = con.execute(f"SELECT MAX(espectadores) FROM main.snapshot_audiencia WHERE video_id=? AND {lo} AND {hi}",
+                                        (l["video_id"],)).fetchone()[0]
+                d["n_msgs"] = con.execute(f"SELECT COUNT(*) FROM main.mensagem WHERE video_id=? AND {lo} AND {hi}",
+                                          (l["video_id"],)).fetchone()[0]
+            e = estado(d)
+            if e is None:
+                continue
+            d["estado"] = e
+            lista.append(d)
     lista.sort(key=_ordem)
     for i, d in enumerate(lista, 1):
         d["numero"] = i
@@ -130,6 +159,14 @@ def resumo_live(d):
         "detectada_em": d["detectada_em"],
         # o YouTube diz que esta no ar; com estado != no_ar, ninguem coleta
         "ao_vivo": d["status"] == "ao_vivo",
+        # entra na coleta (escolha da live ou modo do canal) e se a escolha
+        # foi feita na live (True/False) ou vem do canal (None)
+        "coletar": vai_coletar(d),
+        "coletar_escolha": None if d["coletar"] is None else bool(d["coletar"]),
+        # trecho de um video que carregou mais de uma transmissao
+        "trecho": {"n": d["_trecho"], "total": d["_total"], "video_id": d["_pai"], "ini": d["_ini"], "fim": d["_fim"]}
+        if d.get("_trecho") else None,
+        "nucleo": trechos.nucleo(d["titulo"]),
     }
 
 

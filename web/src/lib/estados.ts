@@ -9,6 +9,8 @@ export const CHIP: Record<EstadoLive, Chip> = {
   parcial: { label: "PARCIAL", bg: "var(--ambT)", border: "var(--ambLine)", ink: "var(--ambInk)", accent: "var(--amb)" },
   perdida: { label: "PERDIDA", bg: "var(--redT)", border: "var(--redLine)", ink: "var(--redInk)", accent: "var(--red)" },
   agendada: { label: "AGENDADA", bg: "var(--s3)", border: "var(--line)", ink: "var(--ink2)", accent: "var(--line2)" },
+  // decisão, não falha: tom neutro, nunca o vermelho de "perdida"
+  nao_escolhida: { label: "NÃO ESCOLHIDA", bg: "transparent", border: "var(--line2)", ink: "var(--ink3)", accent: "var(--line)" },
 };
 
 /** Selo pequeno do breadcrumb. */
@@ -18,4 +20,5 @@ export const TAG: Record<EstadoLive, { t: string; bg: string; bd: string; ink: s
   parcial: { t: "parcial", bg: "var(--ambT)", bd: "var(--ambLine)", ink: "var(--ambInk)" },
   perdida: { t: "perdida", bg: "var(--redT)", bd: "var(--redLine)", ink: "var(--redInk)" },
   agendada: { t: "agendada", bg: "var(--s3)", bd: "var(--line2)", ink: "var(--ink2)" },
+  nao_escolhida: { t: "não escolhida", bg: "transparent", bd: "var(--line2)", ink: "var(--ink3)" },
 };

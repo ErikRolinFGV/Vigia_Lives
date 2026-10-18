@@ -101,6 +101,13 @@ CUSTO = {
 # e por chamada, nao por parte. Ficha, horarios e contadores saem juntos.
 PARTES_VIDEO = "snippet,liveStreamingDetails,statistics,contentDetails,topicDetails,status"
 
-# Concorrencia: de quanto em quanto tempo procurar outras lives no ar
-# durante a coleta. Cada busca custa 100 unidades (search.list).
-INTERVALO_CONCORRENCIA = 15 * 60
+# Concorrencia: outras lives no ar durante a coleta. Cada busca custa 100
+# unidades (search.list), o equivalente a 20 leituras de chat: a cada 15 min
+# ela gastou mais que o proprio chat (18/10: 3.500 de 7.765 unidades no dia).
+# Agora: a primeira aos 10 min no ar, depois de hora em hora, no maximo 3 por
+# live. CONCORRENCIA=0 no .env desliga.
+CONCORRENCIA_LIGADA = os.environ.get("CONCORRENCIA", "1") != "0"
+PRIMEIRA_CONCORRENCIA = 10 * 60
+INTERVALO_CONCORRENCIA = 60 * 60
+CONCORRENCIA_MAX = 3
+CUSTO_CONCORRENCIA = 101  # search.list + videos.list dos rivais

@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/client";
-import type { CanalDetalhe, LiveResumo } from "../api/types";
+import type { CanalDetalhe, CotaDia, LiveResumo } from "../api/types";
 import { useCrumbs } from "../components/AppLayout";
 import { CanalAvatar, useTrocarFoto } from "../components/CanalFoto";
 import { PararModal } from "../components/ModaisCanal";
+import { BotaoColetar, CotaPrevista, SeletorModo } from "../components/Coleta";
+import { Filtros, grupo, NOMES_GRUPO } from "../components/Filtro";
+import type { Grupo } from "../components/Filtro";
 import { CHIP } from "../lib/estados";
 import { apelido, dataCurta, dataHora, n, pct } from "../lib/format";
 import { useSessao } from "../state/sessao";
@@ -16,8 +19,9 @@ import s from "./canais.module.css";
 const BARRAS_MAX = 8;
 
 function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null; tz: string }) {
-  const passadas = lives.filter(l => l.estado !== "agendada");
-  const proximas = lives.filter(l => l.estado === "agendada").slice(0, 2);
+  // só o que foi ou vai ser coletado: não escolhida não tem pico nem falha a mostrar
+  const passadas = lives.filter(l => l.estado !== "agendada" && l.estado !== "nao_escolhida");
+  const proximas = lives.filter(l => l.estado === "agendada" && l.coletar).slice(0, 2);
   const mostrar = [...passadas.slice(-(BARRAS_MAX - proximas.length)), ...proximas];
   return (
     <div className={s.barras}>
@@ -26,6 +30,8 @@ function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null;
           ? { valor: n(l.pico), h: Math.max(14, Math.round(((l.pico || 0) / (pico || 1)) * 120)), fill: "var(--audLine)", stroke: "var(--aud)", ink: "var(--aud)", nome: apelido(l.titulo) }
           : l.estado === "perdida"
             ? { valor: "perdida", h: 8, fill: "var(--redT)", stroke: "var(--redSoft)", ink: "var(--redInk)", nome: "não coletada" }
+            : l.estado === "nao_escolhida"
+              ? { valor: "—", h: 6, fill: "transparent", stroke: "var(--line2)", ink: "var(--ink4)", nome: "não escolhida" }
             : l.estado === "no_ar"
               ? { valor: "no ar", h: 22, fill: "var(--redT)", stroke: "var(--red)", ink: "var(--redInk)", nome: apelido(l.titulo) }
               : { valor: "—", h: 6, fill: "var(--s3)", stroke: "var(--line2)", ink: "var(--ink4)", nome: apelido(l.titulo) };
@@ -46,7 +52,13 @@ export function CanalPagina() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const { conta } = useSessao();
-  const { dados: c, erro, recarregar } = useApi<CanalDetalhe>(`/canais/${id}`);
+  const { dados: c, erro, recarregar: recarregarCanal } = useApi<CanalDetalhe>(`/canais/${id}`);
+  const cota = useApi<{ dias: CotaDia[] }>("/cota/previsao");
+  const recarregar = () => { recarregarCanal(); cota.recarregar(); };
+  // filtro na URL: sobrevive ao recarregar e ao voltar da página da live
+  const [q, setQ] = useSearchParams();
+  const filtro = ((q.get("filtro") as Grupo) in NOMES_GRUPO ? q.get("filtro") : "todas") as Grupo;
+  const mudarFiltro = (g: Grupo) => setQ(p => { const n = new URLSearchParams(p); if (g === "todas") n.delete("filtro"); else n.set("filtro", g); return n; }, { replace: true });
   const [parar, setParar] = useState(false);
   const { onFoto, erro: erroFoto } = useTrocarFoto(id, recarregar);
   useCrumbs(c ? [{ label: c.nome }] : []);
@@ -58,7 +70,8 @@ export function CanalPagina() {
   const chip = c.estado === "no_ar"
     ? { label: "no ar agora", bg: "var(--redT)", border: "var(--redLine)", ink: "var(--redInk)", dot: "var(--red)" }
     : { label: "fora do ar", bg: "var(--s3)", border: "var(--line)", ink: "var(--ink2)", dot: "var(--ink4)" };
-  const lives = [...c.lives].sort((a, b) => b.numero - a.numero);
+  const todas = [...c.lives].sort((a, b) => b.numero - a.numero);
+  const lives = filtro === "todas" ? todas : todas.filter(l => grupo(l) === filtro);
 
   return (
     <div className={`${s.pagina} view-in`}>
@@ -85,6 +98,22 @@ export function CanalPagina() {
             {c.vigiado && <button type="button" className={`${s.botaoLinha} ${s.botaoPerigo}`} onClick={() => setParar(true)}>Parar de vigiar</button>}
           </div>
         </div>
+
+        {c.vigiado && (
+          <div className={s.dois} style={{ marginBottom: 16 }}>
+            <div className={s.resumo} style={{ gap: 12 }}>
+              <div style={{ fontSize: 11.5, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--ink3)" }}>O que coletar</div>
+              <SeletorModo canalId={c.id} modo={c.modo_coleta} mudou={recarregar} />
+              <div style={{ fontSize: 12.5, color: "var(--ink3)", textWrap: "pretty" }}>
+                Marque live a live em "Transmissões", abaixo. A escolha vale até a live começar; no ar, uma live não escolhida ainda pode ser coletada dali em diante.
+              </div>
+            </div>
+            <div className={s.resumo} style={{ gap: 12 }}>
+              <div style={{ fontSize: 11.5, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--ink3)" }}>Cota prevista · todos os canais</div>
+              {cota.dados && <CotaPrevista dias={cota.dados.dias} tz={conta.tz} />}
+            </div>
+          </div>
+        )}
 
         {vazio ? (
           <div className={s.vazioCanal}>
@@ -119,17 +148,24 @@ export function CanalPagina() {
               <h2 className={s.h2}>Transmissões</h2>
               <span className={s.sub}>clique numa transmissão para abrir</span>
             </div>
+            <div style={{ marginBottom: 12 }}>
+              <Filtros itens={todas} ativo={filtro} mudar={mudarFiltro} grupos={["todas", "coletando", "coletadas", "vao", "nao_escolhidas", "perdidas"]} />
+            </div>
+            {lives.length === 0 && <div className={s.vazioLista}>Nenhuma transmissão em “{NOMES_GRUPO[filtro]}”.</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {lives.map(l => {
                 const ch = CHIP[l.estado];
-                const apagado = l.estado === "perdida" || l.estado === "agendada";
+                const apagado = l.estado === "perdida" || l.estado === "nao_escolhida" || (l.estado === "agendada" && !l.coletar);
+                const ir = () => nav(rotaLive(l));
+                // div e nao button: o botao de coletar fica dentro da linha
                 return (
-                  <button key={l.id} type="button" className={s.live} onClick={() => nav(rotaLive(l))}
-                    style={{ borderColor: l.estado === "perdida" ? "var(--redLine)" : "var(--line)", borderLeftColor: ch.accent }}>
+                  <div key={l.id} role="link" tabIndex={0} className={s.live} onClick={ir} onKeyDown={e => e.key === "Enter" && ir()}
+                    style={{ borderColor: l.estado === "perdida" ? "var(--redLine)" : "var(--line)", borderLeftColor: l.estado === "agendada" && l.coletar ? "var(--ok)" : ch.accent }}>
                     <div className={s.liveNum}>#{l.numero}</div>
                     <div className={s.liveData}>{dataHora(l.inicio || l.agendada_para, conta.tz)}</div>
                     <div style={{ flex: 1, minWidth: 200 }}>
                       <div className={s.liveTitulo} style={{ color: apagado ? "var(--ink3)" : "var(--ink)" }}>{l.titulo}</div>
+                      {l.trecho && <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>trecho {l.trecho.n} de {l.trecho.total} do mesmo vídeo · o canal trocou o título</div>}
                     </div>
                     <div className={s.liveChip} style={{ background: ch.bg, borderColor: ch.border }}>
                       <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: ch.ink }}>{ch.label}</span>
@@ -141,9 +177,10 @@ export function CanalPagina() {
                           <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, color: "var(--aud)" }}>{n(l.pico)}</div>
                         </div>
                       )}
+                      <BotaoColetar l={l} mudou={recarregar} />
                       <span style={{ fontSize: 15, color: "var(--redInk)" }}>→</span>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client";
 import type { Canal, CanalDetalhe } from "../api/types";
-import { apelido, ha } from "../lib/format";
+import { apelido, ha, n } from "../lib/format";
 import { definirSaude, recarregarSaude } from "../state/saude";
 import type { Saude } from "../state/saude";
 import { usePlano } from "../state/plano";
@@ -199,6 +199,21 @@ export function VigiaModal({ saude, fechar }: { saude: Saude | null; fechar: () 
           </>
         )}
       </div>
+      {!!saude?.coletas?.length && (
+        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 11, padding: "12px 14px", marginBottom: 16 }}>
+          <div style={{ fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 8 }}>
+            Coletando agora · um coletor por vídeo
+          </div>
+          {saude.coletas.map(c => (
+            <a key={c.id} href={`/yt/lives/${c.id}`} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "6px 0", borderTop: "1px solid var(--div)", color: "inherit", textDecoration: "none" }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{apelido(c.titulo, 44)}</span>
+              <span className="mono tnum" style={{ fontSize: 12, color: "var(--ink3)", whiteSpace: "nowrap" }} title="unidades gastas por este coletor: total · na última hora">
+                {n(c.unidades)} un. · {n(c.ultima_hora)}/h
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
       {erro && <div style={{ marginBottom: 14 }}><Erro texto={erro} /></div>}
       <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
         <button type="button" style={btnCancelar} onClick={fechar}>Cancelar</button>

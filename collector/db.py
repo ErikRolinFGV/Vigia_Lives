@@ -85,6 +85,17 @@ def migrar(con):
     _add_coluna(con, "canal", "uploads_lidos_em", "TEXT")
     # a interface pede para encerrar; o coletor confere a cada volta do loop
     _add_coluna(con, "live", "parar_pedido_em", "TEXT")
+    # Escolha do que coletar. canal.modo_coleta: 'todas' (toda live do canal
+    # vira coleta) ou 'escolhidas' (so as marcadas). live.coletar: 1 coletar,
+    # 0 nao coletar, NULL segue o modo do canal.
+    _add_coluna(con, "canal", "modo_coleta", "TEXT NOT NULL DEFAULT 'todas'")
+    _add_coluna(con, "live", "coletar", "INTEGER")
+    # processo do coletor em andamento (o vigia confere antes de subir outro)
+    _add_coluna(con, "live", "coletor_pid", "INTEGER")
+    # cortes de um video que carregou mais de uma transmissao (api/trechos.py).
+    # Sem linha: detectado pela troca de titulo. cortes '[]': sem divisao.
+    con.execute("""CREATE TABLE IF NOT EXISTS divisao (
+        video_id TEXT PRIMARY KEY, cortes TEXT NOT NULL, atualizado_em TEXT NOT NULL)""")
 
     # batimento do vigia: uma linha so, atualizada a cada ciclo. E o que a
     # interface consulta antes de dizer "coleta de pe".
