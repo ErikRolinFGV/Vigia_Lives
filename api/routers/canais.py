@@ -130,11 +130,20 @@ def listar(con: sqlite3.Connection = Depends(conexao)):
 
 @router.get("/agenda")
 def agenda(con: sqlite3.Connection = Depends(conexao)):
-    """O que os canais vigiados vao transmitir e as ultimas coletas."""
+    """
+    O que os canais vigiados vao transmitir e as ultimas coletas, mais as
+    lives coladas pelo link (de canais que nao sao vigiados: so elas, nao o
+    resto do canal).
+    """
     agora = datetime.now(timezone.utc).isoformat(timespec="seconds")
     proximas, recentes = [], []
-    for c in _vigiados(con):
+    so_avulsas = con.execute(
+        """SELECT DISTINCT c.* FROM canal c JOIN live l ON l.canal_id = c.canal_id
+           WHERE l.avulsa = 1 AND NOT (c.vigiado = 1 AND c.removido_em IS NULL)""").fetchall()
+    for c, avulsas in [(c, False) for c in _vigiados(con)] + [(c, True) for c in so_avulsas]:
         for l in lives_do_canal(con, c["canal_id"]):
+            if avulsas and not l["avulsa"]:
+                continue
             item = {"canal_id": c["canal_id"], "canal": c["nome"], **resumo_live(l)}
             no_ar_sem_escolha = l["estado"] == "nao_escolhida" and l["status"] == "ao_vivo"
             if l["estado"] == "no_ar" or no_ar_sem_escolha or (l["estado"] == "agendada" and (l["agendada_para"] or "") >= agora[:16]):

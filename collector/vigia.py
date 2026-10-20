@@ -18,6 +18,8 @@ A cada ciclo:
      para sempre na interface
   5. roda os jobs vencidos de depois da live (+1 h ... +7 d)
   6. uma vez por dia, le a playlist de uploads de cada canal (comparacao)
+  7. rele as lives coladas pelo link (avulsas, de canal nao vigiado): a cada
+     ciclo perto do horario, a cada 5 min no ar, a cada 30 min longe dele
 
 Cada coletor e um processo separado (python -m collector.collector):
 se um deles cair, o vigia e as outras coletas seguem.
@@ -47,7 +49,10 @@ UPLOADS_CADA = timedelta(hours=24)
 JANELA_QUENTE = timedelta(minutes=15)
 ATRASO_MAX = timedelta(hours=2)
 
+AVULSAS_LONGE = timedelta(minutes=30)
+
 _parar = False
+_avulsas_lidas_em = None
 _coletores: dict[str, subprocess.Popen] = {}
 
 
@@ -137,12 +142,40 @@ def ler_agendas(con):
                 log(f"uploads de {c['nome']} falharam ({e})")
 
 
+def ler_avulsas(con):
+    """
+    Lives coladas pelo link nao tem agenda de canal que as releia. Um lote
+    so para todas (1 unidade), com a mesma pressa da agenda: perto do
+    horario, todo ciclo; no ar, a cada 5 min; longe, a cada 30 min.
+    """
+    global _avulsas_lidas_em
+    agora = _agora()
+    linhas = con.execute(
+        "SELECT status, agendada_para FROM live WHERE avulsa = 1 AND status IN ('agendada','ao_vivo')").fetchall()
+    if not linhas:
+        return
+    marcadas = [yt.parse_ts(l["agendada_para"]) for l in linhas if l["status"] == "agendada" and l["agendada_para"]]
+    quente = any(t and agora - ATRASO_MAX <= t <= agora + JANELA_QUENTE for t in marcadas)
+    cada = timedelta(0) if quente else AGENDA_CADA if any(l["status"] == "ao_vivo" for l in linhas) else AVULSAS_LONGE
+    if _avulsas_lidas_em and agora - _avulsas_lidas_em < cada:
+        return
+    try:
+        vigilancia.acompanhar_avulsas(con)
+        _avulsas_lidas_em = agora
+    except yt.ErroCota:
+        raise
+    except Exception as e:
+        log(f"lives pelo link falharam ({e}), tento no próximo ciclo")
+
+
 def subir_coletores(con):
-    """Uma live no ar, de canal vigiado, sem coletor vivo: sobe um."""
+    """Uma live no ar, de canal vigiado ou colada pelo link, sem coletor vivo: sobe um."""
     no_ar = con.execute(
         """SELECT l.video_id, l.titulo, l.coleta_inicio, l.coleta_fim, l.coletor_pid
            FROM live l JOIN canal c ON c.canal_id = l.canal_id
-           WHERE l.status = 'ao_vivo' AND c.vigiado = 1 AND c.removido_em IS NULL
+           WHERE l.status = 'ao_vivo'
+             -- canal vigiado, ou live colada pelo link (canal nao vigiado)
+             AND ((c.vigiado = 1 AND c.removido_em IS NULL) OR l.avulsa = 1)
              -- encerrada pela interface: a decisao de parar vale ate o fim da live
              AND l.parar_pedido_em IS NULL
              -- escolhida, ou o canal coleta todas e esta nao foi tirada
@@ -191,6 +224,7 @@ def fechar_orfas(con):
 def ciclo(con, iniciado_em):
     batimento(con, iniciado_em)
     ler_agendas(con)
+    ler_avulsas(con)
     subir_coletores(con)
     fechar_orfas(con)
     n = publico.rodar_jobs(con)

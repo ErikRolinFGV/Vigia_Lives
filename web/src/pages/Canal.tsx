@@ -87,6 +87,11 @@ export function CanalPagina() {
             <div className="mono" style={{ fontSize: 13, color: "var(--ink3)" }}>
               {c.handle || c.id} · {c.vigiado ? `vigiado desde ${dataCurta(c.vigiado_desde, conta.tz)}` : "não vigiado"}
             </div>
+            {!c.vigiado && c.lives.some(l => l.avulsa) && (
+              <div style={{ fontSize: 13, color: "var(--ink3)", marginTop: 4, textWrap: "pretty" }}>
+                Aqui ficam só as lives coletadas pelo link. A agenda deste canal não é lida e ele não ocupa slot.
+              </div>
+            )}
             {erroFoto && <div style={{ fontSize: 12, color: "var(--redInk)", marginTop: 4 }}>{erroFoto}</div>}
           </div>
           <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

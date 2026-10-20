@@ -430,7 +430,20 @@ def comunidade(con, video_id, versao):
             opcoes = json.loads(e["opcoes"] or "[]")
         except ValueError:
             opcoes = []
-        enquetes.append({"t": e["offset_segundos"], "pergunta": e["pergunta"], "status": e["status"],
+        status = e["status"]
+        if not status:  # gravada antes de o status ser lido do lugar certo
+            try:
+                status = json.loads(e["bruto"] or "{}").get("status")
+            except ValueError:
+                status = None
+        # a mesma enquete pode chegar com dois ids no mesmo instante (a CazeTV
+        # republica): fica a leitura com mais votos
+        ant = enquetes[-1] if enquetes else None
+        if ant and ant["pergunta"] == e["pergunta"] and abs((e["offset_segundos"] or 0) - (ant["t"] or 0)) <= 120:
+            if (e["total_votos"] or 0) > (ant["total"] or 0):
+                ant.update({"opcoes": opcoes, "total": e["total_votos"], "status": status})
+            continue
+        enquetes.append({"t": e["offset_segundos"], "pergunta": e["pergunta"], "status": status,
                          "opcoes": opcoes, "total": e["total_votos"], "detalhe": True})
     # pollEvent gravado antes do coletor ler pollDetails: a enquete aconteceu,
     # mas pergunta e votos nao foram guardados
@@ -513,6 +526,7 @@ def video(con, video_id, versao):
         "likes_hoje": snaps[-1]["likes"] if snaps else None,
         "mudancas": mudancas,
         "mudancas_monitoradas": bool(durante),
+        "video_inteiro": "~" in video_id,
         "inscritos": {
             "antes": canal["antes"]["inscritos"] if "antes" in canal else None,
             "depois": canal["depois"]["inscritos"] if "depois" in canal else None,
@@ -535,9 +549,14 @@ def depois(con, video_id, versao):
     pontos = [{"rotulo": "ao fim", "views": None, "coletado_em": None}]
     if l["fim_real"] and fim_coleta and l["coleta_fim"] and fim_coleta["coletado_em"] >= l["fim_real"]:
         pontos[0] = {"rotulo": "ao fim", "views": fim_coleta["views"], "coletado_em": fim_coleta["coletado_em"]}
+    fim = yt.parse_ts(l["fim_real"]) if l["fim_real"] else None
     for rot in ("+1 h", "+6 h", "+24 h", "+2 d", "+3 d", "+5 d", "+7 d"):
         x = pos.get(rot)
-        pontos.append({"rotulo": rot, "views": x["views"] if x else None, "coletado_em": x["coletado_em"] if x else None})
+        # quanto depois do fim a leitura foi feita de verdade: com o vigia
+        # parado na hora marcada, ela sai atrasada, e a tela diz isso
+        lido = yt.parse_ts(x["coletado_em"]) if x else None
+        pontos.append({"rotulo": rot, "views": x["views"] if x else None, "coletado_em": x["coletado_em"] if x else None,
+                       "depois_s": int((lido - fim).total_seconds()) if lido and fim else None})
     hoje = next((x for x in reversed(snaps) if x["fase"] == "avulsa"), None)
     ultimo = snaps[-1] if snaps else None
     out = {
@@ -546,6 +565,9 @@ def depois(con, video_id, versao):
         "hoje": {"views": hoje["views"], "likes": hoje["likes"], "comentarios": hoje["comentarios"], "coletado_em": hoje["coletado_em"]} if hoje else None,
         "comentarios": ultimo["comentarios"] if ultimo else None,
         "acompanhado": bool(pos),
+        # trecho de um video que carregou mais de uma transmissao: estes
+        # numeros sao do video inteiro (o YouTube nao separa views por trecho)
+        "video_inteiro": "~" in video_id,
     }
     if versao == "interna":
         rows = con.execute("SELECT * FROM comentario_top WHERE video_id=? ORDER BY likes DESC LIMIT 4", (video_id,)).fetchall()

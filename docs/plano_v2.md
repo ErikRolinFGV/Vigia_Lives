@@ -164,6 +164,19 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
 - Cota prevista por dia (`/cota/previsao` e `/agenda`): lives escolhidas
   × duração mediana do canal × unidades/h medidas nas coletas do canal,
   com o pico de lives simultâneas e o que já foi gasto no dia.
+- Agenda sem corte (20/10): a aba /streams lista as agendadas da mais
+  distante para a mais próxima, e o corte em 15 ids deixava de fora as
+  lives do dia (Vasco × Boca). Agora a leitura pega a aba inteira e rola
+  as páginas seguintes (sem cota) até achar uma live já encerrada.
+- Live pelo link (20/10): "Coletar pelo link" na agenda lê o vídeo
+  (1 un.) e marca só aquela live. Canal não vigiado entra no banco sem
+  vigilância (`live.avulsa = 1`): fica fora da lista de canais, não ocupa
+  slot, e o vigia relê só as avulsas (todo ciclo perto do horário, 5 min
+  no ar, 30 min longe). Link de canal vigiado só marca a live. Live
+  encerrada é recusada: o chat só existe enquanto ela está no ar.
+- Vigia solto (20/10): a API sobe o vigia por um intermediário
+  (`collector/lancar.py`) que sai na hora. Sem pai vivo, reiniciar ou
+  fechar a API não derruba o vigia nem as coletas.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

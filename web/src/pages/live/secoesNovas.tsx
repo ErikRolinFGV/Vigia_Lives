@@ -141,6 +141,25 @@ export function SecaoMomentos({ live }: { live: LiveDetalhe }) {
 
 // ================================================================ Audiência
 
+/**
+ * A API do YouTube devolve inscritos com 3 dígitos significativos (41,7 mi).
+ * Antes e depois iguais não querem dizer zero inscritos novos: a variação
+ * pode estar abaixo do degrau do arredondamento.
+ */
+function precisaoInscritos(v: number | null | undefined) {
+  if (v == null || v < 1000) return "O YouTube arredonda o número de inscritos.";
+  const degrau = 10 ** (Math.floor(Math.log10(v)) - 2);
+  return `O YouTube arredonda o número de inscritos para 3 dígitos (${compacto(v)}): variação menor que ${n(degrau)} não aparece, então antes e depois iguais não querem dizer zero inscritos novos.`;
+}
+
+/** "+6 h" lido 9 h depois do fim: o vigia estava parado na hora marcada. */
+function atrasado(rotulo: string, depois_s: number | null | undefined) {
+  const m = rotulo.match(/^\+(\d+) (h|d)$/);
+  if (!m || depois_s == null) return null;
+  const alvo = +m[1] * (m[2] === "h" ? 3600 : 86400);
+  return depois_s > alvo * 1.25 + 600 ? depois_s : null;
+}
+
 export function SecaoDepois({ live }: { live: LiveDetalhe }) {
   const { conta } = useSessao();
   const req = useSecao<SecDepois>(live, "depois");
@@ -154,8 +173,8 @@ export function SecaoDepois({ live }: { live: LiveDetalhe }) {
         { k: "Em 7 dias", v: compacto(p["+7 d"]), n: p["+7 d"] != null && fim ? `${n((1 - fim / p["+7 d"]!) * 100)}% das views vieram depois` : "não consta", c: "var(--aud)" },
         { k: "Comentários", v: n(d.comentarios), n: d.hoje ? `contados em ${dataCurta(d.hoje.coletado_em, conta.tz)}` : "no vídeo gravado" },
       ];
-      const barras = d.pontos.map(x => ({ rotulo: x.rotulo, v: x.views, hoje: false }));
-      if (d.hoje) barras.push({ rotulo: `hoje · ${dataCurta(d.hoje.coletado_em, conta.tz).slice(0, 5)}`, v: d.hoje.views, hoje: true });
+      const barras = d.pontos.map(x => ({ rotulo: x.rotulo, v: x.views, hoje: false, atraso: atrasado(x.rotulo, x.depois_s) }));
+      if (d.hoje) barras.push({ rotulo: `hoje · ${dataCurta(d.hoje.coletado_em, conta.tz).slice(0, 5)}`, v: d.hoje.views, hoje: true, atraso: null });
       const max = Math.max(1, ...barras.map(b => b.v ?? 0));
       return (
         <>
@@ -172,8 +191,23 @@ export function SecaoDepois({ live }: { live: LiveDetalhe }) {
               ))}
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 7, borderTop: "1px solid var(--audLine)", paddingTop: 7 }}>
-              {barras.map(b => <span key={b.rotulo} className="mono" style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 11, color: "var(--ink3)" }}>{b.rotulo}</span>)}
+              {barras.map(b => (
+                <span key={b.rotulo} className="mono" style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 11, color: "var(--ink3)" }}
+                  title={b.atraso ? "o vigia não estava rodando na hora marcada: a leitura saiu atrasada" : undefined}>
+                  {b.rotulo}{b.atraso && <span style={{ display: "block", color: "var(--ambInk)" }}>lido em +{b.atraso >= 86400 ? `${Math.round(b.atraso / 86400)} d` : `${Math.round(b.atraso / 3600)} h`}</span>}
+                </span>
+              ))}
             </div>
+            {d.video_inteiro && (
+              <NotaPainel tom="var(--audLine)">
+                Este vídeo carregou mais de uma transmissão: views e comentários depois da live são do vídeo inteiro. O YouTube não separa por trecho.
+              </NotaPainel>
+            )}
+            {d.acompanhado && d.pontos.some(x => x.views == null) && (
+              <NotaPainel tom="var(--audLine)">
+                As leituras seguintes acontecem sozinhas na hora marcada (+6 h, +24 h, +2 d, +3 d, +5 d e +7 d depois do fim), com o vigia ligado. Se ele estiver parado, a leitura sai assim que ele voltar, marcada como atrasada.
+              </NotaPainel>
+            )}
             {!d.acompanhado && (
               <NotaPainel tom="var(--audLine)">
                 Esta coleta é anterior às leituras de depois da live: os pontos de +1 h a +7 d não foram lidos e não existem mais.
@@ -608,8 +642,9 @@ export function SecaoVideo({ live, s }: { live: LiveDetalhe; s: Serie | null }) 
                 ))}
               </div>
               <div style={{ fontSize: 12.5, color: "var(--ink3)", textWrap: "pretty" }}>
-                O YouTube arredonda o número de inscritos: num canal deste tamanho, só aparecem mudanças grandes.
+                {precisaoInscritos(d.inscritos.antes ?? d.inscritos.depois ?? d.inscritos.hoje)}
                 {d.inscritos.antes == null && " Antes e depois só existem para coletas que leram o canal no início e no fim."}
+                {d.video_inteiro && " Este vídeo carregou mais de uma transmissão: antes e depois são do vídeo inteiro."}
               </div>
             </Painel>
             <Painel titulo="Ficha do vídeo" estilo={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api/client";
-import type { Canal, CanalDetalhe } from "../api/types";
-import { apelido, ha, n } from "../lib/format";
+import type { Canal, CanalDetalhe, LinkLido } from "../api/types";
+import { apelido, dataHora, falta, ha, n, nomeLive } from "../lib/format";
 import { definirSaude, recarregarSaude } from "../state/saude";
 import type { Saude } from "../state/saude";
 import { usePlano } from "../state/plano";
+import { useSessao } from "../state/sessao";
 import { Erro } from "./basicos";
 import { Modal, btnAcao, btnCancelar } from "./Modal";
 import u from "./ui.module.css";
@@ -222,6 +223,94 @@ export function VigiaModal({ saude, fechar }: { saude: Saude | null; fechar: () 
           {enviando ? (dePe ? "Desligando…" : "Ligando…") : (dePe ? "Desligar o vigia" : "Ligar o vigia")}
         </button>
       </div>
+    </Modal>
+  );
+}
+
+/** Cola o link de uma live e coleta só ela, sem vigiar o canal nem ocupar slot. */
+export function LinkModal({ fechar, marcada }: { fechar: () => void; marcada: (id: string) => void }) {
+  const { conta } = useSessao();
+  const [link, setLink] = useState("");
+  const [lido, setLido] = useState<LinkLido | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const ok = link.trim().length > 0 && !enviando;
+
+  const ler = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ok) return;
+    setEnviando(true);
+    setErro("");
+    try {
+      setLido(await api<LinkLido>("/lives/link/ler", { method: "POST", body: JSON.stringify({ link: link.trim() }) }));
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const confirmar = async () => {
+    setEnviando(true);
+    setErro("");
+    try {
+      const r = await api<{ id: string }>("/lives/link", { method: "POST", body: JSON.stringify({ link: link.trim() }) });
+      marcada(r.id);
+    } catch (err) {
+      setErro((err as Error).message);
+      setEnviando(false);
+    }
+  };
+
+  if (lido) {
+    const quando = lido.no_ar ? "no ar agora" : lido.agendada_para ? `${dataHora(lido.agendada_para, conta.tz)} · ${falta(lido.agendada_para)}` : "sem horário marcado";
+    return (
+      <Modal fechar={fechar}>
+        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 14 }}>Coletar esta live?</div>
+        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 11, padding: "14px 16px", marginBottom: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", textWrap: "pretty" }}>{nomeLive(lido.titulo)}</div>
+          <div className="mono" style={{ fontSize: 12, color: "var(--ink3)", marginTop: 5 }}>{lido.canal} · {quando}</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 6 }}>
+          {lido.canal_vigiado
+            ? <Item m="✓" tom="ok">Este canal já é vigiado: a live fica marcada para coletar, como na agenda.</Item>
+            : <Item m="✓" tom="ok">Só esta live entra na coleta. O canal não passa a ser vigiado e não ocupa slot.</Item>}
+          <Item m="✓" tom="ok">{lido.no_ar ? "Ela já está no ar: o coletor sobe no próximo ciclo do vigia, em até 1 minuto." : "O vigia acompanha o horário e sobe o coletor quando ela entrar no ar."}</Item>
+          {lido.ja_marcada && <Item m="·" tom="neutro">Ela já estava marcada para coletar.</Item>}
+        </div>
+        {erro && <div style={{ marginTop: 12 }}><Erro texto={erro} /></div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 22 }}>
+          <button type="button" style={btnCancelar} onClick={() => { setLido(null); setErro(""); }}>Outro link</button>
+          <button type="button" disabled={enviando} style={{ ...btnAcao(!enviando, "var(--red)"), color: "#FFFFFF" }} onClick={confirmar}>
+            {enviando ? "Marcando…" : "Coletar esta live"}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal fechar={fechar}>
+      <form onSubmit={ler}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Coletar uma live pelo link</div>
+            <div style={{ fontSize: 13.5, color: "var(--ink3)", textWrap: "pretty" }}>Para uma live de um canal que não está na lista, ou que a agenda não mostrou.</div>
+          </div>
+          <button type="button" className={u.closeBtn} style={{ width: 30, height: 30, borderRadius: 8, fontSize: 16 }} onClick={fechar} aria-label="Fechar">×</button>
+        </div>
+        <label htmlFor="link" style={{ display: "block", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 8 }}>Link da live</label>
+        <input id="link" autoFocus value={link} onChange={e => { setLink(e.target.value); setErro(""); }} placeholder="https://www.youtube.com/watch?v=…"
+          className={u.input} style={{ background: "var(--surface)", borderRadius: 10, padding: "13px 15px" }} />
+        <div className="mono" style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 8 }}>ler o link gasta 1 unidade de cota · agendada ou já no ar</div>
+        {erro && <div style={{ marginTop: 12 }}><Erro texto={erro} /></div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 22 }}>
+          <button type="button" style={btnCancelar} onClick={fechar}>Cancelar</button>
+          <button type="submit" disabled={!ok} style={{ ...btnAcao(ok, "var(--red)"), color: "#FFFFFF" }}>
+            {enviando ? "Lendo o link…" : "Ler o link"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

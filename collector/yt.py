@@ -281,13 +281,20 @@ def feed_rss(canal_id):
     return saida
 
 
-def ids_da_pagina(canal, aba="streams"):
+def ids_da_pagina(canal, aba="streams", paginas=1, parar_em=frozenset()):
     """
     Le a pagina publica do canal e extrai os videoIds na ordem em que
     aparecem. Custo zero de cota. A aba /streams e o unico lugar onde
     lives AGENDADAS aparecem de forma confiavel: o feed RSS so lista o
     que ja foi publicado, entao uma live marcada para semana que vem
     pode simplesmente nao estar la.
+
+    A pagina carrega 30 videos; o resto vem rolando a tela. Com paginas > 1
+    segue rolando (mesma chamada que o navegador faz, tambem sem cota) ate
+    achar um id de `parar_em` (live ja encerrada: dali para baixo e
+    passado) ou esgotar as paginas. Importa porque a aba lista as agendadas
+    da mais distante para a mais proxima: canal que marca muitas lives com
+    antecedencia empurra as de hoje para fora da primeira pagina.
     """
     import re
     v = canal.strip()
@@ -306,10 +313,38 @@ def ids_da_pagina(canal, aba="streams"):
         html = resp.read().decode("utf-8", "replace")
 
     vistos, saida = set(), []
-    for m in re.finditer(r'"videoId":"([\w-]{11})"', html):
-        if m.group(1) not in vistos:
-            vistos.add(m.group(1))
-            saida.append(m.group(1))
+
+    def juntar(texto):
+        novos = []
+        for m in re.finditer(r'"videoId":"([\w-]{11})"', texto):
+            if m.group(1) not in vistos:
+                vistos.add(m.group(1))
+                novos.append(m.group(1))
+        saida.extend(novos)
+        return novos
+
+    novos = juntar(html)
+    versao = re.search(r'"INNERTUBE_CLIENT_VERSION":"([^"]+)"', html)
+    # o token da grade fica no continuationItemRenderer do fim da lista;
+    # os outros continuationCommand da pagina sao dos filtros (Recentes...)
+    tok = re.search(r'"continuationItemRenderer":\{"trigger":"CONTINUATION_TRIGGER_ON_ITEM_SHOWN",'
+                    r'"continuationEndpoint":\{.{0,400}?"token":"([^"]+)"', html)
+    tok = tok.group(1) if tok else None
+    for _ in range(paginas - 1):
+        if not tok or not versao or any(v in parar_em for v in novos):
+            break
+        corpo = json.dumps({"context": {"client": {"clientName": "WEB", "clientVersion": versao.group(1)}},
+                            "continuation": tok}).encode()
+        req = urllib.request.Request("https://www.youtube.com/youtubei/v1/browse?prettyPrint=false", data=corpo,
+                                     headers={"User-Agent": UA, "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                d = resp.read().decode("utf-8", "replace")
+        except Exception:
+            break  # a primeira pagina ja vale; o resto fica para a proxima leitura
+        novos = juntar(d)
+        prox = re.findall(r'"token":"([^"]+)"', d)
+        tok = prox[-1] if prox and novos else None
     return saida
 
 

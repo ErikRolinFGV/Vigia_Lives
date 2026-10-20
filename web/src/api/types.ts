@@ -34,6 +34,18 @@ export type LiveResumo = {
   // ini/fim em segundos desde o início do vídeo, fim null = até o fim
   trecho: { n: number; total: number; video_id: string; ini: number; fim: number | null } | null;
   nucleo: string;   // título sem "AO VIVO"/campeonato: identifica o mesmo jogo
+  avulsa: boolean;  // colada pelo link, de canal que não é vigiado
+};
+
+/** O que "Ler" trouxe de um link de live, antes de confirmar a coleta. */
+export type LinkLido = {
+  id: string;
+  titulo: string | null;
+  canal: string | null;
+  canal_vigiado: boolean;
+  agendada_para: string | null;
+  no_ar: boolean;
+  ja_marcada: boolean;
 };
 
 export type Ligada = { id: string; titulo: string | null; estado: EstadoLive; inicio?: string | null; fim?: string | null; trecho: LiveResumo["trecho"] };
@@ -171,16 +183,18 @@ export type SecVideo = {
   likes: (number | null)[] | null; t: number[] | null; likes_hoje: number | null;
   mudancas: { t: number | null; quando: string | null; tipo: string; de: string; para: string; depois_da_live: boolean }[];
   mudancas_monitoradas: boolean;
+  video_inteiro: boolean;  // trecho: inscritos são do vídeo inteiro
   inscritos: { antes: number | null; depois: number | null; hoje: number | null; hoje_em: string | null };
   ficha: { k: string; v: string | null }[] | null;
 };
 
 export type SecDepois = {
-  pontos: { rotulo: string; views: number | null; coletado_em: string | null }[];
+  pontos: { rotulo: string; views: number | null; coletado_em: string | null; depois_s?: number | null }[];
   fim_coleta: { views: number; coletado_em: string } | null;
   hoje: { views: number; likes: number; comentarios: number; coletado_em: string } | null;
   comentarios: number | null;
   acompanhado: boolean;
+  video_inteiro: boolean;  // trecho: os números são do vídeo inteiro
   top_comentarios?: { autor: string; texto: string; likes: number; respostas: number }[];
 };
 

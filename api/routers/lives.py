@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from collector import config, yt
+from collector import config, vigilancia, yt
 
 from .. import secoes
 from ..deps import conexao
@@ -202,11 +202,11 @@ AGENDA_DIA_POR_CANAL = 24 * 12 + 12
 
 
 def _escolhidas_agendadas(con):
-    """Lives agendadas de canais vigiados que vao virar coleta."""
+    """Lives agendadas que vao virar coleta: de canal vigiado ou coladas pelo link."""
     return con.execute(
         """SELECT l.video_id, l.titulo, l.agendada_para, l.canal_id, c.nome canal
            FROM live l JOIN canal c ON c.canal_id = l.canal_id
-           WHERE l.status = 'agendada' AND c.vigiado = 1 AND c.removido_em IS NULL
+           WHERE l.status = 'agendada' AND ((c.vigiado = 1 AND c.removido_em IS NULL) OR l.avulsa = 1)
              AND l.agendada_para IS NOT NULL
              AND (l.coletar = 1 OR (l.coletar IS NULL AND c.modo_coleta = 'todas'))""").fetchall()
 
@@ -324,6 +324,81 @@ def escolher(video_id: str, corpo: Escolha, con: sqlite3.Connection = Depends(co
     con.execute(f"UPDATE live SET coletar = ?{limpa} WHERE video_id = ?", (v, video_id))
     con.commit()
     return _resumo(con, _live_ou_404(con, video_id))
+
+
+# ------------------------------------------------------- live pelo link
+
+# O que "Ler" trouxe fica aqui alguns minutos: confirmar nao gasta outra unidade.
+_lidas: dict[str, tuple[datetime, dict]] = {}
+LIDA_VALE = timedelta(minutes=15)
+
+
+class Link(BaseModel):
+    link: str
+
+
+def _ler_video(con, video_id):
+    if not config.API_KEY:
+        raise HTTPException(503, "YT_API_KEY não configurada no .env do servidor.")
+    try:
+        itens = yt.videos(con, [video_id])
+    except yt.ErroCota:
+        raise HTTPException(503, "A cota diária da API do YouTube acabou. Tente de novo amanhã.")
+    except (yt.ErroAPI, yt.ErroRede) as e:
+        raise HTTPException(502, f"O YouTube não respondeu: {e}")
+    if not itens:
+        raise HTTPException(404, "Não achei esse vídeo. Ele pode ser privado ou ter sido apagado.")
+    item = itens[0]
+    lsd = item.get("liveStreamingDetails")
+    if not lsd:
+        raise HTTPException(422, "Esse link é de um vídeo comum, não de uma transmissão ao vivo.")
+    if lsd.get("actualEndTime"):
+        raise HTTPException(409, "Essa transmissão já acabou. O chat só pode ser coletado enquanto a live está no ar.")
+    _lidas[video_id] = (datetime.now(timezone.utc), item)
+    return item
+
+
+@router.post("/lives/link/ler")
+def ler_link(corpo: Link, con: sqlite3.Connection = Depends(conexao)):
+    """O que o link e, antes de confirmar: titulo, canal, horario. 1 unidade."""
+    video_id = vigilancia.id_do_link(corpo.link)
+    if not video_id:
+        raise HTTPException(422, "Não reconheci o link. Cole o endereço da live no YouTube (watch?v=…, youtu.be/… ou /live/…).")
+    item = _ler_video(con, video_id)
+    snip, lsd = item.get("snippet", {}), item["liveStreamingDetails"]
+    c = con.execute("SELECT vigiado, removido_em FROM canal WHERE canal_id=?", (snip.get("channelId"),)).fetchone()
+    ja = con.execute("SELECT coletar, avulsa FROM live WHERE video_id=?", (video_id,)).fetchone()
+    return {
+        "id": video_id,
+        "titulo": snip.get("title"),
+        "canal": snip.get("channelTitle"),
+        "canal_vigiado": bool(c and c["vigiado"] and not c["removido_em"]),
+        "agendada_para": lsd.get("scheduledStartTime"),
+        "no_ar": bool(lsd.get("actualStartTime")),
+        "ja_marcada": bool(ja and ja["coletar"]),
+    }
+
+
+@router.post("/lives/link", status_code=201)
+def coletar_link(corpo: Link, con: sqlite3.Connection = Depends(conexao)):
+    """
+    Marca a live do link para coleta. Canal nao vigiado nao vira canal da
+    lista nem ocupa slot: o vigia acompanha so esta live.
+    """
+    video_id = vigilancia.id_do_link(corpo.link)
+    if not video_id:
+        raise HTTPException(422, "Não reconheci o link.")
+    lida = _lidas.pop(video_id, None)
+    if lida and datetime.now(timezone.utc) - lida[0] <= LIDA_VALE:
+        item = lida[1]
+    else:
+        item = _ler_video(con, video_id)
+        _lidas.pop(video_id, None)
+    try:
+        avulsa = vigilancia.coletar_avulsa(con, item)
+    except yt.ErroCota:
+        raise HTTPException(503, "A cota diária da API do YouTube acabou. Tente de novo amanhã.")
+    return {"id": video_id, "avulsa": avulsa}
 
 
 @router.get("/lives/{video_id}/secoes/{secao}")

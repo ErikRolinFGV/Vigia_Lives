@@ -1,5 +1,4 @@
 """Plano, saude e cota: o lado operacional da plataforma."""
-import os
 import sqlite3
 import subprocess
 import sys
@@ -27,9 +26,9 @@ def plano(con: sqlite3.Connection = Depends(conexao)):
 BATIMENTO_MAX = timedelta(minutes=5)
 
 
-# Vigia subido pela interface. Fica so em memoria: se a API reiniciar, o
-# processo segue vivo (sem janela, grupo proprio) e o batimento continua valendo.
-_vigia: subprocess.Popen | None = None
+# Pid do vigia subido pela interface. Fica so em memoria: se a API reiniciar,
+# o processo segue vivo (solto, sem janela) e o batimento continua valendo.
+_vigia: int | None = None
 LOG_VIGIA = config.RAIZ / "data" / "vigia.log"
 
 
@@ -55,7 +54,7 @@ def _de_pe(b) -> bool:
 
 
 def _subindo() -> bool:
-    return _vigia is not None and _vigia.poll() is None
+    return _vigia is not None and _processo_vivo(_vigia)
 
 
 @router.get("/operacao/saude")
@@ -104,27 +103,21 @@ def ligar_vigia(con: sqlite3.Connection = Depends(conexao)):
     with open(LOG_VIGIA, "a", encoding="utf-8") as saida:
         saida.write(f"\n--- ligado pela interface em {db.agora()} ---\n")
         saida.flush()
-        _vigia = subprocess.Popen(
-            [sys.executable, "-m", "collector.vigia"],
-            cwd=str(config.RAIZ), stdout=saida, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-            # saida em arquivo: sem isso o Windows grava em cp1252 e um titulo
-            # com emoji derruba o vigia (e os coletores, que herdam o ambiente)
-            env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"},
-            # sem janela: o python do .venv e um lancador que abre o python de
-            # verdade como filho, e com DETACHED_PROCESS esse filho ganhava uma
-            # janela de console propria (fechar a janela matava o vigia).
-            # CREATE_NO_WINDOW da um console escondido, herdado pelos coletores.
-            # Grupo proprio: o Ctrl+C do terminal da API nao derruba o vigia.
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
-            start_new_session=sys.platform != "win32",
-        )
+    # pelo intermediario: o vigia sobe sem pai vivo, fora da arvore da API,
+    # e reiniciar ou fechar a API nao derruba o vigia nem as coletas
+    r = subprocess.run([sys.executable, "-m", "collector.lancar", str(LOG_VIGIA)], cwd=str(config.RAIZ),
+                       capture_output=True, text=True, timeout=30,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    if r.returncode != 0 or not r.stdout.strip().isdigit():
+        raise HTTPException(500, f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
+    _vigia = int(r.stdout.strip())
     # o primeiro batimento sai logo no inicio do primeiro ciclo
     for _ in range(20):
         time.sleep(0.5)
         if _de_pe(_batimento(con)):
             return saude(con)
-        if _vigia.poll() is not None:
-            raise HTTPException(500, f"O vigia saiu logo ao subir (código {_vigia.returncode}). Veja data/vigia.log.")
+        if not _processo_vivo(_vigia):
+            raise HTTPException(500, "O vigia saiu logo ao subir. Veja data/vigia.log.")
     return saude(con)
 
 

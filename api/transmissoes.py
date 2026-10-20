@@ -167,6 +167,8 @@ def resumo_live(d):
         "trecho": {"n": d["_trecho"], "total": d["_total"], "video_id": d["_pai"], "ini": d["_ini"], "fim": d["_fim"]}
         if d.get("_trecho") else None,
         "nucleo": trechos.nucleo(d["titulo"]),
+        # colada pelo link, de canal que nao e vigiado
+        "avulsa": bool(d["avulsa"]),
     }
 
 

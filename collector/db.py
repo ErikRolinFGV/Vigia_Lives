@@ -92,6 +92,9 @@ def migrar(con):
     _add_coluna(con, "live", "coletar", "INTEGER")
     # processo do coletor em andamento (o vigia confere antes de subir outro)
     _add_coluna(con, "live", "coletor_pid", "INTEGER")
+    # live colada pelo link, de canal que nao e vigiado: o vigia acompanha
+    # so ela, e o canal fica fora da lista de canais (nao ocupa slot)
+    _add_coluna(con, "live", "avulsa", "INTEGER NOT NULL DEFAULT 0")
     # cortes de um video que carregou mais de uma transmissao (api/trechos.py).
     # Sem linha: detectado pela troca de titulo. cortes '[]': sem divisao.
     con.execute("""CREATE TABLE IF NOT EXISTS divisao (
@@ -374,7 +377,8 @@ def registrar_enquete(con, msg_id, video_id, offset_seg, poll_details):
                              COALESCE(enquete.total_votos,0)),
              bruto=excluded.bruto,
              atualizado_em=excluded.coletado_em""",
+        # status ('active'/'closed') vem fora de metadata no pollDetails
         (msg_id, video_id, offset_seg, meta.get("questionText"),
-         meta.get("status"), json.dumps(opcoes, ensure_ascii=False),
+         (poll_details or {}).get("status") or meta.get("status"), json.dumps(opcoes, ensure_ascii=False),
          total or None, json.dumps(poll_details, ensure_ascii=False), agora()),
     )

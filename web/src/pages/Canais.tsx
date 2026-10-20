@@ -7,7 +7,7 @@ import { CanalAvatar, useTrocarFoto } from "../components/CanalFoto";
 import { BotaoColetar, CotaPrevista } from "../components/Coleta";
 import { Filtros, grupo } from "../components/Filtro";
 import type { Grupo } from "../components/Filtro";
-import { PararModal, VigiarModal } from "../components/ModaisCanal";
+import { LinkModal, PararModal, VigiarModal } from "../components/ModaisCanal";
 import { dataHora, duracao, falta, ha, n, nomeLive } from "../lib/format";
 import { useSaude } from "../state/saude";
 import { useSessao } from "../state/sessao";
@@ -104,6 +104,7 @@ export function Canais() {
   const lista = useApi<ListaCanais>("/canais");
   const agenda = useApi<Agenda>("/agenda");
   const [add, setAdd] = useState(false);
+  const [porLink, setPorLink] = useState(false);
   const [parar, setParar] = useState<Canal | null>(null);
   const [tip, setTip] = useState(false);
 
@@ -177,6 +178,8 @@ export function Canais() {
             <div className={s.painelTopo}>
               <h2 className={s.h2}>Agenda</h2>
               <span style={{ fontSize: 13, color: "var(--ink3)" }}>o que os canais vigiados vão transmitir</span>
+              <button type="button" className={s.botaoLinha} style={{ marginLeft: "auto", alignSelf: "center", padding: "6px 12px", fontSize: 12.5 }}
+                onClick={() => setPorLink(true)} title="Coleta uma live só, sem vigiar o canal">+ Coletar pelo link</button>
             </div>
             {agenda.dados && <CotaPrevista dias={agenda.dados.cota} tz={conta.tz} />}
             {janela.length > 0 && <div style={{ marginBottom: 12 }}><Filtros itens={janela} ativo={filtro} mudar={setFiltro} grupos={["todas", "coletando", "vao", "nao_escolhidas"]} /></div>}
@@ -203,6 +206,7 @@ export function Canais() {
         </div>
       </div>
 
+      {porLink && <LinkModal fechar={() => setPorLink(false)} marcada={id => { setPorLink(false); nav(rotaLive({ id })); }} />}
       {add && <VigiarModal fechar={() => setAdd(false)} adicionado={recarregar} />}
       {parar && <PararModal canal={parar} fechar={() => setParar(null)} parado={() => { setParar(null); recarregar(); }} />}
     </div>
@@ -223,7 +227,7 @@ function LinhaAgenda({ a, tz, ir, mudou }: { a: ItemAgenda; tz: string; ir: () =
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={s.titulo1} style={{ color: fora ? "var(--ink3)" : undefined }}>{nomeLive(a.titulo)}</div>
-        <div className={s.mono12}>{a.canal}</div>
+        <div className={s.mono12}>{a.canal}{a.avulsa && " · pelo link"}</div>
       </div>
       <BotaoColetar l={a} mudou={mudou} />
       <span style={{ fontSize: 14, color: "var(--ink4)" }}>→</span>
@@ -242,7 +246,7 @@ function LinhaRecente({ r, tz, ir }: { r: ItemAgenda; tz: string; ir: () => void
     <button type="button" className={s.linha} onClick={ir}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={s.titulo1}>{perdida ? (r.ao_vivo ? "No ar agora, sem coleta" : "Transmissão sem coleta") : nomeLive(r.titulo)}</div>
-        <div className={s.mono12}>{r.canal} · {dataHora(r.inicio || r.agendada_para, tz)}</div>
+        <div className={s.mono12}>{r.canal}{r.avulsa && " · pelo link"} · {dataHora(r.inicio || r.agendada_para, tz)}</div>
       </div>
       <div style={{ textAlign: "right", flex: "0 0 auto" }}>
         <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, color: perdida ? "var(--redInk)" : "var(--aud)" }}>

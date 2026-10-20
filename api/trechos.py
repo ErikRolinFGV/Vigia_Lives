@@ -20,9 +20,9 @@ Como funciona:
     as secoes, o dossie e a exportacao leem so a janela do trecho, com o
     tempo contado do inicio dele, sem saber que e um trecho. As visoes
     morrem com a conexao (uma por request).
-  - Dado do video inteiro depois da live (comentarios, views +1 h ... +7 d)
-    nao e de um trecho: nos trechos ele fica de fora, e o video inteiro
-    continua acessivel pelo id original.
+  - Dado do video inteiro (inscritos antes/depois, comentarios, views
+    +1 h ... +7 d) nao se divide: o trecho mostra o do video, e a tela diz
+    que e do video inteiro. O video inteiro segue acessivel pelo id original.
 """
 import json
 import re
@@ -210,17 +210,19 @@ def preparar(con, tid):
     lo = f"offset_segundos >= {ini}" if n > 1 else "1"
     hi = f"offset_segundos < {fim}" if fim is not None else "1"
     por_offset = {"video_id": T, "offset_segundos": f"offset_segundos - {ini}"}
-    for tab in ("mensagem", "snapshot_audiencia", "momento"):
+    for tab in ("mensagem", "snapshot_audiencia", "momento", "enquete"):
         visao(tab, f"{lo} AND {hi}", por_offset)
     # janela por relogio
     janela = lambda col: f"{col} >= {_q(a_iso)} AND {col} < {_q(b_iso)}"
     visao("coleta_log", janela("chamado_em"), {"video_id": T})
     visao("concorrencia", janela("coletado_em"), {"video_id": T})
-    visao("canal_snapshot", janela("coletado_em"), {"video_id": T})
-    # historico do video so durante o trecho; o 'pos' (depois da live) e do video inteiro
-    visao("video_snapshot", f"fase = 'durante' AND {janela('coletado_em')}", {"video_id": T})
+    # Do video inteiro, nao de um trecho: inscritos antes/depois, views e
+    # comentarios depois da live. O trecho mostra, e a tela avisa que e do
+    # video inteiro (secoes devolvem video_inteiro=True).
+    visao("canal_snapshot", "1", {"video_id": T})
+    visao("video_snapshot", f"fase != 'durante' OR ({janela('coletado_em')})", {"video_id": T})
     for tab in ("comentario_top", "estatistica_final", "pos_live_job"):
-        visao(tab, "0", {"video_id": T})
+        visao(tab, "1", {"video_id": T})
     return tid
 
 
