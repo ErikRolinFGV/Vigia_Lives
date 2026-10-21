@@ -67,6 +67,17 @@ def parse_ts(s):
         return None
 
 
+COTA_ESGOTADA = {"quotaExceeded", "dailyLimitExceeded"}
+
+
+def _razoes(corpo):
+    """Os `reason` do erro da API ({"error": {"errors": [{"reason": ...}]}})."""
+    try:
+        return {e.get("reason") for e in json.loads(corpo)["error"].get("errors", [])}
+    except Exception:
+        return {"quotaExceeded"} if "quotaExceeded" in corpo else set()
+
+
 def chamar(con, metodo, params, video_id=None, tentativas=3,
            paciencia_seg=None):
     """
@@ -92,7 +103,7 @@ def chamar(con, metodo, params, video_id=None, tentativas=3,
     tentativa_api = 0
     ultimo_erro_rede = None
     while True:
-        status, erro, itens, dados, foi_rede = None, None, None, None, False
+        status, erro, itens, dados, foi_rede, razoes = None, None, None, None, False, set()
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 status = resp.status
@@ -102,7 +113,11 @@ def chamar(con, metodo, params, video_id=None, tentativas=3,
             status = e.code
             corpo = e.read().decode("utf-8", "replace")
             erro = corpo[:500] or f"HTTP {status} sem corpo na resposta"
-            if status == 403 and "quota" in corpo.lower():
+            razoes = _razoes(corpo)
+            # so cota de verdade para a coleta. "Sent too soon" (403 de ritmo)
+            # tambem cita "quota" no texto e derrubava o coletor (21/10, ao
+            # voltar de uma queda de internet): agora conta o motivo, nao o texto
+            if status == 403 and razoes & COTA_ESGOTADA:
                 _log(con, video_id, metodo, custo, status, itens,
                      params.get("pageToken"), erro)
                 con.commit()
@@ -138,7 +153,9 @@ def chamar(con, metodo, params, video_id=None, tentativas=3,
         tentativa_api += 1
         if tentativa_api >= tentativas:
             raise ErroAPI(f"{metodo} falhou apos {tentativas} tentativas: {erro}")
-        time.sleep(2 ** tentativa_api)
+        # pedido cedo demais: o chat ainda nao renovou, espera mais um pouco
+        ritmo = status == 403 and "rateLimitExceeded" in razoes
+        time.sleep(max(2 ** tentativa_api, 8 if ritmo else 0))
 
 
 def _log(con, video_id, metodo, custo, status, itens, page_token, erro):
