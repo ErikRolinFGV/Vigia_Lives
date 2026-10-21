@@ -1,143 +1,150 @@
-# Monitor de lives — coletor v0.1
+# Vigia — monitoramento de lives do YouTube
 
-Coleta chat, doacoes e curva de audiencia de uma live do YouTube enquanto
-ela esta no ar, e gera um relatorio da live sem nenhuma chamada de LLM.
+O Vigia acompanha os canais escolhidos, coleta as lives enquanto estão no ar e
+mostra o que aconteceu: quanta gente assistiu, minuto a minuto, quanto da
+audiência escreveu no chat, os momentos em que o chat reagiu e o apoio pago.
+Depois, compara cada live com as outras e gera um relatório pronto para
+compartilhar.
 
-O chat ao vivo **deixa de existir quando a live acaba**. A API nao devolve as
-mensagens depois. Por isso o coletor precisa estar rodando durante a transmissao.
+O motivo de existir: **o chat ao vivo some quando a live acaba.** A API do
+YouTube não devolve as mensagens depois. Quem não coletou durante a
+transmissão perdeu esse dado para sempre. O Vigia fica de olho na agenda dos
+canais e começa a coletar sozinho quando a live sobe.
 
-## v2: plataforma Vigia
+## O que ele faz
 
-Interface web sobre o mesmo banco. Plano e decisoes em
-[docs/plano_v2.md](docs/plano_v2.md); design em `design_handoff_vigia_pesquisa/`.
+**Vigiar canais.** Você cola o @ de um canal e escolhe o que coletar: todas
+as lives ou só as que marcar. O vigia lê a agenda da aba /streams do canal
+(sem gastar cota), confirma em lote com a API e sobe um coletor por live no ar.
+Uma live solta, de um canal que você não vigia, também pode ser coletada pelo
+link.
+
+**Coletar.** Durante a live, o coletor guarda:
+
+- o chat inteiro: mensagens, Super Chats, novos membros, assinaturas
+  presenteadas, enquetes e mensagens apagadas pela moderação;
+- a audiência simultânea, uma leitura por minuto;
+- as trocas de título e de thumbnail;
+- as lives concorrentes da mesma categoria no ar ao mesmo tempo.
+
+Depois que a live acaba, ele volta ao vídeo várias vezes, de +1 h a +7 dias,
+para ler as views e os comentários.
+
+**Mostrar.** Cada transmissão tem uma página com:
+
+- audiência, ritmo do chat e participação (quem escreveu ÷ quem assistia);
+- momentos de reação detectados por estatística, com link para o minuto no
+  YouTube;
+- pessoas e apoio, vídeo e contexto, e a qualidade da coleta, com cada minuto
+  coberto ou perdido;
+- um replay de como a coleta viu a live.
+
+**Comparar.** Cada live coletada vira uma ficha com 19 métricas. A ficha mostra
+a posição da live no canal, na mesma categoria e entre todas as coletas, e uma
+página põe até 4 lives lado a lado.
+
+**Entregar.** O dossiê resume a live num veredito e em achados. Ele situa a
+live no histórico do canal, e cada número é calculado da coleta. O resultado
+pode sair como:
+
+- link público, sem login, que mostra só números agregados;
+- arquivo CSV, JSON ou Markdown.
+
+**Dizer a verdade sobre a coleta.**
+
+- **Cobertura.** É medida pelos dados: o tempo em que o coletor estava ligado
+  e recebendo resposta do YouTube. Uma queda de internet aparece como buraco,
+  e a coleta vira *parcial*.
+- **Links reaproveitados.** Quando o canal usa o mesmo link para outra
+  transmissão (troca o título e passa outro jogo), a coleta é dividida em
+  trechos. A página mostra de que link cada trecho veio e se o mesmo conteúdo
+  passou em outro link que não foi coletado.
+- **Descarte.** Uma coleta pode ser descartada, com motivo e volta: muito
+  parcial, reprise...
+- **Cota.** O consumo é previsto e acompanhado.
+
+## Privacidade
+
+- **Identidade separada.** O nome e o canal de quem escreve ficam em uma única
+  tabela, `autor_identidade`. O resto do banco usa um pseudônimo, um hash com
+  salt. Apagar essa tabela anonimiza a base inteira sem quebrar nenhuma
+  análise.
+- **Expurgo.** As identidades vencem em 90 dias e são apagadas sozinhas.
+- **Link público.** Mostra só agregados: nunca texto de chat, autor, custo ou
+  cota.
+- **Inteligência artificial.** Nenhuma lê o texto do chat. Quando entrar um
+  dossiê escrito por modelo ou um chatbot, eles vão trabalhar só com números
+  agregados.
+
+## Como rodar
+
+Passo a passo completo, incluindo como criar a chave gratuita da YouTube Data
+API, em **[INSTALL.md](INSTALL.md)**. Versão curta (Windows):
 
 ```
-pip install -e ".[api]"          # FastAPI + uvicorn, so para a API
-lives-api                        # API em http://127.0.0.1:8000 (docs em /api/docs)
-lives-vigia                      # vigia: le agendas e sobe um coletor por live no ar
-cd web && npm install && npm run dev   # front em http://localhost:5173
+py -m venv .venv && .venv\Scripts\activate
+pip install -e ".[api]"
+copy .env.example .env          # cole sua chave em YT_API_KEY
+lives-api                        # API em http://127.0.0.1:8000
+cd web && npm install && npm run dev    # interface em http://localhost:5173
 ```
 
-Sao tres processos. Sem o `lives-vigia` rodando nada e coletado, e a
-interface diz isso ("vigia parado") em vez de fingir que esta de pe.
-O botao "vigia parado · ligar" no cabecalho sobe o vigia pela propria
-interface (saida em `data/vigia.log`) e, rodando, desliga: o pedido vai
-pelo banco e o vigia sai em segundos. Coletas em andamento seguem ate o
-fim da live.
-O login e de demonstracao: qualquer e-mail valido e senha com 6 ou mais
-caracteres entra. Com `npm run build`, a propria API passa a servir o front.
+Na interface, o botão do cabeçalho liga o vigia. Ele roda como processo
+próprio: fechar ou reiniciar a API não interrompe uma coleta em andamento.
+Sem o vigia de pé nada é coletado, e a interface avisa. O login é de
+demonstração: qualquer e-mail válido e senha com 6 ou mais caracteres.
+Depois de `npm run build`, a própria API serve a interface.
 
-Relatorio publico: depois de gerar o dossie de uma transmissao, "Publicar
-link" cria `/r/{canal}/{nome-da-live-data}`, que abre sem login e so le
-agregados (sem cota, custo, texto de chat ou autor).
+## Limites de hoje
 
-## Instalacao
+- **O coletor roda no seu computador.** Ele precisa ficar ligado, sem dormir e
+  com internet durante as lives. Cada queda vira um buraco na coleta, que a
+  plataforma mostra.
+- **Cota.** A cota gratuita do YouTube é de 10.000 unidades por dia. Uma live
+  com chat movimentado gasta perto de 1.000 unidades por hora. A tela do canal
+  prevê o gasto do dia antes de você marcar mais lives.
+- **Estrutura.** O banco é SQLite e o login é de demonstração. Servidor,
+  Postgres e contas de verdade ficam para quando a coleta sair do PC.
 
-Passo a passo completo em **[INSTALL.md](INSTALL.md)**. Versao curta:
+## Como está organizado
 
-```
-py -m venv .venv && .venv\Scripts\activate      # Windows
-python -m pip install --upgrade pip setuptools
-pip install -e .
-copie .env.example para .env e cole sua chave em YT_API_KEY
-```
+| pasta | o que tem |
+|---|---|
+| `collector/` | coletor, vigia, cliente da API do YouTube, banco e relatório da camada 0. Só a biblioteca padrão do Python |
+| `api/` | API FastAPI: canais, transmissões, trechos, ficha e comparação, dossiê, exportação e link público |
+| `web/` | interface em React + Vite + TypeScript, temas claro e escuro |
+| `docs/` | plano da v2 e decisões tomadas, com o porquê de cada uma ([plano_v2.md](docs/plano_v2.md)) |
+| `design_handoff_vigia_pesquisa/` | protótipo e especificação de design |
+| `data/` | banco SQLite e log do vigia (fora do git) |
 
-Nao ha dependencia externa: o coletor usa so a biblioteca padrao do
-Python 3.9 ou superior. O `pip install -e .` serve para registrar os
-comandos `lives-coletar`, `lives-report`, `lives-quota` e `lives-demo`.
-Rodar `python collector/collector.py` direto tambem funciona.
+## Decisões técnicas
 
-### Como gerar a chave da API (uma vez, gratuito)
+**Custo de cota visível.** Toda chamada à API é registrada com o custo em
+unidades (`coleta_log`). É daí que saem a previsão de cota e a medida de
+cobertura.
 
-1. Acesse https://console.cloud.google.com e crie um projeto
-   (sugestao de nome: `lives-monitor`).
-2. Menu **APIs e servicos > Biblioteca**, busque **YouTube Data API v3**
-   e clique em **Ativar**.
-3. Menu **APIs e servicos > Credenciais > Criar credenciais > Chave de API**.
-4. Copie a chave e cole no `.env` em `YT_API_KEY=`.
-5. Opcional mas recomendado: em **Restringir chave**, limite a chave a
-   YouTube Data API v3.
+**Janela adaptativa do chat.** `liveChatMessages.list` custa 5 unidades. O
+coletor pede a cada 20 s e ajusta entre 5 s e 60 s conforme o volume. Espaçar
+não perde mensagem: o `nextPageToken` devolve tudo desde a última chamada.
 
-A cota gratuita e de 10.000 unidades por dia e nao exige cartao.
-Acompanhe o consumo em **APIs e servicos > YouTube Data API v3 > Cotas**.
+**Descobrir lives sem gastar cota.** A agenda vem da página pública do canal.
+A API entra só para confirmar, 1 unidade para até 50 vídeos. Uma live marcada
+que some da resposta da API é conferida na página do vídeo.
 
-## Uso
+**Números nunca vêm de um modelo.** O dossiê de hoje é escrito por regras:
+frases fixas, escolhidas pelo que os números mostram, e cada número é
+calculado da coleta.
+
+**Dinheiro em micros inteiros**, como a API devolve. Nunca float.
+
+## Linha de comando
+
+O coletor original continua funcionando sozinho, sem a interface:
 
 ```bash
-# coletar uma live que ja esta no ar
-python collector/collector.py --video VIDEO_ID
-
-# vigiar um canal e comecar sozinho quando a live subir
-python collector/collector.py --canal @cazetvoficial
-
-# teste curto, para medir cota antes de comprometer o dia inteiro
-python collector/collector.py --video VIDEO_ID --minutos 20
-
-# relatorio da live coletada
-python collector/report.py --video VIDEO_ID
-
-# auditoria de consumo de cota
-python collector/quota.py --dias 7
-
-# testar o pipeline inteiro sem chave e sem live, com dado sintetico
-python collector/seed_demo.py && python collector/report.py --video DEMO_SINTETICO
+lives-coletar --video VIDEO_ID            # coletar uma live no ar
+lives-coletar --canal @canal              # esperar a live do canal subir
+lives-report --video VIDEO_ID             # relatório da live coletada
+lives-quota --dias 7                      # auditoria de cota
+lives-demo && lives-report --video DEMO_SINTETICO   # testar sem chave nem live
 ```
-
-Ctrl+C encerra a coleta com seguranca: o banco e fechado, a cobertura e
-calculada e o relatorio fica disponivel.
-
-## Arquivos
-
-| arquivo | papel |
-|---|---|
-| `collector/config.py` | parametros de coleta e leitura do `.env` |
-| `collector/db.py` | banco, pseudonimizacao e expurgo de dado pessoal |
-| `collector/yt.py` | cliente da API, com custo de cada chamada registrado |
-| `collector/collector.py` | loop de coleta: chat, audiencia, cobertura |
-| `collector/report.py` | camada 0 de analise e relatorio da live |
-| `collector/quota.py` | auditoria de consumo de cota |
-| `collector/seed_demo.py` | live sintetica para testar sem gastar cota |
-| `db/schema.sql` | schema v0.1 |
-| `data/lives.db` | banco (criado na primeira execucao) |
-| `reports/` | relatorios gerados |
-
-## Decisoes que estao embutidas no codigo
-
-**Janela adaptativa de 20 s.** `liveChatMessages.list` custa 5 unidades. A
-cada 5 s, uma live de 3 h consome 10.800 unidades e estoura a cota sozinha.
-A 20 s, cerca de 2.700 unidades, ou 27% da cota. Espacar o polling **nao
-perde mensagem**: o `nextPageToken` devolve tudo desde a ultima chamada.
-Espacar troca latencia por cota, nao completude por cota. A janela encurta
-sozinha quando a pagina volta saturada e alarga quando volta vazia.
-
-**RSS em vez de search.list.** Desde junho de 2026 o `search.list` tem bucket
-proprio de cerca de 100 chamadas por dia. Descobrir que a live comecou por
-ali e caro demais. O feed publico do canal nao consome cota nenhuma, e a
-confirmacao com `videos.list` custa 1 unidade.
-
-**Dado pessoal so em `autor_identidade`.** Todo o resto do banco referencia
-`autor_pid = sha256(canal_do_autor + salt)`. Apagar a tabela de identidades
-anonimiza a base inteira sem quebrar analise nenhuma, e atender um pedido de
-titular vira apagar uma linha. O expurgo por vencimento roda sozinho a cada
-execucao do coletor.
-
-**Dinheiro em micros inteiros**, exatamente como a API devolve. Nunca float.
-
-**`cobertura_pct` e metrica de primeira classe.** Sem ela nao da para saber
-se um vale no grafico foi silencio do publico ou coletor caido. O relatorio
-mostra esse numero no topo, antes de qualquer outro.
-
-**Analise escalonada.** A camada 0 (contagem, emoji, dedup, heuristica de
-spam, deteccao de pico por z-score) elimina uma fatia do volume e ja produz
-o relatorio inteiro com custo zero. O LLM entra depois, so para rotular o
-que a estatistica ja apontou.
-
-## O que ainda precisa ser medido numa live real
-
-1. Consumo real de cota contra os 2.700 previstos, no painel do Google Cloud
-   e no `quota.py`. Os dois numeros precisam bater.
-2. Custo do `liveChatMessages.streamList`. Metodo novo, conexao persistente,
-   custo nao documentado. Se for cobrado por conexao e nao por chamada, o
-   gargalo de cota some.
-3. Comportamento da janela adaptativa num chat de verdade: com que frequencia
-   ela encosta no piso de 5 s.
