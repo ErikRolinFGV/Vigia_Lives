@@ -5,7 +5,7 @@ serie minuto a minuto.
 O estado nao e uma coluna: e derivado do que o banco sabe. Assim uma coleta
 que caiu sem atualizar `live.status` nao aparece como "no ar" para sempre.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from collector import yt
 
@@ -133,6 +133,88 @@ def lives_do_canal(con, canal_id):
     return lista
 
 
+COM_COLETA = ("coletada", "parcial", "no_ar")
+SEM_COLETA = ("perdida", "nao_escolhida")
+
+
+def mesmo_conteudo(resumos, video_id, titulo, inicio):
+    """
+    Outras transmissoes do canal com o mesmo conteudo (resumos de
+    resumo_live): mesmo nucleo de titulo, comecando a menos de 12 h, sem
+    ser trecho do proprio video. E o link de reserva, ou o canal que marca
+    um link para o pos-jogo e o transmite tambem no link do jogo.
+    """
+    nuc = trechos.nucleo(titulo)
+    if not nuc or not inicio:
+        return []
+    perto = lambda x: x["inicio"] and abs((_ts(x["inicio"]) - _ts(inicio)).total_seconds()) < 12 * 3600
+    link = trechos.separar(video_id)[0]
+    return [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
+             "trecho": x["trecho"], "link": x["link"]}
+            for x in resumos if x["link"]["video_id"] != link and x["nucleo"] == nuc and perto(x)]
+
+
+SOBREPOE_MIN = timedelta(minutes=15)
+
+
+def mapa_links(resumos, video_id, max_links=6):
+    """
+    Os links (videos do YouTube) em volta de uma transmissao, para a tela
+    dizer quem e quem: o link dela, com todos os trechos, e os outros links
+    do canal que passaram o mesmo conteudo ou que foram coletados no mesmo
+    horario. Cada link: como comecou, quando esteve no ar e os trechos.
+    """
+    por_link = {}
+    for x in resumos:
+        if x["inicio"]:
+            por_link.setdefault(x["link"]["video_id"], []).append(x)
+    proprio = trechos.separar(video_id)[0]
+    meus = por_link.get(proprio, [])
+    if not meus:
+        return []
+    nucs = {x["nucleo"] for x in meus if x["nucleo"]}
+    agora = datetime.now(timezone.utc)
+    fim_de = lambda x: _ts(x["fim"]) if x["fim"] else agora
+    a, b = min(_ts(x["inicio"]) for x in meus), max(fim_de(x) for x in meus)
+    perto = timedelta(hours=12)
+
+    def entra(segs):
+        for x in segs:
+            if x["nucleo"] in nucs and a - perto < _ts(x["inicio"]) < b + perto:
+                return True  # o mesmo conteudo em outro link
+            # outra coleta no mesmo horario; encostar na virada (um link
+            # acaba quando o outro abre) nao conta
+            if x["estado"] in COM_COLETA and min(b, fim_de(x)) - max(a, _ts(x["inicio"])) >= SOBREPOE_MIN:
+                return True
+        return False
+
+    outros = sorted((v for v, segs in por_link.items() if v != proprio and entra(segs)),
+                    key=lambda v: min(_ts(x["inicio"]) for x in por_link[v]))
+    out = []
+    for v in [proprio] + outros[:max_links - 1]:
+        segs = sorted(por_link[v], key=lambda x: (x["trecho"] or {}).get("n", 0))
+        out.append({
+            "video_id": v, "comecou_como": segs[0]["link"]["comecou_como"],
+            "inicio": segs[0]["link"]["inicio"], "fim": segs[0]["link"]["fim"],
+            "trechos": [{"id": x["id"], "n": (x["trecho"] or {}).get("n"), "titulo": x["titulo"], "nucleo": x["nucleo"],
+                         "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"]} for x in segs],
+        })
+    return out
+
+
+def outro_link(estado_live, outras):
+    """
+    O que a lista diz do mesmo conteudo em outro link: "sem_coleta" se esta
+    foi coletada e a outra nao (o chat de la ficou de fora), "coletado" se
+    esta nao foi coletada mas a outra sim (os dados estao la), senao None.
+    """
+    if estado_live in COM_COLETA and any(o["estado"] in SEM_COLETA for o in outras):
+        return "sem_coleta"
+    if estado_live in SEM_COLETA and any(o["estado"] in COM_COLETA for o in outras):
+        return "coletado"
+    return None
+
+
 def resumo_live(d):
     """Campos que a lista do canal e a home mostram de uma transmissao."""
     duracao = d["duracao_segundos"]
@@ -167,6 +249,12 @@ def resumo_live(d):
         "trecho": {"n": d["_trecho"], "total": d["_total"], "video_id": d["_pai"], "ini": d["_ini"], "fim": d["_fim"]}
         if d.get("_trecho") else None,
         "nucleo": trechos.nucleo(d["titulo"]),
+        # o link (video do YouTube) de onde a transmissao vem e como ele
+        # comecou: e o que diz "quem e quem" quando o canal reaproveita links
+        "link": {"video_id": d.get("_pai") or d["video_id"],
+                 "comecou_como": d.get("_link_titulo", d["titulo"]),
+                 "inicio": d.get("_link_inicio", d["inicio_real"]),
+                 "fim": d.get("_link_fim", d["fim_real"])},
         # colada pelo link, de canal que nao e vigiado
         "avulsa": bool(d["avulsa"]),
     }

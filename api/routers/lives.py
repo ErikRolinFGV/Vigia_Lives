@@ -11,7 +11,7 @@ from collector import config, vigilancia, yt
 from .. import secoes
 from ..deps import conexao
 from .. import trechos
-from ..transmissoes import lives_do_canal, resumo_live, serie
+from ..transmissoes import lives_do_canal, mapa_links, mesmo_conteudo, resumo_live, serie
 
 router = APIRouter(tags=["lives"])
 
@@ -58,14 +58,9 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     r = _resumo(con, l)
     lista = [resumo_live(d) for d in lives_do_canal(con, l["canal_id"])]
     # o mesmo conteudo em outra transmissao do canal (link de reserva, trecho
-    # de outro video): a tela liga as duas para nao parecerem duplicadas
-    perto = lambda x: x["inicio"] and l["inicio_real"] and abs(
-        (yt.parse_ts(x["inicio"]) - yt.parse_ts(l["inicio_real"])).total_seconds()) < 12 * 3600
-    nuc = trechos.nucleo(l["titulo"])
-    mesmo = [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
-              "trecho": x["trecho"]}
-             for x in lista if x["id"] != video_id and nuc and x["nucleo"] == nuc and perto(x)
-             and not (x["trecho"] and x["trecho"]["video_id"] == video_id)]
+    # de outro video): a tela liga as duas para nao parecerem duplicadas, e
+    # avisa quando uma delas ficou sem coleta
+    mesmo = mesmo_conteudo(lista, video_id, l["titulo"], l["inicio_real"])
     # trechos do mesmo video; aberto pelo id do video inteiro, lista os dele
     pai = r["trecho"]["video_id"] if r and r["trecho"] else video_id
     irmaos = [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
@@ -109,6 +104,7 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
         "subabas": subs,
         "url": trechos.url_video(video_id, ini=r["trecho"]["ini"] if r and r["trecho"] else None),
         "mesmo_jogo": mesmo,
+        "links": mapa_links(lista, video_id),
         "trechos": irmaos,
     }
 

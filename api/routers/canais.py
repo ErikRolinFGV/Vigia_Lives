@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from collector import config, db, vigilancia, yt
 
 from ..deps import LIMITE_SLOTS, conexao
-from ..transmissoes import lives_do_canal, resumo_live, vai_coletar
+from ..transmissoes import lives_do_canal, mesmo_conteudo, outro_link, resumo_live, vai_coletar
 from .lives import cota_por_dia
 
 router = APIRouter(tags=["canais"])
@@ -72,6 +72,12 @@ def _canal_ou_404(con, canal_id):
     return c
 
 
+def _com_outro_link(resumos):
+    for x in resumos:
+        x["outro_link"] = outro_link(x["estado"], mesmo_conteudo(resumos, x["id"], x["titulo"], x["inicio"]))
+    return resumos
+
+
 def _visao_canal(con, c):
     lives = lives_do_canal(con, c["canal_id"])
     coletadas = [l for l in lives if l["estado"] in ("coletada", "parcial")]
@@ -105,7 +111,7 @@ def _visao_canal(con, c):
         "n_nao_escolhidas": sum(1 for l in lives if l["estado"] == "nao_escolhida"),
         "cobertura_media": round(sum(cobs) / len(cobs), 1) if cobs else None,
         "pico": max(picos) if picos else None,
-        "lives": [resumo_live(l) for l in lives],
+        "lives": _com_outro_link([resumo_live(l) for l in lives]),
     }
     return v
 

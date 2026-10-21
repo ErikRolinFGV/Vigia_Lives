@@ -8,7 +8,7 @@ import { BotaoColetar, CotaPrevista } from "../components/Coleta";
 import { Filtros, grupo } from "../components/Filtro";
 import type { Grupo } from "../components/Filtro";
 import { LinkModal, PararModal, VigiarModal } from "../components/ModaisCanal";
-import { dataHora, duracao, falta, ha, n, nomeLive } from "../lib/format";
+import { dataHora, duracao, falta, ha, n, nomeLive, origemTrecho } from "../lib/format";
 import { useSaude } from "../state/saude";
 import { useSessao } from "../state/sessao";
 import s from "./canais.module.css";
@@ -248,7 +248,7 @@ function LinhaRecente({ r, tz, ir }: { r: ItemAgenda; tz: string; ir: () => void
     <button type="button" className={s.linha} onClick={ir}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className={s.titulo1}>{perdida ? (r.ao_vivo ? "No ar agora, sem coleta" : "Transmissão sem coleta") : nomeLive(r.titulo)}</div>
-        <div className={s.mono12}>{r.canal}{r.avulsa && " · pelo link"} · {dataHora(r.inicio || r.agendada_para, tz)}</div>
+        <div className={s.mono12}>{r.canal}{r.avulsa && " · pelo link"} · {dataHora(r.inicio || r.agendada_para, tz)}{r.trecho && ` · ${origemTrecho(r.trecho.n, r.link.comecou_como, 24)}`}</div>
       </div>
       <div style={{ textAlign: "right", flex: "0 0 auto" }}>
         <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, color: perdida ? "var(--redInk)" : "var(--aud)" }}>

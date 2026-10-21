@@ -9,7 +9,7 @@ import { BotaoColetar, CotaPrevista, SeletorModo } from "../components/Coleta";
 import { Filtros, grupo, NOMES_GRUPO } from "../components/Filtro";
 import type { Grupo } from "../components/Filtro";
 import { CHIP } from "../lib/estados";
-import { apelido, dataCurta, dataHora, n, pct } from "../lib/format";
+import { apelido, dataCurta, dataHora, hora, n, origemTrecho, pct } from "../lib/format";
 import { useSessao } from "../state/sessao";
 import { rotaLive } from "./Canais";
 import s from "./canais.module.css";
@@ -29,14 +29,16 @@ function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null;
         const b = l.estado === "coletada" || l.estado === "parcial"
           ? { valor: n(l.pico), h: Math.max(14, Math.round(((l.pico || 0) / (pico || 1)) * 120)), fill: "var(--audLine)", stroke: "var(--aud)", ink: "var(--aud)", nome: apelido(l.titulo) }
           : l.estado === "perdida"
-            ? { valor: "perdida", h: 8, fill: "var(--redT)", stroke: "var(--redSoft)", ink: "var(--redInk)", nome: "não coletada" }
+            ? { valor: "perdida", h: 8, fill: "var(--redT)", stroke: "var(--redSoft)", ink: "var(--redInk)", nome: l.outro_link === "coletado" ? "outro link, sem coleta" : "não coletada" }
             : l.estado === "nao_escolhida"
               ? { valor: "—", h: 6, fill: "transparent", stroke: "var(--line2)", ink: "var(--ink4)", nome: "não escolhida" }
             : l.estado === "no_ar"
               ? { valor: "no ar", h: 22, fill: "var(--redT)", stroke: "var(--red)", ink: "var(--redInk)", nome: apelido(l.titulo) }
               : { valor: "—", h: 6, fill: "var(--s3)", stroke: "var(--line2)", ink: "var(--ink4)", nome: apelido(l.titulo) };
         return (
-          <div key={l.id} className={s.barraCol} title={l.titulo || ""}>
+          <div key={l.id} className={s.barraCol} title={[l.titulo, l.trecho && origemTrecho(l.trecho.n, l.link.comecou_como, 60),
+            l.outro_link === "coletado" && "o mesmo conteúdo foi coletado em outro link do canal",
+            l.outro_link === "sem_coleta" && "o mesmo conteúdo também passou em outro link, sem coleta"].filter(Boolean).join(" · ")}>
             <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: b.ink }}>{b.valor}</div>
             <div className={s.barra} style={{ height: b.h, background: b.fill, borderColor: b.stroke }} />
             <div className={s.barraNome}>{b.nome}</div>
@@ -174,7 +176,16 @@ export function CanalPagina() {
                     <div className={s.liveData}>{dataHora(l.inicio || l.agendada_para, conta.tz)}</div>
                     <div style={{ flex: 1, minWidth: 200 }}>
                       <div className={s.liveTitulo} style={{ color: apagado ? "var(--ink3)" : "var(--ink)" }}>{l.titulo}</div>
-                      {l.trecho && <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>trecho {l.trecho.n} de {l.trecho.total} do mesmo vídeo · o canal trocou o título</div>}
+                      {(l.trecho || l.outro_link) && (
+                        <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>
+                          {l.trecho && <span title={`O canal reaproveitou o link: trocou o título às ${hora(l.inicio, conta.tz)} e passou a transmitir isto. O link carregou ${l.trecho.total} transmissões.`}>
+                            {origemTrecho(l.trecho.n, l.link.comecou_como)}{l.trecho.n > 1 ? `, aberto às ${hora(l.link.inicio, conta.tz)}` : ""}
+                          </span>}
+                          {l.trecho && l.outro_link && " · "}
+                          {l.outro_link === "sem_coleta" && <span style={{ color: "var(--ambInk)" }} title="O canal transmitiu o mesmo conteúdo em outro link, que não foi coletado: o chat de lá não está nos números desta transmissão">também passou em outro link, sem coleta</span>}
+                          {l.outro_link === "coletado" && <span title="O mesmo conteúdo foi coletado em outro link do canal">coletada em outro link do canal</span>}
+                        </div>
+                      )}
                     </div>
                     <div className={s.liveChip} style={{ background: ch.bg, borderColor: ch.border }}>
                       <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: ch.ink }}>{ch.label}</span>

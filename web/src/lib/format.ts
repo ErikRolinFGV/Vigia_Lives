@@ -112,6 +112,20 @@ export function nomeLive(t: string | null | undefined, trechos = 2): string {
     .map(p => apelido(p, 200)).join(" · ");
 }
 
+/**
+ * Como a tela chama um link do YouTube: pelo que ele era quando abriu.
+ * O canal pode trocar o título no meio (e passar outra coisa no mesmo link);
+ * o nome do link não muda com isso.
+ */
+export function nomeLink(comecouComo: string | null | undefined, max = 40): string {
+  return `“${apelido(nomeLive(comecouComo, 1), max)}”`;
+}
+
+/** "2º trecho do link “Vasco × Boca Juniors”": de onde vem um trecho, em listas. */
+export function origemTrecho(n: number, comecouComo: string | null | undefined, max = 30): string {
+  return `${n}º trecho do link ${nomeLink(comecouComo, max)}`;
+}
+
 /** "412 mil", "1,7 mi" — para contadores públicos grandes. */
 export function compacto(v: number | null | undefined): string {
   if (v == null) return "—";

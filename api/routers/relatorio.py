@@ -14,7 +14,7 @@ from collector import db, yt
 
 from .. import dossie, secoes
 from ..deps import conexao
-from ..transmissoes import acompanhada_pct, janela_coletada_s, serie
+from ..transmissoes import SEM_COLETA, acompanhada_pct, janela_coletada_s, serie
 from .. import trechos
 from .lives import _live_ou_404, detalhe
 
@@ -182,6 +182,7 @@ def publico(canal_slug: str, slug: str, con: sqlite3.Connection = Depends(conexa
     s = serie(con, vid)
     chat = secoes._chat(con, vid)
     d = dossie.ler(con, vid)
+    det = detalhe(vid, con)
     return {
         "canal": {"nome": c["nome"], "handle": c["handle"], "foto": c["foto_url"]},
         "titulo": l["titulo"], "inicio": l["inicio_real"], "duracao_s": l["duracao_segundos"],
@@ -194,5 +195,8 @@ def publico(canal_slug: str, slug: str, con: sqlite3.Connection = Depends(conexa
         "comunidade": secoes.comunidade(con, vid, "publica"),
         "dossie": {k: d[k] for k in ("veredito", "veredito_sub", "insights", "recomendacao", "achados", "modelo", "gerado_em")} if d else None,
         "publicado": {"em": p["emitido_em"], "autor_nome": p["autor_nome"], "instituicao": p["instituicao"], "orcid": p["orcid"]},
-        "url_video": trechos.url_video(vid, ini=(r.get("trecho") or {}).get("ini") if (r := detalhe(vid, con)) else None),
+        "url_video": trechos.url_video(vid, ini=(det.get("trecho") or {}).get("ini")),
+        # o mesmo conteudo passou ao mesmo tempo em outro link sem coleta:
+        # o publico de la nao esta nestes numeros (so o fato, sem o link)
+        "outro_link_sem_coleta": any(m["estado"] in SEM_COLETA for m in det["mesmo_jogo"]),
     }

@@ -56,6 +56,11 @@ export function Publico() {
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--okInk)", background: "var(--okT)", border: "1px solid var(--okLine)", borderRadius: 99, padding: "4px 11px" }}>cobertura {pct(r.cobertura)} na janela coletada</span>
           <a href={r.url_video} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600 }}>Ver no YouTube ↗</a>
         </div>
+        {r.outro_link_sem_coleta && (
+          <div style={{ fontSize: 13.5, color: "var(--ink2)", marginTop: 12, borderLeft: "3px solid var(--amb)", paddingLeft: 11, textWrap: "pretty" }}>
+            O canal transmitiu o mesmo conteúdo, ao mesmo tempo, em outro link que não foi acompanhado. A audiência e o chat daquele link não estão neste relatório: os números aqui são só deste link.
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 16 }}>

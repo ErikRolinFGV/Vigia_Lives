@@ -209,6 +209,17 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   ainda faltar, conferida na página pública do vídeo (`isLiveNow`, sem
   cota): no ar, vira ao_vivo e o coletor tenta a cada ciclo. O log do vigia
   registra quando muda o conjunto de ids que o YouTube não devolveu.
+- Link e transmissão (21/10): "link" é o vídeo do YouTube (uma URL);
+  "transmissão" é o conteúdo (cada linha da lista, ou trecho). Um link é
+  chamado pelo que era quando abriu ("o link “Vasco × Boca Juniors”"), e o
+  nome não muda quando o canal troca o título. A página de transmissão
+  abre com um mapa: a frase "esta página é o 2º trecho do link que começou
+  como…" e uma faixa por link (o dela, os que passaram o mesmo conteúdo e os
+  coletados no mesmo horário por 15 min ou mais), um bloco por trecho, a
+  mesma cor para o mesmo conteúdo, tracejado sem coleta. Lista, início,
+  comparação e o gráfico de picos dizem "2º trecho do link …".
+- Corte fantasma (21/10): troca de título corrigida em menos de 5 min
+  (CORTE_MIN) não vira trecho; vale o corte da correção.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

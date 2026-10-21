@@ -141,6 +141,9 @@ def calcular(con, video_id, resumo):
         "parcial": parcial,
         "curta": (m["janela_s"] or 0) < JANELA_MINIMA,
         "trecho": resumo["trecho"] is not None,
+        # trecho: de que link veio (como o link comecou), para a tela dizer quem e quem
+        "trecho_n": resumo["trecho"],
+        "link": {"comecou_como": resumo["link_titulo"], "inicio": resumo["link_inicio"]} if resumo["trecho"] else None,
         "valores": v,
     }
 
@@ -156,7 +159,8 @@ def _resumos(con):
             if d["estado"] in ("coletada", "parcial"):
                 out.append({"id": d["video_id"], "titulo": d["titulo"], "nucleo": trechos.nucleo(d["titulo"]),
                             "canal_id": c["canal_id"], "canal": c["nome"], "inicio": d["inicio_real"],
-                            "estado": d["estado"], "trecho": d.get("_trecho")})
+                            "estado": d["estado"], "trecho": d.get("_trecho"),
+                            "link_titulo": d.get("_link_titulo"), "link_inicio": d.get("_link_inicio")})
     return out
 
 

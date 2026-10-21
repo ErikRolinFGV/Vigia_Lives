@@ -10,7 +10,7 @@ import { useCrumbs } from "../components/AppLayout";
 import { NotaPainel, Painel, Secao } from "../components/blocos";
 import { gbox, nice, py } from "../lib/chart";
 import { CORES_COMPARAR, foraDoRanking, valorMetrica } from "../lib/ficha";
-import { compacto, dataHora, hhmm, n as fmtN, nomeLive } from "../lib/format";
+import { compacto, dataHora, hhmm, n as fmtN, nomeLive, origemTrecho } from "../lib/format";
 import { useSessao } from "../state/sessao";
 import s from "./canais.module.css";
 
@@ -119,8 +119,8 @@ function Escolher({ fichas, ids, mudar }: { fichas: Ficha[]; ids: string[]; muda
               <span style={{ width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px", background: marcada ? CORES_COMPARAR[i] : "transparent", border: marcada ? "none" : "1px solid var(--line2)" }} />
               <span className="mono tnum" style={{ fontSize: 12, color: "var(--ink3)", width: 92, flex: "0 0 92px" }}>{dataHora(f.inicio, conta.tz)}</span>
               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 600 }}>{nomeLive(f.titulo)}</span>
-              <span className={s.mono12} style={{ whiteSpace: "nowrap" }}>
-                {f.canal}{f.trecho ? " · trecho" : ""}{f.curta ? " · curta" : f.parcial ? " · parcial" : ""}
+              <span className={s.mono12} style={{ whiteSpace: "nowrap" }} title={f.trecho_n && f.link ? origemTrecho(f.trecho_n, f.link.comecou_como, 60) : undefined}>
+                {f.canal}{f.trecho_n && f.link ? ` · ${origemTrecho(f.trecho_n, f.link.comecou_como, 18)}` : ""}{f.curta ? " · curta" : f.parcial ? " · parcial" : ""}
               </span>
             </label>
           );
@@ -141,7 +141,7 @@ function Legenda({ fichas }: { fichas: Ficha[] }) {
           border: "1px solid var(--line2)", borderRadius: 99, padding: "4px 11px", minWidth: 0, maxWidth: "100%" }}>
           <span style={{ width: 12, height: 4, borderRadius: 2, background: CORES_COMPARAR[i], flex: "0 0 12px" }} />
           <span style={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nomeLive(f.titulo, 1)}</span>
-          <span className="mono" style={{ fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap" }}>{dataHora(f.inicio, conta.tz)}{f.trecho ? " · trecho" : ""}</span>
+          <span className="mono" style={{ fontSize: 11, color: "var(--ink3)", whiteSpace: "nowrap" }} title={f.trecho_n && f.link ? origemTrecho(f.trecho_n, f.link.comecou_como, 60) : undefined}>{dataHora(f.inicio, conta.tz)}{f.trecho_n ? ` · ${f.trecho_n}º trecho` : ""}</span>
         </Link>
       ))}
     </div>

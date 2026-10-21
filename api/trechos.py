@@ -75,12 +75,21 @@ def _titulos(con, l):
     return out
 
 
+# Troca de titulo corrigida logo depois (20/10: "CALDERANO NO CHINA SMASH",
+# um minuto depois "CALDERANO X LEBRUN NO CHINA SMASH") nao e outra
+# transmissao: vale o corte da correcao, e nenhum trecho dura menos que isto.
+CORTE_MIN = 5 * 60
+
+
 def _cortes_auto(titulos):
     cortes, ant = [], None
     for o, t in titulos:
         n = nucleo(t)
         if ant is not None and n and n != ant and o > 0:
-            cortes.append(o)
+            if cortes and o - cortes[-1] < CORTE_MIN:
+                cortes.pop()
+            if not cortes or o - cortes[-1] >= CORTE_MIN:
+                cortes.append(o)
         if n:
             ant = n
     return cortes
@@ -147,6 +156,8 @@ def linha_trecho(l, t, total):
     else:
         d["duracao_segundos"] = None
     d["_pai"], d["_trecho"], d["_total"], d["_ini"], d["_fim"] = l["video_id"], t["n"], total, t["ini"], t["fim"]
+    # o link: o titulo da live e o que ela tinha quando a coleta comecou
+    d["_link_titulo"], d["_link_inicio"], d["_link_fim"] = l["titulo"], l["inicio_real"], l["fim_real"]
     return d
 
 

@@ -35,6 +35,12 @@ export type LiveResumo = {
   trecho: { n: number; total: number; video_id: string; ini: number; fim: number | null } | null;
   nucleo: string;   // título sem "AO VIVO"/campeonato: identifica o mesmo jogo
   avulsa: boolean;  // colada pelo link, de canal que não é vigiado
+  // o link (vídeo do YouTube) de onde vem e como ele começou: diz "quem é quem"
+  // quando o canal reaproveita um link para outra transmissão
+  link: LinkOrigem;
+  // o mesmo conteúdo em outro link do canal: "sem_coleta" = esta foi coletada e a outra não
+  // (o chat de lá ficou de fora); "coletado" = esta não, mas a outra sim. Só na lista do canal.
+  outro_link?: "sem_coleta" | "coletado" | null;
 };
 
 /** O que "Ler" trouxe de um link de live, antes de confirmar a coleta. */
@@ -48,7 +54,15 @@ export type LinkLido = {
   ja_marcada: boolean;
 };
 
-export type Ligada = { id: string; titulo: string | null; estado: EstadoLive; inicio?: string | null; fim?: string | null; trecho: LiveResumo["trecho"] };
+export type Ligada = { id: string; titulo: string | null; estado: EstadoLive; inicio?: string | null; fim?: string | null; trecho: LiveResumo["trecho"]; link?: LinkOrigem };
+
+/** Um vídeo do YouTube (uma URL), pelo que ele era quando abriu. */
+export type LinkOrigem = { video_id: string; comecou_como: string | null; inicio: string | null; fim: string | null };
+
+/** Um link no mapa da página de transmissão, com os trechos que ele carregou. */
+export type LinkMapa = LinkOrigem & {
+  trechos: { id: string; n: number | null; titulo: string | null; nucleo: string; estado: EstadoLive; inicio: string | null; fim: string | null }[];
+};
 
 export type ModoColeta = "todas" | "escolhidas";
 
@@ -102,6 +116,7 @@ export type LiveDetalhe = Omit<LiveResumo, "numero" | "estado"> & {
   url: string;
   mesmo_jogo: Ligada[];   // o mesmo conteúdo em outra transmissão do canal
   trechos: Ligada[];      // os trechos do mesmo vídeo, inclusive este
+  links: LinkMapa[];      // este link e os outros do canal em volta (mesmo conteúdo ou coleta no mesmo horário)
 };
 
 export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade" | "comparar";
@@ -230,6 +245,7 @@ export type RelatorioPublico = {
   dossie: Omit<Dossie, "entrada" | "nao_entrada"> | null;
   publicado: { em: string; autor_nome: string | null; instituicao: string | null; orcid: string | null };
   url_video: string;
+  outro_link_sem_coleta: boolean;  // o mesmo conteúdo passou em outro link, sem coleta
 };
 
 // ---- ficha de métricas e comparação entre lives (api/ficha.py)
@@ -253,6 +269,8 @@ export type Ficha = {
   parcial: boolean;   // acompanhou menos de 90% da transmissão
   curta: boolean;     // coleta com menos de 15 min: fora de todo ranking
   trecho: boolean;    // trecho de um vídeo que carregou mais de uma transmissão
+  trecho_n: number | null;
+  link: { comecou_como: string | null; inicio: string | null } | null;  // só em trecho
   valores: Record<string, number | null>;
 };
 

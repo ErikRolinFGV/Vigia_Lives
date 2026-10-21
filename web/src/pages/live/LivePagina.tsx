@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AvisoMesmoJogo, AvisoTrechos, BotaoYouTube } from "../../components/Ligacoes";
+import { BotaoYouTube, ContextoLinks } from "../../components/Ligacoes";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
 import type { LiveDetalhe, Serie, SubAba } from "../../api/types";
@@ -101,8 +101,7 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
           </h1>
         </div>
 
-        <AvisoTrechos live={live} />
-        <AvisoMesmoJogo live={live} />
+        <ContextoLinks live={live} />
 
         <div className={st.abas} role="tablist">
           <button type="button" role="tab" aria-selected={aba === "dados"} className={st.aba} data-ativa={aba === "dados"} onClick={() => ir({ aba: "dados" })}>Dados da coleta</button>

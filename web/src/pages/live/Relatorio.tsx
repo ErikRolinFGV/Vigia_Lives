@@ -204,6 +204,11 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         )}
         <div style={{ ...card, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={rot}>O que não está neste relatório</div>
+          {live.mesmo_jogo.some(m => m.estado === "perdida" || m.estado === "nao_escolhida") && (
+            <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty", borderLeft: "3px solid var(--amb)", paddingLeft: 11 }}>
+              O canal transmitiu o mesmo conteúdo, ao mesmo tempo, em outro link que não foi coletado. A audiência e o chat daquele link não estão aqui: os números deste relatório são só deste link.
+            </div>
+          )}
           <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>Retenção, tempo médio assistido e origem de tráfego explicariam quem são as pessoas que assistiram sem escrever. Dependem de autorização do canal, não de código.</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             {["retenção de audiência", "tempo médio assistido", "origem de tráfego e demografia"].map(x => (
