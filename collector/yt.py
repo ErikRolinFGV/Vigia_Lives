@@ -281,6 +281,27 @@ def feed_rss(canal_id):
     return saida
 
 
+def no_ar_pela_pagina(video_id):
+    """
+    A pagina publica do video diz se ele esta no ar ("isLiveNow"). Custo
+    zero de cota. E a segunda opiniao quando o videos.list deixa de devolver
+    uma live marcada: em 20/10 o "Logo apos" da CazeTV sumiu da resposta
+    enquanto esteve no ar e so voltou depois de acabar. None se nao deu
+    para ler a pagina.
+    """
+    req = urllib.request.Request(f"https://www.youtube.com/watch?v={video_id}", headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            html = resp.read().decode("utf-8", "replace")
+    except Exception:
+        return None
+    if '"isLiveNow":true' in html:
+        return True
+    if '"isLiveNow":false' in html:
+        return False
+    return None
+
+
 def ids_da_pagina(canal, aba="streams", paginas=1, parar_em=frozenset()):
     """
     Le a pagina publica do canal e extrai os videoIds na ordem em que

@@ -87,6 +87,9 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
         subs += ["audiencia", "chat"]
     if tem_chat:
         subs += ["pessoas", "contexto", "qualidade"]
+    # coleta encerrada tem ficha, e a ficha se compara com as outras
+    if r and r["estado"] in ("coletada", "parcial"):
+        subs.append("comparar")
 
     return {
         "id": video_id,

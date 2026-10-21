@@ -33,12 +33,13 @@ import time
 from datetime import datetime, timedelta, timezone
 
 try:  # instalado como pacote
-    from . import config, db, processo, publico, vigilancia, yt
+    from . import config, db, processo, publico, report, vigilancia, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
     import processo
     import publico
+    import report
     import vigilancia
     import yt
 
@@ -124,7 +125,7 @@ def ler_agendas(con):
                          "WHERE vigiado = 1 AND removido_em IS NULL").fetchall():
         if _velho(c["agenda_lida_em"], AGENDA_CADA) or _live_quente(con, c["canal_id"]):
             try:
-                n = vigilancia.sincronizar_agenda(con, c["canal_id"])
+                n = vigilancia.sincronizar_agenda(con, c["canal_id"], avisar=log)
                 if n:
                     log(f"agenda de {c['nome']}: {n} transmissões")
             except yt.ErroCota:
@@ -160,7 +161,7 @@ def ler_avulsas(con):
     if _avulsas_lidas_em and agora - _avulsas_lidas_em < cada:
         return
     try:
-        vigilancia.acompanhar_avulsas(con)
+        vigilancia.acompanhar_avulsas(con, avisar=log)
         _avulsas_lidas_em = agora
     except yt.ErroCota:
         raise
@@ -218,6 +219,10 @@ def fechar_orfas(con):
         con.execute("UPDATE live SET coleta_fim=? WHERE video_id=?", (ultima or db.agora(), l["video_id"]))
         con.commit()
         log(f"coleta de {l['video_id']} estava aberta sem coletor: fechada em {ultima}")
+        try:
+            report.pos_coleta(con, l["video_id"])
+        except Exception as e:
+            log(f"momentos de {l['video_id']} falharam ({e})")
         _coletores.pop(l["video_id"], None)
 
 

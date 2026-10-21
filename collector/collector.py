@@ -24,11 +24,12 @@ import time
 from datetime import datetime, timezone
 
 try:  # instalado como pacote
-    from . import config, db, publico, yt
+    from . import config, db, publico, report, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
     import publico
+    import report
     import yt
 
 _parar = False
@@ -412,6 +413,7 @@ def coletar(con, info, limite_minutos=None):
 
     db.consolidar_autores(con, video_id)
     con.commit()
+    _tentar("momentos", lambda: log(f"{report.pos_coleta(con, video_id)} momentos detectados"))
 
     _tentar("inscritos depois", lambda: publico.registrar_canal(con, info["canal_id"], video_id, "depois"))
     if final and final["fim_real"]:

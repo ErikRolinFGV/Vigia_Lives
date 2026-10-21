@@ -16,13 +16,14 @@ from fastapi.staticfiles import StaticFiles
 
 from collector import config
 
-from .routers import canais, lives, operacao, relatorio
+from .routers import canais, comparar, lives, operacao, relatorio
 
 app = FastAPI(title="Vigia", docs_url="/api/docs", openapi_url="/api/openapi.json")
 app.include_router(operacao.router, prefix="/api")
 app.include_router(canais.router, prefix="/api")
 app.include_router(lives.router, prefix="/api")
 app.include_router(relatorio.router, prefix="/api")
+app.include_router(comparar.router, prefix="/api")
 
 DIST = Path(config.RAIZ) / "web" / "dist"
 if DIST.exists():

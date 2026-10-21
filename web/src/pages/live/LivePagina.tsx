@@ -10,6 +10,7 @@ import { useSessao } from "../../state/sessao";
 import { derivar } from "./derivados";
 import { SecaoAudiencia, SecaoChat, SecaoQualidade, SecaoResumo } from "./secoesSerie";
 import { Agendada, NaoEscolhida, Perdida } from "./Estados";
+import { SecaoPosicao } from "./SecaoPosicao";
 import { SecaoApoio, SecaoComparacao, SecaoComunidade, SecaoConversa, SecaoDepois, SecaoModeracao, SecaoMomentos, SecaoPessoas, SecaoVideo } from "./secoesNovas";
 import { AoVivo } from "./AoVivo";
 import { Relatorio, useDossie } from "./Relatorio";
@@ -17,7 +18,7 @@ import st from "./live.module.css";
 
 const NOMES_SUB: Record<SubAba, string> = {
   resumo: "Resumo", audiencia: "Audiência", chat: "Chat",
-  pessoas: "Pessoas e apoio", contexto: "Vídeo e contexto", qualidade: "Qualidade da coleta",
+  pessoas: "Pessoas e apoio", contexto: "Vídeo e contexto", qualidade: "Qualidade da coleta", comparar: "Comparar",
 };
 
 export function useLive(id: string) {
@@ -128,6 +129,7 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
                   {sub === "pessoas" && <><SecaoPessoas live={live} /><SecaoApoio live={live} /><SecaoComunidade live={live} /></>}
                   {sub === "contexto" && <><SecaoVideo live={live} s={s} /><SecaoComparacao live={live} /></>}
                   {sub === "qualidade" && <SecaoQualidade live={live} s={s} d={d} />}
+                  {sub === "comparar" && <SecaoPosicao id={live.id} />}
                 </>
               )}
             </div>

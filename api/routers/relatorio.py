@@ -54,7 +54,8 @@ def _cabecalho(con, video_id):
 def ler_dossie(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     _live_ou_404(con, video_id)
     d = dossie.ler(con, video_id)
-    return {"gerado": bool(d), "dossie": d}
+    # dossie gerado com versao antiga do texto: a tela oferece gerar de novo
+    return {"gerado": bool(d), "dossie": d, "modelo_atual": dossie.MODELO}
 
 
 @router.post("/lives/{video_id}/dossie")
@@ -62,7 +63,7 @@ def gerar_dossie(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     l = _live_ou_404(con, video_id)
     if not l["coleta_inicio"]:
         raise HTTPException(409, "sem coleta, não há dossiê: o chat desta transmissão não foi capturado")
-    return {"gerado": True, "dossie": dossie.gerar(con, video_id)}
+    return {"gerado": True, "dossie": dossie.gerar(con, video_id), "modelo_atual": dossie.MODELO}
 
 
 # ---------------------------------------------------------------- exportar

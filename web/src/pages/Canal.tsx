@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../api/client";
 import type { CanalDetalhe, CotaDia, LiveResumo } from "../api/types";
 import { useCrumbs } from "../components/AppLayout";
@@ -67,6 +67,9 @@ export function CanalPagina() {
   if (!c) return <div className={s.pagina}><div className={`${s.conteudo} ${s.carregando}`}>carregando o canal…</div></div>;
 
   const vazio = c.lives.length === 0;
+  // as ultimas coletas do canal, para abrir lado a lado
+  const coletadas = c.lives.filter(l => l.estado === "coletada" || l.estado === "parcial")
+    .sort((x, y) => (x.inicio ?? "").localeCompare(y.inicio ?? "")).map(l => l.id);
   const chip = c.estado === "no_ar"
     ? { label: "no ar agora", bg: "var(--redT)", border: "var(--redLine)", ink: "var(--redInk)", dot: "var(--red)" }
     : { label: "fora do ar", bg: "var(--s3)", border: "var(--line)", ink: "var(--ink2)", dot: "var(--ink4)" };
@@ -99,6 +102,7 @@ export function CanalPagina() {
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: chip.dot }} />
               <span style={{ fontSize: 13, fontWeight: 600, color: chip.ink }}>{chip.label}</span>
             </div>
+            {coletadas.length >= 2 && <Link className={s.botaoLinha} to={`/yt/comparar?ids=${encodeURIComponent(coletadas.slice(-4).join(","))}`} title="Abre as últimas coletas deste canal lado a lado">Comparar lives</Link>}
             <a className={s.botaoLinha} href={c.url} target="_blank" rel="noopener noreferrer">Abrir no YouTube <span>↗</span></a>
             {c.vigiado && <button type="button" className={`${s.botaoLinha} ${s.botaoPerigo}`} onClick={() => setParar(true)}>Parar de vigiar</button>}
           </div>

@@ -513,6 +513,17 @@ def gerar(con, video_id, bucket):
     return caminho
 
 
+def pos_coleta(con, video_id, bucket=BUCKET_PADRAO):
+    """
+    Agrega minuto a minuto e detecta os momentos (picos de reacao, quedas de
+    audiencia). Roda sozinho quando a coleta fecha: antes so este comando
+    (v1) fazia isso, e as coletas do vigia ficavam sem momento nenhum.
+    Devolve quantos momentos achou.
+    """
+    agregar(con, video_id, bucket)
+    return len(detectar_momentos(con, video_id, bucket))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--video", required=True)

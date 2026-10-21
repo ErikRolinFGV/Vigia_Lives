@@ -174,9 +174,41 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   slot, e o vigia relê só as avulsas (todo ciclo perto do horário, 5 min
   no ar, 30 min longe). Link de canal vigiado só marca a live. Live
   encerrada é recusada: o chat só existe enquanto ela está no ar.
+- Ficha e comparação (20/10, etapas A e B do relatório novo):
+  `api/ficha.py` calcula as mesmas métricas (`ficha-v1`) para toda live
+  coletada, com cache por assinatura; `/lives/{id}/ficha` dá a posição
+  no canal, na categoria do YouTube e em todas as coletas, e `/comparar`
+  põe 2 a 4 lives lado a lado (curvas alinhadas no início de cada uma).
+  Fora do ranking: totais de coleta parcial, números do vídeo inteiro num
+  trecho e qualquer coleta com menos de 15 min. Empate divide a posição.
+  Com poucas lives, posição e faixa (menor, mediana, maior), não média.
+- Dossiê `regra-v2` (20/10): continua texto fixo, mas lê a ficha das
+  outras lives coletadas do canal. O veredito diz onde a live fica no
+  histórico (1ª ou última em métricas-chave, com 3 ou mais lives), e entram
+  enquetes, quem sustenta a conversa e views depois da live. Dossiê antigo
+  aparece marcado na tela com o convite a gerar de novo.
+- Comparação por seções (20/10): a página lado a lado mostra números-chave
+  (ficha completa recolhida) e gráficos por seção: audiência, mensagens
+  por minuto, participação, "quando a conversa acontece" (chat acumulado
+  × parcela da coleta), picos de reação no tempo, quem escreve quanto,
+  enquetes e views depois da live.
+- Momentos detectados ao fechar a coleta (20/10): só o comando v1
+  (`report.py`) rodava a detecção, e as coletas do vigia ficavam sem
+  momento nenhum. Agora o coletor (e o vigia, ao fechar coleta órfã)
+  chama `report.pos_coleta`; as coletas antigas foram processadas.
+- IA (20/10): dossiê por modelo e chatbot só com agregados. O texto das
+  mensagens não vai para modelo nenhum; rever depois da apresentação a
+  investidor.
 - Vigia solto (20/10): a API sobe o vigia por um intermediário
   (`collector/lancar.py`) que sai na hora. Sem pai vivo, reiniciar ou
   fechar a API não derruba o vigia nem as coletas.
+- Live que some do videos.list (21/10): o "Logo após" de Vasco × Boca
+  ficou fora da resposta do lote enquanto esteve no ar e voltou só depois
+  de acabar; o vigia nunca soube que subiu e a live se perdeu. Agora, live
+  marcada, já na hora e ausente da resposta é lida sozinha (1 un.) e, se
+  ainda faltar, conferida na página pública do vídeo (`isLiveNow`, sem
+  cota): no ar, vira ao_vivo e o coletor tenta a cada ciclo. O log do vigia
+  registra quando muda o conjunto de ids que o YouTube não devolveu.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

@@ -104,7 +104,7 @@ export type LiveDetalhe = Omit<LiveResumo, "numero" | "estado"> & {
   trechos: Ligada[];      // os trechos do mesmo vídeo, inclusive este
 };
 
-export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade";
+export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade" | "comparar";
 
 export type Serie = { t: number[]; esp: (number | null)[]; mpm: number[]; part: (number | null)[]; cota: number[] };
 
@@ -214,7 +214,7 @@ export type Dossie = {
   achados: { rotulo: string; valor: string; unidade: string; cor: "aud" | "msg" | "part" | "ink3"; bar: number; texto: string }[];
   entrada: string[]; nao_entrada: string[];
 };
-export type EstadoDossie = { gerado: boolean; dossie: Dossie | null };
+export type EstadoDossie = { gerado: boolean; dossie: Dossie | null; modelo_atual?: string };
 
 export type Publicacao = { canal_slug: string; slug: string; emitido_em: string; caminho: string };
 export type EstadoPublicacao = { publicada: Publicacao | null; proposta: { canal_slug: string; slug: string; caminho: string } };
@@ -231,3 +231,41 @@ export type RelatorioPublico = {
   publicado: { em: string; autor_nome: string | null; instituicao: string | null; orcid: string | null };
   url_video: string;
 };
+
+// ---- ficha de métricas e comparação entre lives (api/ficha.py)
+
+export type FormatoMetrica = "int" | "dec1" | "pct" | "pct1" | "pct2" | "x" | "brl" | "dur";
+/** total: fora do ranking em coleta parcial · video: fora em trecho · contexto: não ranqueia */
+export type EscopoMetrica = "total" | "taxa" | "video" | "contexto";
+export type MetricaDef = { chave: string; grupo: string; rotulo: string; formato: FormatoMetrica; escopo: EscopoMetrica; descricao: string };
+
+export type Ficha = {
+  versao: string;
+  id: string;
+  titulo: string | null;
+  nucleo: string;
+  canal_id: string;
+  canal: string;
+  inicio: string | null;
+  estado: EstadoLive;
+  categoria_id: string | null;
+  categoria: string | null;
+  parcial: boolean;   // acompanhou menos de 90% da transmissão
+  curta: boolean;     // coleta com menos de 15 min: fora de todo ranking
+  trecho: boolean;    // trecho de um vídeo que carregou mais de uma transmissão
+  valores: Record<string, number | null>;
+};
+
+export type Recorte = "canal" | "categoria" | "todas";
+export type Posicao = { posicao: number | null; empatadas: number; n: number; min: number; mediana: number; max: number; valores: { id: string; nome: string | null; v: number }[] };
+type FichaBase = { metricas: MetricaDef[]; grupos: Record<string, string>; versao: string };
+export type FichaLive = FichaBase & { ficha: Ficha; posicoes: Record<Recorte, { n: number; metricas: Record<string, Posicao> }> };
+export type ListaFichas = FichaBase & { fichas: Ficha[] };
+export type DetalheComparacao = {
+  serie: { t: number[]; esp: (number | null)[]; mpm: number[]; part: (number | null)[] } | null;
+  momentos: { t: number; tipo: string; magnitude: number }[];
+  pessoas: { faixas: { faixa: string; n: number }[]; top10pct: { pessoas: number; pct_msgs: number }; uma_vez: { n: number; pct: number }; pessoas: number } | null;
+  depois: { pontos: { rotulo: string; views: number | null }[]; video_inteiro: boolean };
+  enquetes: { t: number | null; total: number | null }[];
+};
+export type Comparacao = FichaBase & { fichas: Ficha[]; detalhes: Record<string, DetalheComparacao> };

@@ -11,6 +11,7 @@ E o mesmo codigo que o vigia (processo permanente) usa a cada ciclo e que
 a API chama quando alguem cola um @handle.
 """
 import re
+from datetime import datetime, timedelta, timezone
 
 try:  # instalado como pacote
     from . import db, yt
@@ -82,7 +83,63 @@ def _status(lsd):
     return "agendada"
 
 
-def sincronizar_agenda(con, canal_id, paginas=4):
+def _conferir_sumidas(con, pedidos, itens, avisar=None):
+    """
+    Lives marcadas para coletar, ja na hora e sem coleta rodando, que o
+    videos.list em lote nao devolveu. Le cada uma sozinha (1 unidade); se
+    ainda nao vem, pergunta a pagina publica do video (sem cota). No ar pela
+    pagina: vira ao_vivo e o vigia sobe o coletor, que tenta o videos.list
+    de novo a cada ciclo ate o YouTube voltar a devolver a live.
+
+    Devolve os itens recuperados pela leitura individual.
+    """
+    voltaram = {i["id"] for i in itens}
+    faltam = [v for v in pedidos if v not in voltaram]
+    if not faltam:
+        return []
+    agora = db.agora()
+    # agendada que nunca subiu (apagada) para de ser conferida depois de 3 h
+    piso = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat(timespec="seconds")
+    marcadas = con.execute(
+        f"""SELECT l.video_id, l.titulo, l.status FROM live l JOIN canal c ON c.canal_id = l.canal_id
+            WHERE l.video_id IN ({",".join("?" * len(faltam))})
+              AND l.status IN ('agendada','ao_vivo') AND l.parar_pedido_em IS NULL
+              AND (l.status = 'ao_vivo' OR l.agendada_para BETWEEN ? AND ?)
+              AND NOT (l.coleta_inicio IS NOT NULL AND l.coleta_fim IS NULL)
+              AND (l.coletar = 1 OR (l.coletar IS NULL AND c.modo_coleta = 'todas'))""",
+        (*faltam, piso, agora)).fetchall()
+    achados = []
+    for l in marcadas:
+        item = yt.video(con, l["video_id"])
+        if item:
+            achados.append(item)
+            continue
+        no_ar = yt.no_ar_pela_pagina(l["video_id"])
+        if no_ar and l["status"] != "ao_vivo":
+            con.execute("UPDATE live SET status='ao_vivo', inicio_real=COALESCE(inicio_real, ?) WHERE video_id=?",
+                        (agora, l["video_id"]))
+            con.commit()
+        if avisar:
+            estado = {True: "no ar pela página do vídeo", False: "fora do ar pela página do vídeo",
+                      None: "a página do vídeo não respondeu"}[no_ar]
+            avisar(f"ATENÇÃO: o YouTube não devolveu a live marcada {l['video_id']} ({l['titulo']}): {estado}")
+    return achados
+
+
+_faltas_antes: dict[str, frozenset] = {}
+
+
+def _registrar_faltas(chave, pedidos, itens, avisar):
+    """Avisa quando muda o conjunto de ids que o videos.list nao devolveu."""
+    voltaram = {i["id"] for i in itens}
+    faltas = frozenset(v for v in pedidos if v not in voltaram)
+    if avisar and faltas != _faltas_antes.get(chave, frozenset()):
+        avisar(f"{chave}: o YouTube devolveu {len(pedidos) - len(faltas)} de {len(pedidos)} ids"
+               + (f"; faltaram {', '.join(sorted(faltas))}" if faltas else ""))
+    _faltas_antes[chave] = faltas
+
+
+def sincronizar_agenda(con, canal_id, paginas=4, avisar=None):
     """
     Le a aba /streams e grava cada transmissao em `live`. Tambem relê as
     lives do canal que o banco ainda acha que estao no ar ou agendadas,
@@ -112,7 +169,10 @@ def sincronizar_agenda(con, canal_id, paginas=4):
 
     agora = db.agora()
     n = 0
-    for item in yt.videos(con, ids):
+    itens = yt.videos(con, ids)
+    _registrar_faltas(f"agenda {canal_id}", ids, itens, avisar)
+    itens += _conferir_sumidas(con, ids, itens, avisar)
+    for item in itens:
         if item.get("snippet", {}).get("channelId") == canal_id and gravar_live(con, item, agora):
             n += 1
     _marcar_lida(con, canal_id)
@@ -183,7 +243,7 @@ def coletar_avulsa(con, item):
     return not vigiado
 
 
-def acompanhar_avulsas(con):
+def acompanhar_avulsas(con, avisar=None):
     """
     Rele as lives avulsas que ainda nao acabaram (agendada ou no ar), todas
     num lote so (1 unidade). E o que a leitura da agenda faz pelas lives de
@@ -191,8 +251,13 @@ def acompanhar_avulsas(con):
     """
     ids = [r[0] for r in con.execute(
         "SELECT video_id FROM live WHERE avulsa = 1 AND status IN ('agendada','ao_vivo')")]
+    if not ids:
+        return 0
+    itens = yt.videos(con, ids)
+    _registrar_faltas("lives pelo link", ids, itens, avisar)
+    itens += _conferir_sumidas(con, ids, itens, avisar)
     n = 0
-    for item in yt.videos(con, ids) if ids else []:
+    for item in itens:
         if gravar_live(con, item):
             n += 1
     con.commit()

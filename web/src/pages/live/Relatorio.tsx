@@ -126,6 +126,11 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         <span className="mono" style={{ fontSize: 12, color: "var(--ink3)", flex: 1, minWidth: 200 }}>gerado em {dataHora(d.gerado_em, conta.tz)} · números da coleta, texto fixo ({d.modelo})</span>
         <button type="button" className="botao-claro" onClick={gerar}>Gerar de novo</button>
       </div>
+      {estado.modelo_atual && d.modelo !== estado.modelo_atual && (
+        <div style={{ background: "var(--ambT)", border: "1px solid var(--ambLine)", borderRadius: 12, padding: "13px 17px", fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
+          <b>Este dossiê é da versão antiga ({d.modelo}).</b> A versão atual ({estado.modelo_atual}) compara a live com o histórico do canal e lê enquetes, momentos e as views de depois da live. Use "Gerar de novo" para atualizar.
+        </div>
+      )}
 
       <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 14, padding: "26px 28px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>

@@ -195,6 +195,8 @@ export function Canais() {
             <div className={s.painelTopo}>
               <h2 className={s.h2}>Últimas coletas</h2>
               <span style={{ fontSize: 13, color: "var(--ink3)" }}>inclusive o que foi perdido</span>
+              <button type="button" className={s.botaoLinha} style={{ marginLeft: "auto", alignSelf: "center", padding: "6px 12px", fontSize: 12.5 }}
+                onClick={() => nav("/yt/comparar")} title="As mesmas métricas, lado a lado, para lives coletadas">Comparar lives</button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {agenda.dados?.recentes.map(r => <LinhaRecente key={r.id} r={r} tz={conta.tz} ir={() => nav(rotaLive(r))} />)}
