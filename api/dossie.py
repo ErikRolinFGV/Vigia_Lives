@@ -15,7 +15,7 @@ import statistics
 from collector import db
 
 from . import secoes
-from .transmissoes import acompanhada_pct, janela_coletada_s, serie as serie_live
+from .transmissoes import acompanhada_pct, janela_coletada_s, medir, serie as serie_live
 
 MODELO = "regra-v2"
 
@@ -50,7 +50,7 @@ def _dur(s):
 
 
 def metricas(con, video_id):
-    l = con.execute("SELECT * FROM live WHERE video_id=?", (video_id,)).fetchone()
+    l = medir(con, con.execute("SELECT * FROM live WHERE video_id=?", (video_id,)).fetchone())
     s = serie_live(con, video_id)
     chat = secoes._chat(con, video_id)
     m = {

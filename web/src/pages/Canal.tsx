@@ -20,7 +20,7 @@ const BARRAS_MAX = 8;
 
 function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null; tz: string }) {
   // só o que foi ou vai ser coletado: não escolhida não tem pico nem falha a mostrar
-  const passadas = lives.filter(l => l.estado !== "agendada" && l.estado !== "nao_escolhida");
+  const passadas = lives.filter(l => l.estado !== "agendada" && l.estado !== "nao_escolhida" && !l.descartada);
   const proximas = lives.filter(l => l.estado === "agendada" && l.coletar).slice(0, 2);
   const mostrar = [...passadas.slice(-(BARRAS_MAX - proximas.length)), ...proximas];
   return (
@@ -76,7 +76,7 @@ export function CanalPagina() {
     ? { label: "no ar agora", bg: "var(--redT)", border: "var(--redLine)", ink: "var(--redInk)", dot: "var(--red)" }
     : { label: "fora do ar", bg: "var(--s3)", border: "var(--line)", ink: "var(--ink2)", dot: "var(--ink4)" };
   const todas = [...c.lives].sort((a, b) => b.numero - a.numero);
-  const lives = filtro === "todas" ? todas : todas.filter(l => grupo(l) === filtro);
+  const lives = filtro === "todas" ? todas.filter(l => !l.descartada) : todas.filter(l => grupo(l) === filtro);
 
   return (
     <div className={`${s.pagina} view-in`}>
@@ -160,7 +160,7 @@ export function CanalPagina() {
               <span className={s.sub}>clique numa transmissão para abrir</span>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <Filtros itens={todas} ativo={filtro} mudar={mudarFiltro} grupos={["todas", "coletando", "coletadas", "vao", "nao_escolhidas", "perdidas"]} />
+              <Filtros itens={todas} ativo={filtro} mudar={mudarFiltro} grupos={["todas", "coletando", "coletadas", "vao", "nao_escolhidas", "perdidas", "descartadas"]} />
             </div>
             {lives.length === 0 && <div className={s.vazioLista}>Nenhuma transmissão em “{NOMES_GRUPO[filtro]}”.</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -176,6 +176,7 @@ export function CanalPagina() {
                     <div className={s.liveData}>{dataHora(l.inicio || l.agendada_para, conta.tz)}</div>
                     <div style={{ flex: 1, minWidth: 200 }}>
                       <div className={s.liveTitulo} style={{ color: apagado ? "var(--ink3)" : "var(--ink)" }}>{l.titulo}</div>
+                      {l.descartada && <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>descartada{l.descartada.do_video ? " com o link inteiro" : ""}: {l.descartada.motivo}</div>}
                       {(l.trecho || l.outro_link) && (
                         <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>
                           {l.trecho && <span title={`O canal reaproveitou o link: trocou o título às ${hora(l.inicio, conta.tz)} e passou a transmitir isto. O link carregou ${l.trecho.total} transmissões.`}>

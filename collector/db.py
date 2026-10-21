@@ -99,6 +99,12 @@ def migrar(con):
     # Sem linha: detectado pela troca de titulo. cortes '[]': sem divisao.
     con.execute("""CREATE TABLE IF NOT EXISTS divisao (
         video_id TEXT PRIMARY KEY, cortes TEXT NOT NULL, atualizado_em TEXT NOT NULL)""")
+    # coleta descartada pelo analista (muito parcial, reprise...): some das
+    # listas, comparacoes e totais, e volta com "restaurar". O dado bruto
+    # fica. id e o de uma live ou de um trecho ("V~2"); o do video vale para
+    # todos os trechos.
+    con.execute("""CREATE TABLE IF NOT EXISTS descarte (
+        id TEXT PRIMARY KEY, motivo TEXT NOT NULL, em TEXT NOT NULL)""")
 
     # batimento do vigia: uma linha so, atualizada a cada ciclo. E o que a
     # interface consulta antes de dizer "coleta de pe".

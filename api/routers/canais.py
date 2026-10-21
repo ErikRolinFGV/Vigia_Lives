@@ -80,7 +80,8 @@ def _com_outro_link(resumos):
 
 def _visao_canal(con, c):
     lives = lives_do_canal(con, c["canal_id"])
-    coletadas = [l for l in lives if l["estado"] in ("coletada", "parcial")]
+    # descartada nao entra em total nenhum do canal
+    coletadas = [l for l in lives if l["estado"] in ("coletada", "parcial") and not l["_descarte"]]
     # no ar = o YouTube diz que esta no ar, com ou sem coletor. Sem coletor
     # e o pior estado possivel, e a tela precisa dizer isso, nao "fora do ar".
     no_ar = next((l for l in lives if l["estado"] == "no_ar"), None)         or next((l for l in lives if l["status"] == "ao_vivo"), None)
@@ -154,7 +155,7 @@ def agenda(con: sqlite3.Connection = Depends(conexao)):
             no_ar_sem_escolha = l["estado"] == "nao_escolhida" and l["status"] == "ao_vivo"
             if l["estado"] == "no_ar" or no_ar_sem_escolha or (l["estado"] == "agendada" and (l["agendada_para"] or "") >= agora[:16]):
                 proximas.append(item)
-            elif l["estado"] in ("coletada", "parcial", "perdida"):
+            elif l["estado"] in ("coletada", "parcial", "perdida") and not l["_descarte"]:
                 recentes.append(item)
     proximas.sort(key=lambda x: (not x["ao_vivo"], x["agendada_para"] or ""))
     recentes.sort(key=lambda x: x["inicio"] or x["agendada_para"] or "", reverse=True)

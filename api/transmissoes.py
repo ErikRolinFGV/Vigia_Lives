@@ -70,6 +70,8 @@ def estado(l):
 
 def janela_coletada_s(l):
     """Segundos em que o coletor esteve ligado durante a transmissao."""
+    if "_viva_s" in l.keys():
+        return l["_viva_s"]
     a = max(filter(None, [_ts(l["coleta_inicio"]), _ts(l["inicio_real"])]), default=None)
     b = min(filter(None, [_ts(l["coleta_fim"]), _ts(l["fim_real"])]), default=None)
     if not a or not b or b <= a:
@@ -84,10 +86,87 @@ def acompanhada_pct(l):
     coleta perfeita de 1h48 numa live de 6h51 tem cobertura 99,7% e
     acompanhou 26% da transmissao. A tela mostra os dois.
     """
+    if "_acompanhada" in l.keys():
+        return l["_acompanhada"]
     janela, dur = janela_coletada_s(l), l["duracao_segundos"]
     if not janela or not dur:
         return None
     return round(min(100.0, 100.0 * janela / dur), 1)
+
+
+# Cobertura medida pelos dados. O numero gravado pelo coletor (cobertura_pct)
+# so via a ultima execucao dele: em 20/10 o coletor caiu e voltou 5 vezes com
+# a internet oscilando, a ultima volta foi limpa, e a coleta apareceu como
+# "100% acompanhada, cobertura 91,5%" com 28% dos minutos da ginastica lidos.
+# Agora: o coletor esta vivo entre duas chamadas ao YouTube que tiveram
+# resposta (coleta_log com http_status) a ate VIVO_GAP segundos uma da outra;
+# mais que isso e buraco (internet caiu, coletor reiniciando, PC dormindo).
+VIVO_GAP = 150
+_chamadas: dict = {}
+
+
+def _chamadas_de(con, video_id):
+    """Instantes (epoch) das chamadas com resposta do video; cache ate mudar o log."""
+    n, ultimo = con.execute("SELECT COUNT(*), MAX(log_id) FROM main.coleta_log WHERE video_id = ?",
+                            (video_id,)).fetchone()
+    chave = (n, ultimo)
+    if video_id not in _chamadas or _chamadas[video_id][0] != chave:
+        ts = [_ts(r[0]).timestamp() for r in con.execute(
+            "SELECT chamado_em FROM main.coleta_log WHERE video_id = ? AND http_status IS NOT NULL ORDER BY chamado_em",
+            (video_id,))]
+        _chamadas[video_id] = (chave, ts)
+    return _chamadas[video_id][1]
+
+
+def _viva(ts, a, b):
+    tot = 0.0
+    for t0, t1 in zip(ts, ts[1:]):
+        if t1 - t0 <= VIVO_GAP:
+            tot += max(0.0, min(t1, b) - max(t0, a))
+    return tot
+
+
+def medir(con, l):
+    """
+    A linha `l` (live ou trecho) com cobertura_pct, janela coletada e
+    acompanhada medidas pelas chamadas registradas: segundos com coletor vivo
+    / segundos da janela de coleta (cobertura) e / segundos da transmissao
+    (acompanhada). Coleta sem chamadas registradas fica com o numero gravado.
+    """
+    d = dict(l)
+    if not d.get("coleta_inicio"):
+        return d
+    ts = _chamadas_de(con, trechos.separar(d["video_id"])[0])
+    if len(ts) < 2:
+        return d
+    agora = datetime.now(timezone.utc).timestamp()
+    ini, fim = _ts(d["inicio_real"]), _ts(d["fim_real"])
+    ci, cf = _ts(d["coleta_inicio"]), _ts(d["coleta_fim"])
+    a_tr = (ini or ci).timestamp()
+    b_tr = fim.timestamp() if fim else (cf.timestamp() if cf and d["status"] != "ao_vivo" else agora)
+    a_co, b_co = max(ci.timestamp(), a_tr), min(cf.timestamp() if cf else agora, b_tr)
+    viva = _viva(ts, a_co, b_co)
+    d["_viva_s"] = int(viva)
+    if b_co > a_co:
+        d["cobertura_pct"] = round(min(100.0, 100.0 * viva / (b_co - a_co)), 2)
+    if b_tr > a_tr:
+        d["_acompanhada"] = round(min(100.0, 100.0 * viva / (b_tr - a_tr)), 1)
+    return d
+
+
+def descartes(con):
+    """{id: {motivo, em}} das coletas descartadas (id de live ou de trecho)."""
+    return {r["id"]: {"motivo": r["motivo"], "em": r["em"]}
+            for r in con.execute("SELECT id, motivo, em FROM main.descarte")}
+
+
+def descarte_de(desc, d):
+    """Descarte que vale para a linha: o dela, ou o do video inteiro (vale para todos os trechos)."""
+    if d["video_id"] in desc:
+        return {**desc[d["video_id"]], "do_video": False}
+    if d.get("_pai") in desc:
+        return {**desc[d["_pai"]], "do_video": True}
+    return None
 
 
 def _ordem(l):
@@ -109,12 +188,15 @@ def lives_do_canal(con, canal_id):
            FROM main.live l JOIN canal c ON c.canal_id = l.canal_id
            WHERE l.canal_id = ?""",
         (canal_id,)).fetchall()
+    desc = descartes(con)
     lista = []
     for l in linhas:
         # video que carregou mais de uma transmissao: entra cada trecho
         ts = trechos.trechos(con, l)
         partes = [trechos.linha_trecho(l, t, len(ts)) for t in ts] if ts else [dict(l)]
         for d in partes:
+            d = medir(con, d)
+            d["_descarte"] = descarte_de(desc, d)
             if ts:
                 lo = f"offset_segundos >= {d['_ini']}" if d["_trecho"] > 1 else "1"
                 hi = f"offset_segundos < {d['_fim']}" if d["_fim"] is not None else "1"
@@ -245,6 +327,9 @@ def resumo_live(d):
         # foi feita na live (True/False) ou vem do canal (None)
         "coletar": vai_coletar(d),
         "coletar_escolha": None if d["coletar"] is None else bool(d["coletar"]),
+        # coleta descartada pelo analista (reversivel): fora das listas,
+        # comparacoes e totais; os dados brutos ficam
+        "descartada": d.get("_descarte"),
         # trecho de um video que carregou mais de uma transmissao
         "trecho": {"n": d["_trecho"], "total": d["_total"], "video_id": d["_pai"], "ini": d["_ini"], "fim": d["_fim"]}
         if d.get("_trecho") else None,

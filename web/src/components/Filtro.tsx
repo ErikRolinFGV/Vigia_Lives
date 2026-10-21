@@ -2,7 +2,7 @@
 // foi, o que vai ser e o que ficou de fora.
 import type { LiveResumo } from "../api/types";
 
-export type Grupo = "todas" | "coletando" | "coletadas" | "vao" | "nao_escolhidas" | "perdidas";
+export type Grupo = "todas" | "coletando" | "coletadas" | "vao" | "nao_escolhidas" | "perdidas" | "descartadas";
 
 export const NOMES_GRUPO: Record<Grupo, string> = {
   todas: "Todas",
@@ -11,9 +11,13 @@ export const NOMES_GRUPO: Record<Grupo, string> = {
   vao: "Vão ser coletadas",
   nao_escolhidas: "Não escolhidas",
   perdidas: "Perdidas",
+  descartadas: "Descartadas",
 };
 
-export function grupo(l: Pick<LiveResumo, "estado" | "coletar">): Exclude<Grupo, "todas"> {
+type Item = Pick<LiveResumo, "estado" | "coletar"> & { descartada?: LiveResumo["descartada"] };
+
+export function grupo(l: Item): Exclude<Grupo, "todas"> {
+  if (l.descartada) return "descartadas";
   if (l.estado === "no_ar") return "coletando";
   if (l.estado === "coletada" || l.estado === "parcial") return "coletadas";
   if (l.estado === "perdida") return "perdidas";
@@ -23,9 +27,10 @@ export function grupo(l: Pick<LiveResumo, "estado" | "coletar">): Exclude<Grupo,
 
 /** Chips com contagem; grupos vazios somem (menos "Todas" e o ativo). */
 export function Filtros({ itens, ativo, mudar, grupos }: {
-  itens: Pick<LiveResumo, "estado" | "coletar">[]; ativo: Grupo; mudar: (g: Grupo) => void; grupos: Grupo[];
+  itens: Item[]; ativo: Grupo; mudar: (g: Grupo) => void; grupos: Grupo[];
 }) {
-  const conta = (g: Grupo) => (g === "todas" ? itens.length : itens.filter(l => grupo(l) === g).length);
+  // descartadas ficam fora de "Todas": só aparecem no filtro delas
+  const conta = (g: Grupo) => (g === "todas" ? itens.filter(l => !l.descartada).length : itens.filter(l => grupo(l) === g).length);
   return (
     <div role="radiogroup" aria-label="Filtrar transmissões" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {grupos.filter(g => g === "todas" || g === ativo || conta(g) > 0).map(g => {

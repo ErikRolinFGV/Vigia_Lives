@@ -220,6 +220,20 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   comparação e o gráfico de picos dizem "2º trecho do link …".
 - Corte fantasma (21/10): troca de título corrigida em menos de 5 min
   (CORTE_MIN) não vira trecho; vale o corte da correção.
+- Cobertura medida pelos dados (21/10): o `cobertura_pct` gravado pelo
+  coletor só via a última execução dele, e "acompanhada" ia do primeiro ao
+  último minuto sem olhar os buracos. A ginástica de 20/10 (coletor caiu e
+  voltou 5 vezes com a internet oscilando) aparecia "100% acompanhada,
+  cobertura 91,5%" com 28% dos minutos lidos. Agora `transmissoes.medir`
+  conta o tempo com o coletor vivo: entre duas chamadas com resposta no
+  `coleta_log` a até 150 s uma da outra. Cobertura = vivo ÷ janela de
+  coleta; acompanhada = vivo ÷ transmissão (ou trecho). O gravado fica só
+  para coleta sem chamadas registradas.
+- Descartar coleta (21/10): reversível. Tabela `descarte` (id de live, de
+  trecho ou do vídeo inteiro, que vale para todos os trechos), com motivo.
+  Descartada sai da lista (fica no filtro "Descartadas"), da comparação, do
+  ranking, da ficha e dos totais do canal; os dados brutos ficam e
+  "Restaurar" traz de volta. Apagar de vez não existe.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

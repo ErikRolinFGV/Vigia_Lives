@@ -14,7 +14,7 @@ from collector import db, yt
 
 from .. import dossie, secoes
 from ..deps import conexao
-from ..transmissoes import SEM_COLETA, acompanhada_pct, janela_coletada_s, serie
+from ..transmissoes import SEM_COLETA, acompanhada_pct, janela_coletada_s, medir, serie
 from .. import trechos
 from .lives import _live_ou_404, detalhe
 
@@ -37,7 +37,7 @@ def _apelido(titulo):
 
 
 def _cabecalho(con, video_id):
-    l = _live_ou_404(con, video_id)
+    l = medir(con, _live_ou_404(con, video_id))
     t = yt.parse_ts(l["inicio_real"] or l["agendada_para"])
     return l, {
         "canal": l["canal_nome"], "nome": _apelido(l["titulo"]).title().replace(" X ", " × "),
@@ -177,7 +177,7 @@ def publico(canal_slug: str, slug: str, con: sqlite3.Connection = Depends(conexa
     if p["revogado_em"]:
         raise HTTPException(410, "este relatório não está mais público")
     vid = p["video_id"]
-    l = _live_ou_404(con, vid)
+    l = medir(con, _live_ou_404(con, vid))
     c = con.execute("SELECT nome, handle, foto_url FROM canal WHERE canal_id=?", (l["canal_id"],)).fetchone()
     s = serie(con, vid)
     chat = secoes._chat(con, vid)

@@ -38,6 +38,9 @@ export type LiveResumo = {
   // o link (vídeo do YouTube) de onde vem e como ele começou: diz "quem é quem"
   // quando o canal reaproveita um link para outra transmissão
   link: LinkOrigem;
+  // descartada pelo analista (reversível): fora da lista, comparações e totais.
+  // do_video: o descarte foi do link inteiro, e vale para este trecho
+  descartada: { motivo: string; em: string; do_video: boolean } | null;
   // o mesmo conteúdo em outro link do canal: "sem_coleta" = esta foi coletada e a outra não
   // (o chat de lá ficou de fora); "coletado" = esta não, mas a outra sim. Só na lista do canal.
   outro_link?: "sem_coleta" | "coletado" | null;

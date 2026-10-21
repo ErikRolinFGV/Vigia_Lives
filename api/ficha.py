@@ -69,7 +69,8 @@ def _assinatura(con, video_id):
                   (SELECT atualizado_em FROM divisao d WHERE d.video_id = l.video_id),
                   (SELECT COUNT(*) FROM main.enquete e WHERE e.video_id = l.video_id),
                   (SELECT COUNT(*) FROM main.momento m WHERE m.video_id = l.video_id),
-                  (SELECT COUNT(*) FROM janela_agregada j WHERE j.video_id = l.video_id)
+                  (SELECT COUNT(*) FROM janela_agregada j WHERE j.video_id = l.video_id),
+                  (SELECT COUNT(*) FROM main.coleta_log g WHERE g.video_id = l.video_id)
            FROM main.live l WHERE l.video_id = ?""", (v,)).fetchone()
     return VERSAO + "|" + "|".join(str(x) for x in (r or []))
 
@@ -156,7 +157,8 @@ def _resumos(con):
     out = []
     for c in canais:
         for d in lives_do_canal(con, c["canal_id"]):
-            if d["estado"] in ("coletada", "parcial"):
+            # descartada sai do ranking e da comparacao
+            if d["estado"] in ("coletada", "parcial") and not d["_descarte"]:
                 out.append({"id": d["video_id"], "titulo": d["titulo"], "nucleo": trechos.nucleo(d["titulo"]),
                             "canal_id": c["canal_id"], "canal": c["nome"], "inicio": d["inicio_real"],
                             "estado": d["estado"], "trecho": d.get("_trecho"),

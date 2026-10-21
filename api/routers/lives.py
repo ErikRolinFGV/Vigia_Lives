@@ -44,6 +44,11 @@ def _resumo(con, l):
     return None
 
 
+def _descarte_video(con, video_id):
+    d = con.execute("SELECT motivo, em FROM main.descarte WHERE id = ?", (video_id,)).fetchone()
+    return {"motivo": d["motivo"], "em": d["em"], "do_video": False} if d else None
+
+
 def _momentos(con, video_id):
     rows = con.execute(
         """SELECT offset_segundos t, tipo, magnitude, url_timestamp url FROM momento
@@ -83,7 +88,8 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     if tem_chat:
         subs += ["pessoas", "contexto", "qualidade"]
     # coleta encerrada tem ficha, e a ficha se compara com as outras
-    if r and r["estado"] in ("coletada", "parcial"):
+    # (descartada saiu da comparacao)
+    if r and r["estado"] in ("coletada", "parcial") and not r["descartada"]:
         subs.append("comparar")
 
     return {
@@ -105,6 +111,7 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
         "url": trechos.url_video(video_id, ini=r["trecho"]["ini"] if r and r["trecho"] else None),
         "mesmo_jogo": mesmo,
         "links": mapa_links(lista, video_id),
+        **({} if r else {"descartada": _descarte_video(con, video_id)}),
         "trechos": irmaos,
     }
 
@@ -162,16 +169,35 @@ def _duracao_estimada(con, canal_id):
     return int(statistics.median(durs)), True
 
 
+def _domingo(ano, mes, n):
+    """O n-esimo domingo do mes (dia do mes)."""
+    primeiro = datetime(ano, mes, 1).weekday()  # segunda = 0
+    return 1 + (6 - primeiro) % 7 + 7 * (n - 1)
+
+
+def _pacifico(t):
+    """
+    `t` no horario do Pacifico, onde a cota do YouTube zera. Windows sem o
+    pacote tzdata nao tem o fuso: cai para a regra dos EUA (horario de verao,
+    UTC-7, do 2o domingo de marco ao 1o de novembro, as 2h locais; fora dele
+    UTC-8). Antes caia para UTC-8 fixo, uma hora errado de marco a novembro.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        return t.astimezone(ZoneInfo("America/Los_Angeles"))
+    except Exception:
+        u = t.astimezone(timezone.utc).replace(tzinfo=None)
+        ini = datetime(u.year, 3, _domingo(u.year, 3, 2), 10)   # 2h PST = 10h UTC
+        fim = datetime(u.year, 11, _domingo(u.year, 11, 1), 9)  # 2h PDT = 9h UTC
+        return t.astimezone(timezone(timedelta(hours=-7 if ini <= u < fim else -8)))
+
+
 def _dia_cota(iso):
     """A cota do YouTube zera a meia-noite do Pacifico."""
     t = yt.parse_ts(iso)
     if not t:
         return None
-    try:
-        from zoneinfo import ZoneInfo
-        return t.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat()
-    except Exception:
-        return (t - timedelta(hours=8)).date().isoformat()
+    return _pacifico(t).date().isoformat()
 
 
 def buscas_concorrencia(dur):
@@ -256,8 +282,7 @@ def cota_por_dia(con):
         # agenda: o que falta do dia (hoje) ou o dia inteiro
         resto = 1.0
         if dia == hoje:
-            from zoneinfo import ZoneInfo
-            pt = agora.astimezone(ZoneInfo("America/Los_Angeles"))
+            pt = _pacifico(agora)
             resto = 1 - (pt.hour * 3600 + pt.minute * 60) / 86400
         agenda = round(n_canais * AGENDA_DIA_POR_CANAL * resto)
         saida.append({"dia": dia, "lives": lives, "estimado": estimado, "gasto": gasto, "agenda": agenda,
@@ -330,6 +355,43 @@ def escolher(video_id: str, corpo: Escolha, con: sqlite3.Connection = Depends(co
 # O que "Ler" trouxe fica aqui alguns minutos: confirmar nao gasta outra unidade.
 _lidas: dict[str, tuple[datetime, dict]] = {}
 LIDA_VALE = timedelta(minutes=15)
+
+
+class Descarte(BaseModel):
+    motivo: str
+
+
+@router.put("/lives/{video_id}/descarte")
+def descartar(video_id: str, corpo: Descarte, con: sqlite3.Connection = Depends(conexao)):
+    """
+    Descarta a coleta (live, trecho ou video inteiro): ela sai das listas,
+    das comparacoes, do ranking e dos totais do canal. Reversivel: o dado
+    bruto fica, e DELETE restaura.
+    """
+    l = _live_ou_404(con, video_id)
+    # o video inteiro nao e linha da lista: vale se algum trecho dele foi coletado
+    linhas = [d for d in lives_do_canal(con, l["canal_id"]) if video_id in (d["video_id"], d.get("_pai"))]
+    if not any(d["estado"] in ("coletada", "parcial") for d in linhas):
+        raise HTTPException(409, "Só uma coleta encerrada pode ser descartada.")
+    motivo = corpo.motivo.strip()[:200]
+    if not motivo:
+        raise HTTPException(422, "Diga o motivo do descarte.")
+    con.execute("INSERT OR REPLACE INTO descarte (id, motivo, em) VALUES (?,?,?)",
+                (video_id, motivo, datetime.now(timezone.utc).isoformat(timespec="seconds")))
+    con.commit()
+    return {"id": video_id, "descartada": True}
+
+
+@router.delete("/lives/{video_id}/descarte")
+def restaurar(video_id: str, con: sqlite3.Connection = Depends(conexao)):
+    """Desfaz o descarte. Descarte do video inteiro so sai pelo id do video."""
+    if not con.execute("DELETE FROM descarte WHERE id = ?", (video_id,)).rowcount:
+        pai = trechos.separar(video_id)[0]
+        if pai != video_id and con.execute("SELECT 1 FROM descarte WHERE id = ?", (pai,)).fetchone():
+            raise HTTPException(409, "Esta coleta foi descartada junto com o vídeo inteiro: restaure pelo vídeo inteiro.")
+        raise HTTPException(409, "Esta coleta não está descartada.")
+    con.commit()
+    return {"id": video_id, "descartada": False}
 
 
 class Link(BaseModel):

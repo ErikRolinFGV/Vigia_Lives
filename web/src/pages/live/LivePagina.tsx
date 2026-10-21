@@ -14,6 +14,7 @@ import { SecaoPosicao } from "./SecaoPosicao";
 import { SecaoApoio, SecaoComparacao, SecaoComunidade, SecaoConversa, SecaoDepois, SecaoModeracao, SecaoMomentos, SecaoPessoas, SecaoVideo } from "./secoesNovas";
 import { AoVivo } from "./AoVivo";
 import { Relatorio, useDossie } from "./Relatorio";
+import { AvisoDescartada, BotaoDescartar } from "./Descarte";
 import st from "./live.module.css";
 
 const NOMES_SUB: Record<SubAba, string> = {
@@ -50,10 +51,10 @@ export function LivePagina() {
   if (l.estado === "perdida") return <Perdida live={l} reler={live.recarregar} />;
   if (l.estado === "nao_escolhida") return <NaoEscolhida live={l} reler={live.recarregar} />;
   if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} reler={() => { live.recarregar(); serie.recarregar(); }} />;
-  return <LiveColetada live={l} serie={serie.dados} carregandoSerie={serie.carregando} />;
+  return <LiveColetada live={l} serie={serie.dados} carregandoSerie={serie.carregando} reler={live.recarregar} />;
 }
 
-function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; serie: Serie | null; carregandoSerie: boolean }) {
+function LiveColetada({ live, serie, carregandoSerie, reler }: { live: LiveDetalhe; serie: Serie | null; carregandoSerie: boolean; reler: () => void }) {
   const s = serie;
   const { conta } = useSessao();
   const [q, setQ] = useSearchParams();
@@ -71,6 +72,7 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
 
   const acompanhada = live.acompanhada;
   const parcialJanela = acompanhada != null && acompanhada < 90;
+  const parcialCob = live.cobertura != null && live.cobertura < 90;
 
   return (
     <div className={`${st.pagina} view-in`}>
@@ -82,18 +84,19 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
             </span>
             {acompanhada != null && (
               <div className={st.chip} style={{ background: parcialJanela ? "var(--ambT)" : "var(--okT)", borderColor: parcialJanela ? "var(--ambLine)" : "var(--okLine)" }}
-                title="Quanto da transmissão inteira a janela de coleta acompanhou">
+                title="Quanto da transmissão inteira teve o coletor ligado e respondendo (buracos de internet ou de coletor reiniciando não contam)">
                 <span className={st.chipDot} style={{ background: parcialJanela ? "var(--amb)" : "var(--ok)" }} />
                 <span className="tnum" style={{ color: parcialJanela ? "var(--ambInk)" : "var(--okInk)" }}>{pct(acompanhada)} da transmissão acompanhada</span>
               </div>
             )}
-            <div className={st.chip} style={{ background: "var(--okT)", borderColor: "var(--okLine)" }}
-              title="Fração da janela de coleta em que o chat foi lido sem buraco">
-              <span className={st.chipDot} style={{ background: "var(--ok)" }} />
-              <span className="tnum" style={{ color: "var(--okInk)" }}>cobertura {pct(live.cobertura)} na janela coletada</span>
+            <div className={st.chip} style={{ background: parcialCob ? "var(--ambT)" : "var(--okT)", borderColor: parcialCob ? "var(--ambLine)" : "var(--okLine)" }}
+              title="Fração da janela de coleta (do primeiro ao último minuto coletado) em que o coletor estava ligado e respondendo">
+              <span className={st.chipDot} style={{ background: parcialCob ? "var(--amb)" : "var(--ok)" }} />
+              <span className="tnum" style={{ color: parcialCob ? "var(--ambInk)" : "var(--okInk)" }}>cobertura {pct(live.cobertura)} na janela coletada</span>
             </div>
             {s && <Link to={`/yt/lives/${live.id}/replay`} className={st.replay}>Ver como foi ao vivo ↺</Link>}
             <BotaoYouTube url={live.url} />
+            <BotaoDescartar live={live} mudou={reler} />
           </div>
           <h1 className={st.titulo}>
             {live.numero && <span className={st.num}>#{live.numero}</span>}
@@ -101,6 +104,7 @@ function LiveColetada({ live, serie, carregandoSerie }: { live: LiveDetalhe; ser
           </h1>
         </div>
 
+        <AvisoDescartada live={live} mudou={reler} />
         <ContextoLinks live={live} />
 
         <div className={st.abas} role="tablist">
