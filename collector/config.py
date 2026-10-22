@@ -53,6 +53,22 @@ def _garantir_salt():
     salt = os.environ.get("PID_SALT")
     if salt:
         return salt
+    # banco com autores e .env sem salt: e o .env que nao veio junto (copia
+    # para o servidor, .env recriado). Um salt novo separaria todo autor do
+    # proprio historico sem aviso; melhor parar e pedir o salt de volta.
+    db = Path(os.environ.get("DB_PATH", RAIZ / "data" / "lives.db"))
+    if db.exists() and db.stat().st_size > 0:
+        import sqlite3
+        try:
+            c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+            tem_autor = c.execute("SELECT 1 FROM autor LIMIT 1").fetchone() is not None
+            c.close()
+        except sqlite3.Error:
+            tem_autor = False
+        if tem_autor:
+            raise SystemExit(
+                f"PID_SALT ausente do {CAMINHO_ENV}, mas o banco {db} ja tem autores. "
+                "Copie o PID_SALT do .env original: um salt novo separaria cada autor do proprio historico.")
     salt = secrets.token_hex(32)
     with open(CAMINHO_ENV, "a", encoding="utf-8") as f:
         f.write(f"\nPID_SALT={salt}\n")
