@@ -1,0 +1,26 @@
+# O vigia: le a agenda dos canais e sobe um coletor por live no ar.
+# Servico de usuario (systemctl --user), instalado por deploy/instalar.sh,
+# que troca @RAIZ@ pela pasta do projeto.
+[Unit]
+Description=Vigia - acompanha os canais e sobe os coletores
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=@RAIZ@
+Environment=PYTHONIOENCODING=utf-8 PYTHONUNBUFFERED=1
+ExecStart=@RAIZ@/.venv/bin/python -m collector.vigia
+StandardOutput=append:@RAIZ@/data/vigia.log
+StandardError=append:@RAIZ@/data/vigia.log
+# Ctrl+C e o que o vigia trata: sai no fim do ciclo e marca o encerramento
+KillSignal=SIGINT
+TimeoutStopSec=90
+# So o vigia para: os coletores (filhos dele) seguem ate o fim de cada live,
+# como no PC. Reiniciar o vigia nao derruba coleta em andamento.
+KillMode=process
+# Caiu sozinho: volta. Desligado pela interface (sai com 0): fica desligado.
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

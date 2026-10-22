@@ -1,0 +1,9 @@
+# Copia diaria do banco em data/backups, mantendo as 14 mais novas.
+# Disparado por vigia-backup.timer.
+[Unit]
+Description=Vigia - copia diaria do banco
+
+[Service]
+Type=oneshot
+WorkingDirectory=@RAIZ@
+ExecStart=@RAIZ@/.venv/bin/python -m collector.backup --manter 14

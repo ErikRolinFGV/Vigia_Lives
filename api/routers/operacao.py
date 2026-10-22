@@ -1,4 +1,6 @@
 """Plano, saude e cota: o lado operacional da plataforma."""
+import os
+import shlex
 import sqlite3
 import subprocess
 import sys
@@ -99,6 +101,19 @@ def ligar_vigia(con: sqlite3.Connection = Depends(conexao)):
         raise HTTPException(400, "YT_API_KEY não configurada no .env: sem ela o vigia não sobe.")
     con.execute("UPDATE vigia_batimento SET parar_pedido_em = NULL WHERE id = 1")
     con.commit()
+    # no servidor o vigia e um servico do sistema (deploy/README.md): o
+    # botao liga o servico. Um processo solto ficaria no grupo do servico
+    # da API e morreria junto quando ela reiniciasse.
+    cmd = os.environ.get("VIGIA_LIGAR_CMD")
+    if cmd:
+        r = subprocess.run(shlex.split(cmd), capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            raise HTTPException(500, f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
+        for _ in range(20):
+            time.sleep(0.5)
+            if _de_pe(_batimento(con)):
+                break
+        return saude(con)
     LOG_VIGIA.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_VIGIA, "a", encoding="utf-8") as saida:
         saida.write(f"\n--- ligado pela interface em {db.agora()} ---\n")

@@ -1,0 +1,10 @@
+[Unit]
+Description=Vigia - copia diaria do banco, as 4h30
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+# servidor desligado na hora: copia assim que voltar
+Persistent=true
+
+[Install]
+WantedBy=timers.target

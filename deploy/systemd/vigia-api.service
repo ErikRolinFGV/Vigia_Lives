@@ -1,0 +1,16 @@
+# A API e a interface (web/dist), em 127.0.0.1:8000, atras do nginx.
+# Reiniciar a API nao mexe no vigia nem nas coletas: sao servicos separados.
+[Unit]
+Description=Vigia - API e interface
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=@RAIZ@
+Environment=PYTHONIOENCODING=utf-8 PYTHONUNBUFFERED=1
+ExecStart=@RAIZ@/.venv/bin/python -m api.main
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

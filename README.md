@@ -95,11 +95,15 @@ Sem o vigia de pé nada é coletado, e a interface avisa. O login é de
 demonstração: qualquer e-mail válido e senha com 6 ou mais caracteres.
 Depois de `npm run build`, a própria API serve a interface.
 
+Para rodar num servidor Linux, sempre ligado, veja **[deploy/README.md](deploy/README.md)**:
+serviços do systemd, nginx com senha, backup diário e a troca do PC para o servidor.
+
 ## Limites de hoje
 
 - **O coletor roda no seu computador.** Ele precisa ficar ligado, sem dormir e
   com internet durante as lives. Cada queda vira um buraco na coleta, que a
-  plataforma mostra.
+  plataforma mostra. O projeto já está pronto para ir para um servidor
+  ([deploy/README.md](deploy/README.md)).
 - **Cota.** A cota gratuita do YouTube é de 10.000 unidades por dia. Uma live
   com chat movimentado gasta perto de 1.000 unidades por hora. A tela do canal
   prevê o gasto do dia antes de você marcar mais lives.
@@ -113,6 +117,7 @@ Depois de `npm run build`, a própria API serve a interface.
 | `collector/` | coletor, vigia, cliente da API do YouTube, banco e relatório da camada 0. Só a biblioteca padrão do Python |
 | `api/` | API FastAPI: canais, transmissões, trechos, ficha e comparação, dossiê, exportação e link público |
 | `web/` | interface em React + Vite + TypeScript, temas claro e escuro |
+| `deploy/` | serviços do systemd, nginx e script de instalação para servidor Linux ([guia](deploy/README.md)) |
 | `docs/` | plano da v2 e decisões tomadas, com o porquê de cada uma ([plano_v2.md](docs/plano_v2.md)) |
 | `design_handoff_vigia_pesquisa/` | protótipo e especificação de design |
 | `data/` | banco SQLite e log do vigia (fora do git) |
@@ -146,5 +151,7 @@ lives-coletar --video VIDEO_ID            # coletar uma live no ar
 lives-coletar --canal @canal              # esperar a live do canal subir
 lives-report --video VIDEO_ID             # relatório da live coletada
 lives-quota --dias 7                      # auditoria de cota
+python -m collector.backup                # copia segura do banco, com o vigia rodando
+python -m collector.checar                # esta maquina esta pronta para o vigia?
 lives-demo && lives-report --video DEMO_SINTETICO   # testar sem chave nem live
 ```

@@ -264,6 +264,16 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   transação aberta durante as chamadas de rede seguintes, e um coletor caiu
   com "database is locked" depois de 15 s. O registro faz commit na hora, e
   a espera pelo banco subiu para 60 s.
+- Preparo para servidor (22/10): `deploy/` com serviços de usuário do
+  systemd (vigia com `KillMode=process`, para reiniciar sem derrubar
+  coletas, e `KillSignal=SIGINT`, o sinal que o vigia trata), nginx com
+  senha (o login ainda é de demonstração; o link público `/r/` fica
+  aberto), backup diário e `instalar.sh`. `collector.backup` copia pela
+  API de backup do SQLite; `collector.checar` confere a máquina, inclusive
+  se o YouTube entrega a página dos canais ao IP dela. O botão "ligar
+  vigia" roda `VIGIA_LIGAR_CMD` quando definido. O config se recusa a
+  gerar `PID_SALT` novo para um banco que já tem autores. A rota da
+  interface não serve arquivo de fora de `web/dist`.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 
