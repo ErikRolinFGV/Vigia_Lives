@@ -23,6 +23,7 @@ export type LiveResumo = {
   duracao_s: number | null;
   cobertura: number | null;         // % da janela do coletor sem buraco
   janela_coletada_s: number | null; // quanto tempo o coletor esteve ligado
+  coletado: Coletado;               // e quando
   acompanhada: number | null;       // % da transmissão inteira que a janela cobriu
   pico: number | null;
   mensagens: number;
@@ -63,8 +64,11 @@ export type Ligada = { id: string; titulo: string | null; estado: EstadoLive; in
 export type LinkOrigem = { video_id: string; comecou_como: string | null; inicio: string | null; fim: string | null };
 
 /** Um link no mapa da página de transmissão, com os trechos que ele carregou. */
+/** Quando a coleta esteve de pé: [início, fim] de cada intervalo sem buraco. null = sem medida. */
+export type Coletado = [string, string][] | null;
+
 export type LinkMapa = LinkOrigem & {
-  trechos: { id: string; n: number | null; titulo: string | null; nucleo: string; estado: EstadoLive; inicio: string | null; fim: string | null }[];
+  trechos: { id: string; n: number | null; titulo: string | null; nucleo: string; estado: EstadoLive; inicio: string | null; fim: string | null; coletado: Coletado }[];
 };
 
 export type ModoColeta = "todas" | "escolhidas";

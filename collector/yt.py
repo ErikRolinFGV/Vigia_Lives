@@ -167,6 +167,11 @@ def _log(con, video_id, metodo, custo, status, itens, page_token, erro):
            VALUES (?,?,?,?,?,?,?,?)""",
         (video_id, metodo, db.agora(), custo, status, itens, page_token, erro),
     )
+    # commit ja: sem isso o INSERT deixava a transacao aberta durante as
+    # proximas chamadas de rede, e o banco ficava travado para os outros
+    # processos. Em 22/10 as leituras de depois da live do vigia seguraram o
+    # banco e o coletor do Espanha x Australia caiu com "database is locked".
+    con.commit()
 
 
 # ---------------------------------------------------------------- endpoints

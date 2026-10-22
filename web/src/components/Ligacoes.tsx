@@ -218,15 +218,24 @@ export function ContextoLinks({ live }: { live: LiveDetalhe }) {
                   const sem = SEM_COLETA.includes(t.estado);
                   const atual = t.id === live.id || (inteiro && este);
                   const quando = `${hora(t.inicio, tz)}–${t.fim ? hora(t.fim, tz) : "agora"}`;
+                  // coleta parcial: a parte sem coletor fica tracejada, a coletada cheia
+                  const a0 = ms(t.inicio, agora), dur = Math.max(ms(t.fim, agora) - a0, 1);
+                  const partes = !sem && t.coletado && t.coletado.length ? t.coletado : null;
+                  const coleta = partes ? ` · coletado ${partes.map(([i, f]) => `${hora(i, tz)}–${hora(f, tz)}`).join(", ")}` : "";
                   return (
                     <Link key={t.id} to={`/yt/lives/${t.id}`} aria-label={`${t.n ? `${t.n}º trecho, ` : ""}${nomeLive(t.titulo, 1)}, ${quando}${sem ? ", sem coleta" : ""}`}
-                      title={`${t.n ? `${t.n}º trecho · ` : ""}${nomeLive(t.titulo, 2)} · ${quando}${sem ? " · sem coleta" : ""}`}
+                      title={`${t.n ? `${t.n}º trecho · ` : ""}${nomeLive(t.titulo, 2)} · ${quando}${sem ? " · sem coleta" : coleta}`}
                       style={{ position: "absolute", left: `${a}%`, width: `${w}%`, top: 3, bottom: 3, borderRadius: 5, overflow: "hidden",
-                        background: sem ? `repeating-linear-gradient(135deg, color-mix(in srgb, ${c} 25%, transparent) 0 5px, transparent 5px 10px)` : `color-mix(in srgb, ${c} 28%, transparent)`,
+                        background: sem || partes ? `repeating-linear-gradient(135deg, color-mix(in srgb, ${c} 25%, transparent) 0 5px, transparent 5px 10px)` : `color-mix(in srgb, ${c} 28%, transparent)`,
                         border: `1px ${sem ? "dashed" : "solid"} ${c}`, outline: atual ? "2px solid var(--ink)" : "none", outlineOffset: 1,
                         display: "flex", alignItems: "center", padding: "0 6px", fontSize: 11.5, fontWeight: 600, color: sem ? "var(--ink3)" : "var(--ink)",
                         textDecoration: "none", whiteSpace: "nowrap" }}>
-                      {w > 9 && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t.n ? `${t.n}º · ` : ""}{apelido(t.titulo, 40)}</span>}
+                      {partes?.map(([i, f]) => (
+                        <span key={i} aria-hidden style={{ position: "absolute", top: 0, bottom: 0, left: `${((ms(i, agora) - a0) / dur) * 100}%`,
+                          width: `${((ms(f, agora) - ms(i, agora)) / dur) * 100}%`, // opaca: o tracejado de baixo não aparece
+                          background: `color-mix(in srgb, ${c} 28%, var(--s3))` }} />
+                      ))}
+                      {w > 9 && <span style={{ overflow: "hidden", textOverflow: "ellipsis", position: "relative" }}>{t.n ? `${t.n}º · ` : ""}{apelido(t.titulo, 40)}</span>}
                     </Link>
                   );
                 })}
@@ -245,7 +254,7 @@ export function ContextoLinks({ live }: { live: LiveDetalhe }) {
       </div>
 
       <div style={{ fontSize: 11.5, color: "var(--ink4)" }}>
-        mesma cor = mesmo conteúdo · tracejado = sem coleta · contorno = esta página · clique num trecho para abrir
+        mesma cor = mesmo conteúdo · tracejado = sem coleta (o link inteiro ou o pedaço que ficou de fora) · contorno = esta página · clique num trecho para abrir
       </div>
 
       {mc && (

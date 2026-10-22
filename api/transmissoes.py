@@ -131,6 +131,23 @@ def _viva(ts, a, b):
     return tot
 
 
+def _vivos(ts, a, b):
+    """Os intervalos [ini, fim] (ISO) com coletor vivo dentro de [a, b]: onde a coleta esteve."""
+    out = []
+    for t0, t1 in zip(ts, ts[1:]):
+        if t1 - t0 > VIVO_GAP:
+            continue
+        x0, x1 = max(t0, a), min(t1, b)
+        if x1 <= x0:
+            continue
+        if out and x0 - out[-1][1] <= 1:
+            out[-1][1] = max(out[-1][1], x1)
+        else:
+            out.append([x0, x1])
+    iso = lambda t: datetime.fromtimestamp(t, timezone.utc).isoformat(timespec="seconds")
+    return [[iso(x0), iso(x1)] for x0, x1 in out]
+
+
 def medir(con, l):
     """
     A linha `l` (live ou trecho) com cobertura_pct, janela coletada e
@@ -152,6 +169,7 @@ def medir(con, l):
     a_co, b_co = max(ci.timestamp(), a_tr), min(cf.timestamp() if cf else agora, b_tr)
     viva = _viva(ts, a_co, b_co)
     d["_viva_s"] = int(viva)
+    d["_coletado"] = _vivos(ts, a_co, b_co)
     if b_co > a_co:
         d["cobertura_pct"] = round(min(100.0, 100.0 * viva / (b_co - a_co)), 2)
     if b_tr > a_tr:
@@ -286,7 +304,8 @@ def mapa_links(resumos, video_id, max_links=6):
             "video_id": v, "comecou_como": segs[0]["link"]["comecou_como"],
             "inicio": segs[0]["link"]["inicio"], "fim": segs[0]["link"]["fim"],
             "trechos": [{"id": x["id"], "n": (x["trecho"] or {}).get("n"), "titulo": x["titulo"], "nucleo": x["nucleo"],
-                         "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"]} for x in segs],
+                         "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
+                         "coletado": x["coletado"]} for x in segs],
         })
     return out
 
@@ -324,6 +343,8 @@ def resumo_live(d):
         "duracao_s": duracao,
         "cobertura": d["cobertura_pct"],
         "janela_coletada_s": janela_coletada_s(d),
+        # quando a coleta esteve de pe: [[ini, fim], ...], um por buraco a menos
+        "coletado": d.get("_coletado"),
         "acompanhada": acompanhada_pct(d),
         "pico": d["pico"],
         "mensagens": d["n_msgs"],

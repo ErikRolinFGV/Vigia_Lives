@@ -27,8 +27,9 @@ def conectar(multithread=False):
     primeira_vez = (not config.CAMINHO_DB.exists()
                     or config.CAMINHO_DB.stat().st_size == 0)
     config.CAMINHO_DB.parent.mkdir(parents=True, exist_ok=True)
+    # 60 s: um coletor no meio da live espera o banco em vez de cair
     con = sqlite3.connect(config.CAMINHO_DB, check_same_thread=not multithread,
-                          timeout=15)
+                          timeout=60)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     con.execute("PRAGMA journal_mode = WAL")

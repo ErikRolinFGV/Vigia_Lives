@@ -252,6 +252,18 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
 - Trecho fantasma no fim (22/10): a CazéTV renomeou o link 34 s antes de
   encerrar. Uma troca de título nos últimos `CORTE_MIN` da live não abre
   trecho.
+- Horário da coleta à vista (22/10): a porcentagem não dizia de quando a
+  quando a coleta esteve de pé. `coletado` traz os intervalos com coletor
+  vivo (as mesmas chamadas da cobertura). O cabeçalho mostra "(21:04 →
+  23:42)", com o número de interrupções, e no mapa de links a parte
+  coletada de cada trecho fica cheia e a que ficou de fora, tracejada.
+- Id de vídeo que começa com hífen (22/10, "-YJrkJd6ge8"): o argparse lia
+  `--video -YJrk…` como outra opção e o coletor morria ao subir, a cada
+  ciclo. O vigia passa `--video=<id>`.
+- Banco travado (22/10): o registro de cada chamada (`coleta_log`) deixava a
+  transação aberta durante as chamadas de rede seguintes, e um coletor caiu
+  com "database is locked" depois de 15 s. O registro faz commit na hora, e
+  a espera pelo banco subiu para 60 s.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

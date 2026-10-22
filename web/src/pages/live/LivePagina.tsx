@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import { BotaoYouTube, ContextoLinks } from "../../components/Ligacoes";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../api/client";
-import type { LiveDetalhe, Serie, SubAba } from "../../api/types";
+import type { Coletado, LiveDetalhe, Serie, SubAba } from "../../api/types";
 import { useCrumbs } from "../../components/AppLayout";
 import { TAG } from "../../lib/estados";
-import { apelido, dataLonga, duracao, nomeLive, pct } from "../../lib/format";
+import { apelido, dataLonga, duracao, hora, nomeLive, pct } from "../../lib/format";
 import { useSessao } from "../../state/sessao";
 import { derivar } from "./derivados";
 import { SecaoAudiencia, SecaoChat, SecaoQualidade, SecaoResumo } from "./secoesSerie";
@@ -16,6 +16,13 @@ import { AoVivo } from "./AoVivo";
 import { Relatorio, useDossie } from "./Relatorio";
 import { AvisoDescartada, BotaoDescartar } from "./Descarte";
 import st from "./live.module.css";
+
+/** " (21:04 → 23:42)": de quando a quando a coleta esteve de pé, e quantas vezes caiu no meio. */
+function janelaColeta(c: Coletado, tz: string) {
+  if (!c || !c.length) return "";
+  const buracos = c.length - 1;
+  return ` (${hora(c[0][0], tz)} → ${hora(c[c.length - 1][1], tz)}${buracos ? `, ${buracos} ${buracos === 1 ? "interrupção" : "interrupções"}` : ""})`;
+}
 
 const NOMES_SUB: Record<SubAba, string> = {
   resumo: "Resumo", audiencia: "Audiência", chat: "Chat",
@@ -80,7 +87,7 @@ function LiveColetada({ live, serie, carregandoSerie, reler }: { live: LiveDetal
         <div style={{ padding: "32px 0 20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
             <span className="mono" style={{ fontSize: 12.5, color: "var(--ink3)" }}>
-              {live.canal.nome} · {dataLonga(live.inicio || live.agendada_para, conta.tz)} · {duracao(live.janela_coletada_s)} coletada{live.duracao_s ? ` de ${duracao(live.duracao_s)} no ar` : ""}
+              {live.canal.nome} · {dataLonga(live.inicio || live.agendada_para, conta.tz)} · {duracao(live.janela_coletada_s)} coletada{janelaColeta(live.coletado, conta.tz)}{live.duracao_s ? ` de ${duracao(live.duracao_s)} no ar` : ""}
             </span>
             {acompanhada != null && (
               <div className={st.chip} style={{ background: parcialJanela ? "var(--ambT)" : "var(--okT)", borderColor: parcialJanela ? "var(--ambLine)" : "var(--okLine)" }}

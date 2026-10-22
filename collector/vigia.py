@@ -191,7 +191,9 @@ def subir_coletores(con):
             continue
         log(f"live no ar: {l['titulo']} — subindo coletor")
         _coletores[l["video_id"]] = subprocess.Popen(
-            [sys.executable, "-m", "collector.collector", "--video", l["video_id"]],
+            # "--video=": id que comeca com hifen ("-YJrkJd6ge8", 22/10) virava
+            # outra opcao para o argparse, e o coletor morria ao subir
+            [sys.executable, "-m", "collector.collector", f"--video={l['video_id']}"],
             cwd=str(config.RAIZ),
             # o coletor recebe o proprio Ctrl+C; o do vigia nao o derruba
             creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
