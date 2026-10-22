@@ -81,7 +81,13 @@ def _titulos(con, l):
 CORTE_MIN = 5 * 60
 
 
-def _cortes_auto(titulos):
+def _cortes_auto(titulos, fim=None):
+    """
+    Cortes pelas trocas de nucleo do titulo. `fim`: duracao da live em
+    segundos. Troca nos ultimos CORTE_MIN nao abre trecho: em 22/10 a CazeTV
+    renomeou o link 34 s antes de encerrar ("JOGO COMPLETO: ATLETICO-MG X
+    TORQUE"), e virava um 5o trecho de 34 s.
+    """
     cortes, ant = [], None
     for o, t in titulos:
         n = nucleo(t)
@@ -92,6 +98,8 @@ def _cortes_auto(titulos):
                 cortes.append(o)
         if n:
             ant = n
+    if fim is not None:
+        cortes = [c for c in cortes if fim - c >= CORTE_MIN]
     return cortes
 
 
@@ -110,7 +118,8 @@ def trechos(con, l):
         return []
     titulos = _titulos(con, l)
     gravado = _gravado(con, l["video_id"])
-    cortes = sorted(set(gravado if gravado is not None else _cortes_auto(titulos)))
+    fim = _off(l, l["fim_real"]) if l["fim_real"] else None
+    cortes = sorted(set(gravado if gravado is not None else _cortes_auto(titulos, fim)))
     if not cortes:
         return []
 

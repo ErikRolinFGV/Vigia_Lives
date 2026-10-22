@@ -94,6 +94,10 @@ def _conferir_sumidas(con, pedidos, itens, avisar=None):
     Devolve os itens recuperados pela leitura individual.
     """
     voltaram = {i["id"] for i in itens}
+    if voltaram:
+        con.execute(f"UPDATE sumida SET voltou_em=? WHERE voltou_em IS NULL AND video_id IN ({','.join('?' * len(voltaram))})",
+                    (db.agora(), *voltaram))
+        con.commit()
     faltam = [v for v in pedidos if v not in voltaram]
     if not faltam:
         return []
@@ -112,17 +116,26 @@ def _conferir_sumidas(con, pedidos, itens, avisar=None):
     for l in marcadas:
         item = yt.video(con, l["video_id"])
         if item:
+            con.execute("UPDATE sumida SET voltou_em=? WHERE video_id=? AND voltou_em IS NULL", (agora, l["video_id"]))
+            con.commit()
             achados.append(item)
             continue
-        no_ar = yt.no_ar_pela_pagina(l["video_id"])
-        if no_ar and l["status"] != "ao_vivo":
+        estado = yt.estado_pela_pagina(l["video_id"])
+        if estado == "no_ar" and l["status"] != "ao_vivo":
             con.execute("UPDATE live SET status='ao_vivo', inicio_real=COALESCE(inicio_real, ?) WHERE video_id=?",
                         (agora, l["video_id"]))
-            con.commit()
+        # a interface mostra o motivo no lugar de "vai coletar"
+        con.execute("""INSERT INTO sumida (video_id, motivo, desde, visto_em) VALUES (?, ?, ?, ?)
+                       ON CONFLICT(video_id) DO UPDATE SET motivo=excluded.motivo, visto_em=excluded.visto_em,
+                         desde=CASE WHEN sumida.voltou_em IS NULL THEN sumida.desde ELSE excluded.desde END,
+                         voltou_em=NULL""",
+                    (l["video_id"], estado or "sem_resposta", agora, agora))
+        con.commit()
         if avisar:
-            estado = {True: "no ar pela página do vídeo", False: "fora do ar pela página do vídeo",
-                      None: "a página do vídeo não respondeu"}[no_ar]
-            avisar(f"ATENÇÃO: o YouTube não devolveu a live marcada {l['video_id']} ({l['titulo']}): {estado}")
+            texto = {"no_ar": "no ar pela página do vídeo", "fora_do_ar": "fora do ar pela página do vídeo",
+                     "privada": "a página do vídeo está privada", "indisponivel": "o vídeo está indisponível",
+                     None: "a página do vídeo não respondeu"}[estado]
+            avisar(f"ATENÇÃO: o YouTube não devolveu a live marcada {l['video_id']} ({l['titulo']}): {texto}")
     return achados
 
 

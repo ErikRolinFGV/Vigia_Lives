@@ -234,6 +234,24 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   Descartada sai da lista (fica no filtro "Descartadas"), da comparação, do
   ranking, da ficha e dos totais do canal; os dados brutos ficam e
   "Restaurar" traz de volta. Apagar de vez não existe.
+- Live marcada que vira privada (21/10): a CazéTV pôs no privado o link
+  reservado do Palmeiras × Fluminense e passou o jogo em outro link, e a tela
+  seguia dizendo "coletor a postos" e reservando cota. O vigia grava em
+  `sumida` o que a página do vídeo diz (privada, indisponível, fora do ar),
+  e a agendada atrasada cujo conteúdo (mesmo núcleo de título) subiu em
+  outro link do canal aponta para ele. Nos dois casos ela sai da reserva de
+  cota. Se o link voltar, o coletor sobe normalmente. O mesmo vale para a
+  live que continua outra ainda no ar (o "Logo após" que seguiu no link do
+  jogo: o título de uma contém o da outra).
+- Estado "privada" (22/10): live que foi ao ar com a página pedindo login
+  não tinha chat público, então não é perdida. A linha de `sumida` fica
+  (`voltou_em`) depois que o YouTube volta a devolver o vídeo, e a live
+  encerrada sem coleta que o vigia viu privada durante o ar ganha o estado
+  "privada", em tom neutro. Não conta como "outro link sem coleta". Os três
+  links reservados da CazéTV de 21/10 foram registrados à mão, pelo log.
+- Trecho fantasma no fim (22/10): a CazéTV renomeou o link 34 s antes de
+  encerrar. Uma troca de título nos últimos `CORTE_MIN` da live não abre
+  trecho.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

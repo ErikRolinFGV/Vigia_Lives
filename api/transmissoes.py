@@ -42,6 +42,8 @@ def estado(l):
                    desligado, cota): uma falha, e a tela diz isso
     nao_escolhida  no ar ou encerrada sem coleta porque ninguem escolheu
                    coletar: decisao, nao falha
+    privada        foi ao ar privada (o vigia viu a pagina pedir login): sem
+                   chat publico, nao havia o que coletar
     None           live que so foi descoberta depois de acabar: nao vigiada,
                    fica fora da lista do canal (aparece so na comparacao)
     """
@@ -60,6 +62,9 @@ def estado(l):
     if l["status"] == "agendada":
         return "agendada"
     detectada, fim = _ts(l["detectada_em"]), _ts(l["fim_real"])
+    privada = _ts(l["privada_visto"]) if "privada_visto" in l.keys() else None
+    if privada and _ts(l["inicio_real"]) and privada >= _ts(l["inicio_real"]):
+        return "privada"
     sem_coleta = "perdida" if vai_coletar(l) else "nao_escolhida"
     if l["status"] == "ao_vivo":
         return sem_coleta
@@ -181,6 +186,8 @@ def lives_do_canal(con, canal_id):
     # main.*: numa requisicao de trecho as visoes temp mudam essas tabelas
     linhas = con.execute(
         """SELECT l.*, c.modo_coleta,
+                  (SELECT MAX(su.visto_em) FROM main.sumida su
+                    WHERE su.video_id = l.video_id AND su.motivo = 'privada') AS privada_visto,
                   (SELECT MAX(espectadores) FROM main.snapshot_audiencia s
                    WHERE s.video_id = l.video_id) AS pico,
                   (SELECT COUNT(*) FROM main.mensagem m

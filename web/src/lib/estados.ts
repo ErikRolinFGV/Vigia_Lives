@@ -11,6 +11,8 @@ export const CHIP: Record<EstadoLive, Chip> = {
   agendada: { label: "AGENDADA", bg: "var(--s3)", border: "var(--line)", ink: "var(--ink2)", accent: "var(--line2)" },
   // decisão, não falha: tom neutro, nunca o vermelho de "perdida"
   nao_escolhida: { label: "NÃO ESCOLHIDA", bg: "transparent", border: "var(--line2)", ink: "var(--ink3)", accent: "var(--line)" },
+  // foi ao ar privada: sem chat público, não havia o que coletar
+  privada: { label: "PRIVADA", bg: "transparent", border: "var(--line2)", ink: "var(--ink3)", accent: "var(--line)" },
 };
 
 /** Selo pequeno do breadcrumb. */
@@ -21,4 +23,5 @@ export const TAG: Record<EstadoLive, { t: string; bg: string; bd: string; ink: s
   perdida: { t: "perdida", bg: "var(--redT)", bd: "var(--redLine)", ink: "var(--redInk)" },
   agendada: { t: "agendada", bg: "var(--s3)", bd: "var(--line2)", ink: "var(--ink2)" },
   nao_escolhida: { t: "não escolhida", bg: "transparent", bd: "var(--line2)", ink: "var(--ink3)" },
+  privada: { t: "privada", bg: "transparent", bd: "var(--line2)", ink: "var(--ink3)" },
 };

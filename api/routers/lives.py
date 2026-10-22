@@ -49,6 +49,55 @@ def _descarte_video(con, video_id):
     return {"motivo": d["motivo"], "em": d["em"], "do_video": False} if d else None
 
 
+def _sumida(con, video_id):
+    """O que a pagina do video disse quando o videos.list parou de devolver a live (vigia)."""
+    s = con.execute("SELECT motivo, desde, visto_em FROM sumida WHERE video_id = ? AND voltou_em IS NULL",
+                    (video_id,)).fetchone()
+    return dict(s) if s else None
+
+
+def _privada(con, video_id):
+    s = con.execute("SELECT motivo, desde, visto_em FROM sumida WHERE video_id = ? AND motivo = 'privada'",
+                    (video_id,)).fetchone()
+    return dict(s) if s else None
+
+
+def _gemeas_no_ar(con, l):
+    """
+    Agendada que ja passou da hora e cujo conteudo subiu em outro link do
+    canal (mesmo nucleo de titulo, comecou a menos de 12 h do horario dela):
+    o canal trocou de link. Em 21/10 a CazeTV pos o link reservado do
+    Palmeiras x Fluminense no privado e passou o jogo em outro. Tambem a
+    que continua uma live ainda no ar (titulo contem o dela): no mesmo dia o
+    link do "Logo apos Palmeiras x Fluminense" virou privado e o pos-jogo
+    seguiu no link do jogo.
+    """
+    ini = yt.parse_ts(l["agendada_para"])
+    nuc = trechos.nucleo(l["titulo"])
+    if l["status"] != "agendada" or not ini or not nuc or ini > datetime.now(timezone.utc):
+        return []
+    perto = timedelta(hours=12)
+    rows = con.execute(
+        """SELECT video_id, titulo, status, inicio_real FROM live
+           WHERE canal_id = ? AND video_id != ? AND status IN ('ao_vivo','encerrada')
+             AND inicio_real BETWEEN ? AND ?""",
+        (l["canal_id"], l["video_id"], (ini - perto).isoformat(timespec="seconds"),
+         (ini + perto).isoformat(timespec="seconds"))).fetchall()
+    def mesmo(r):
+        outro = trechos.nucleo(r["titulo"])
+        if outro == nuc:
+            return True
+        contem = lambda a, b: b and f" {b} " in f" {a} "
+        return r["status"] == "ao_vivo" and (contem(nuc, outro) or contem(outro, nuc))
+    return [r["video_id"] for r in rows if mesmo(r)]
+
+
+def _nao_vai_subir(con, l):
+    """Agendada que nao deve virar coleta: o YouTube a tirou do ar, ou o conteudo foi para outro link."""
+    s = _sumida(con, l["video_id"])
+    return bool(s and s["motivo"] in ("privada", "indisponivel")) or bool(_gemeas_no_ar(con, l))
+
+
 def _momentos(con, video_id):
     rows = con.execute(
         """SELECT offset_segundos t, tipo, magnitude, url_timestamp url FROM momento
@@ -65,7 +114,16 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     # o mesmo conteudo em outra transmissao do canal (link de reserva, trecho
     # de outro video): a tela liga as duas para nao parecerem duplicadas, e
     # avisa quando uma delas ficou sem coleta
-    mesmo = mesmo_conteudo(lista, video_id, l["titulo"], l["inicio_real"])
+    # agendada ainda sem inicio: compara pelo horario marcado (o canal pode
+    # ter passado o conteudo em outro link)
+    ref = l["inicio_real"] or (l["agendada_para"] if l["status"] == "agendada" else None)
+    mesmo = mesmo_conteudo(lista, video_id, l["titulo"], ref)
+    # e o link para onde o conteudo dela foi (pos-jogo que seguiu no link do jogo)
+    ja = {m["id"] for m in mesmo}
+    gemeas = set(_gemeas_no_ar(con, l)) if l["status"] == "agendada" else set()
+    mesmo += [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
+               "trecho": x["trecho"], "link": x["link"]}
+              for x in lista if x["link"]["video_id"] in gemeas and x["id"] not in ja and not x["fim"]]
     # trechos do mesmo video; aberto pelo id do video inteiro, lista os dele
     pai = r["trecho"]["video_id"] if r and r["trecho"] else video_id
     irmaos = [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
@@ -110,6 +168,8 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
         "subabas": subs,
         "url": trechos.url_video(video_id, ini=r["trecho"]["ini"] if r and r["trecho"] else None),
         "mesmo_jogo": mesmo,
+        "sumida": (_sumida(con, video_id) if l["status"] in ("agendada", "ao_vivo")
+                   else _privada(con, video_id) if r and r["estado"] == "privada" else None),
         "links": mapa_links(lista, video_id),
         **({} if r else {"descartada": _descarte_video(con, video_id)}),
         "trechos": irmaos,
@@ -229,7 +289,7 @@ AGENDA_DIA_POR_CANAL = 24 * 12 + 12
 def _escolhidas_agendadas(con):
     """Lives agendadas que vao virar coleta: de canal vigiado ou coladas pelo link."""
     return con.execute(
-        """SELECT l.video_id, l.titulo, l.agendada_para, l.canal_id, c.nome canal
+        """SELECT l.video_id, l.titulo, l.agendada_para, l.canal_id, l.status, c.nome canal
            FROM live l JOIN canal c ON c.canal_id = l.canal_id
            WHERE l.status = 'agendada' AND ((c.vigiado = 1 AND c.removido_em IS NULL) OR l.avulsa = 1)
              AND l.agendada_para IS NOT NULL
@@ -258,7 +318,7 @@ def cota_por_dia(con):
     for o in _escolhidas_agendadas(con):
         ini = yt.parse_ts(o["agendada_para"])
         # agendada que ja passou da hora e nao subiu: nao reserva cota
-        if not ini or ini < agora - timedelta(hours=1):
+        if not ini or ini < agora - timedelta(hours=1) or _nao_vai_subir(con, o):
             continue
         dur, _, _, _, custo = _estimar(con, o["canal_id"], cache)
         d = dias.setdefault(_dia_cota(o["agendada_para"]), [])
@@ -306,16 +366,18 @@ def previsao(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     if dia:
         cache = {}
         for o in _escolhidas_agendadas(con):
-            if o["video_id"] != video_id and _dia_cota(o["agendada_para"]) == dia:
+            if o["video_id"] != video_id and _dia_cota(o["agendada_para"]) == dia and not _nao_vai_subir(con, o):
                 outras.append({"id": o["video_id"], "titulo": o["titulo"], "canal": o["canal"],
                                "agendada_para": o["agendada_para"], "custo": _estimar(con, o["canal_id"], cache)[4]})
     outras.sort(key=lambda o: o["agendada_para"])
     r = _resumo(con, l)
     escolhida = bool(r and r["coletar"])
+    # que o YouTube tirou do ar, ou cujo conteudo foi para outro link, tambem nao
+    fora = l["status"] == "agendada" and _nao_vai_subir(con, l)
     # nao escolhida nao reserva cota: o custo mostra quanto custaria
-    reservado = (custo if escolhida else 0) + sum(o["custo"] for o in outras)
+    reservado = (custo if escolhida and not fora else 0) + sum(o["custo"] for o in outras)
     return {
-        "escolhida": escolhida,
+        "escolhida": escolhida, "fora": fora,
         "unidades_hora": un_h, "unidades_hora_medida": medido,
         "duracao_estimada_s": dur, "duracao_do_canal": dur_do_canal,
         "custo": custo, "cota_dia": COTA_DIA, "dia_cota": dia,

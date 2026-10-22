@@ -8,6 +8,7 @@ responde a pergunta em aberto da arquitetura v0.1: quanto a coleta
 realmente consome contra o previsto.
 """
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -298,13 +299,15 @@ def feed_rss(canal_id):
     return saida
 
 
-def no_ar_pela_pagina(video_id):
+def estado_pela_pagina(video_id):
     """
-    A pagina publica do video diz se ele esta no ar ("isLiveNow"). Custo
-    zero de cota. E a segunda opiniao quando o videos.list deixa de devolver
-    uma live marcada: em 20/10 o "Logo apos" da CazeTV sumiu da resposta
-    enquanto esteve no ar e so voltou depois de acabar. None se nao deu
-    para ler a pagina.
+    O que a pagina publica do video diz dele, sem cota: 'no_ar' ou
+    'fora_do_ar' ("isLiveNow"), 'privada' (a pagina pede login) ou
+    'indisponivel' (removido). None se nao deu para ler a pagina. E a
+    segunda opiniao quando o videos.list deixa de devolver uma live marcada:
+    em 20/10 o "Logo apos" da CazeTV sumiu da resposta enquanto esteve no
+    ar; em 21/10 o link reservado do Palmeiras x Fluminense virou privado e
+    o jogo abriu em outro link.
     """
     req = urllib.request.Request(f"https://www.youtube.com/watch?v={video_id}", headers={"User-Agent": UA})
     try:
@@ -313,10 +316,21 @@ def no_ar_pela_pagina(video_id):
     except Exception:
         return None
     if '"isLiveNow":true' in html:
-        return True
+        return "no_ar"
     if '"isLiveNow":false' in html:
-        return False
+        return "fora_do_ar"
+    m = re.search(r'"playabilityStatus":\{"status":"([A-Z_]+)"', html)
+    if m and m.group(1) == "LOGIN_REQUIRED":
+        return "privada"
+    if m and m.group(1) in ("ERROR", "UNPLAYABLE"):
+        return "indisponivel"
     return None
+
+
+def no_ar_pela_pagina(video_id):
+    """True/False pela pagina do video ("isLiveNow"); None se ela nao diz."""
+    e = estado_pela_pagina(video_id)
+    return {"no_ar": True, "fora_do_ar": False}.get(e)
 
 
 def ids_da_pagina(canal, aba="streams", paginas=1, parar_em=frozenset()):

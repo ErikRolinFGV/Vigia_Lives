@@ -1,10 +1,11 @@
 // Estados sem coleta: perdida, não escolhida e agendada.
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../../api/client";
 import { BotaoColetar } from "../../components/Coleta";
 import { BotaoYouTube } from "../../components/Ligacoes";
 import type { LiveDetalhe, Previsao } from "../../api/types";
-import { dataCurta, dataHora, duracao, ha, n, nomeLive, pct } from "../../lib/format";
+import { dataCurta, dataHora, duracao, ha, hora, n, nomeLink, nomeLive, pct } from "../../lib/format";
 import { useSaude } from "../../state/saude";
 import { useSessao } from "../../state/sessao";
 import st from "./live.module.css";
@@ -22,6 +23,8 @@ export function Perdida({ live, reler }: { live: LiveDetalhe; reler: () => void 
   const { conta } = useSessao();
   const agora = live.ao_vivo;
   const dePe = !!useSaude()?.vigia.de_pe;
+  // foi ao ar privada (a página do vídeo pedia login): não é falha
+  const privada = live.estado === "privada";
   // no ar, escolhida e com o vigia de pé: o coletor sobe no próximo ciclo
   const subindo = agora && dePe && live.coletar;
   useEffect(() => {
@@ -39,15 +42,19 @@ export function Perdida({ live, reler }: { live: LiveDetalhe; reler: () => void 
     <div className={`${st.pagina} view-in`}>
       <div className={st.estreito}>
         <div style={{ padding: "36px 0 22px" }}>
-          {agora
+          {privada
+            ? <Selo texto="FOI AO AR PRIVADA" bg="transparent" bd="var(--line2)" ink="var(--ink3)" />
+            : agora
             ? <Selo texto="NO AR SEM COLETA" bg="var(--redT)" bd="var(--redLine)" ink="var(--redInk)" dot="var(--red)" />
             : <Selo texto="LIVE PERDIDA" bg="var(--redT)" bd="var(--redLine)" ink="var(--redInk)" />}
           <div style={{ marginBottom: 12 }}><BotaoYouTube url={live.url} /></div>
           <h1 className={st.h1} style={{ fontSize: "clamp(24px,3vw,32px)" }}>
-            {agora ? "Esta transmissão está no ar e não está sendo coletada." : "Esta transmissão aconteceu e não foi coletada."}
+            {privada ? "Esta transmissão foi ao ar privada." : agora ? "Esta transmissão está no ar e não está sendo coletada." : "Esta transmissão aconteceu e não foi coletada."}
           </h1>
           <p style={{ margin: 0, fontSize: 16.5, color: "var(--ink2)", maxWidth: "56ch", textWrap: "pretty" }}>
-            {agora
+            {privada
+              ? "Enquanto esteve no ar, a página do vídeo pedia login: só o canal via. Sem público, não havia chat nem audiência para coletar. Nada foi perdido; o canal publicou o vídeo depois."
+              : agora
               ? subindo
                 ? "O vigia sobe um coletor no próximo ciclo, em até 1 minuto. Esta tela atualiza sozinha. O chat de antes disso não volta."
                 : "Cada minuto que passa sem coletor é chat que deixa de existir. O vigia não está de pé para subir um coletor."
@@ -55,19 +62,19 @@ export function Perdida({ live, reler }: { live: LiveDetalhe; reler: () => void 
           </p>
         </div>
 
-        <div className={st.cartao} style={{ borderColor: "var(--redLine)", borderLeft: "3px solid var(--red)" }}>
+        <div className={st.cartao} style={privada ? { borderLeft: "3px solid var(--line2)" } : { borderColor: "var(--redLine)", borderLeft: "3px solid var(--red)" }}>
           <div className={st.rotulo} style={{ marginBottom: 16 }}>O que se sabe</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
             <div className={st.kv}><span>Canal</span><b>{live.canal.nome}</b></div>
             <div className={st.kv}><span>Transmissão</span><b style={{ textAlign: "right", maxWidth: "60%" }}>{nomeLive(live.titulo, 2)}</b></div>
-            <div className={st.kv}><span>{agora ? "No ar desde" : "Janela perdida"}</span><b className={st.kvMono}>{janela}</b></div>
-            <div className={st.kv}><span>Motivo</span><b>{subindo ? "coletor subindo" : "nenhum coletor estava de pé"}</b></div>
+            <div className={st.kv}><span>{agora ? "No ar desde" : privada ? "No ar, privada" : "Janela perdida"}</span><b className={st.kvMono}>{janela}</b></div>
+            <div className={st.kv}><span>Motivo</span><b>{privada ? `privada: o vigia viu a página pedir login${live.sumida ? ` (${hora(live.sumida.desde, conta.tz)} a ${hora(live.sumida.visto_em, conta.tz)})` : ""}` : subindo ? "coletor subindo" : "nenhum coletor estava de pé"}</b></div>
             <div className={st.kv}><span>Detectada em</span><b className={st.kvMono}>{dataHora(live.detectada_em, conta.tz)}, na aba de transmissões</b></div>
             <div className={st.kv}><span>Cota consumida</span><b className={st.kvMono} style={{ color: "var(--ink3)" }}>0 un. — nada foi coletado</b></div>
           </div>
         </div>
 
-        <div className={st.cartao}>
+        {!privada && <div className={st.cartao}>
           <div className={st.rotulo} style={{ marginBottom: 14 }}>O que não existe desta transmissão</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16 }}>
             {[["Curva de audiência", "não existe"], ["Mensagens do chat", "não existem"], ["Momentos de reação", "não existem"]].map(([k, v]) => (
@@ -89,15 +96,58 @@ export function Perdida({ live, reler }: { live: LiveDetalhe; reler: () => void 
               </div>
             </>
           )}
-        </div>
+        </div>}
 
-        <div className={st.cartao} style={{ background: "var(--s3)" }}>
+        {!privada && <div className={st.cartao} style={{ background: "var(--s3)" }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 7, textWrap: "pretty" }}>Por que esta linha continua na lista</div>
           <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>
             Sumir com ela deixaria o histórico do canal parecendo completo. A falha fica à vista porque é exatamente ela que justifica manter alguém de pé — e é a pergunta que um cliente deve poder fazer.
           </div>
-        </div>
+        </div>}
       </div>
+    </div>
+  );
+}
+
+const SUMIDA: Record<string, string> = {
+  privada: "O YouTube tornou esta live privada",
+  indisponivel: "Este vídeo não está mais disponível no YouTube",
+  fora_do_ar: "O YouTube parou de devolver esta live",
+  no_ar: "O YouTube parou de devolver esta live",
+  sem_resposta: "O YouTube parou de devolver esta live",
+};
+
+/**
+ * Agendada que não vai subir neste link: o YouTube a tirou do ar (privada,
+ * removida) ou o canal passou o conteúdo em outro link. Em 21/10 a CazéTV
+ * pôs o link reservado do Palmeiras × Fluminense no privado e abriu o jogo
+ * em outro; a tela dizia "coletor a postos".
+ */
+function ForaDoLink({ live }: { live: LiveDetalhe }) {
+  const { conta } = useSessao();
+  const s = live.sumida;
+  const outros = live.mesmo_jogo.filter(m => m.estado && m.estado !== "agendada");
+  const titulo = s ? SUMIDA[s.motivo] : "O conteúdo desta live foi para outro link";
+  return (
+    <div className={st.cartao} style={{ borderLeft: "3px solid var(--amb)", borderColor: "var(--ambLine)" }}>
+      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{titulo}</div>
+      <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty", marginBottom: outros.length ? 14 : 0 }}>
+        {s?.motivo === "privada" && <>A página do vídeo pede login: só o canal consegue ver. </>}
+        {s && <>O vigia percebeu às {hora(s.desde, conta.tz)} e confere de novo a cada ciclo; se o canal reabrir este link, o coletor sobe sozinho. </>}
+        {outros.length
+          ? <>O conteúdo desta live está {outros.some(o => o.estado === "no_ar") ? "passando" : "passou"} em outro link do canal. Esta live não reserva cota.</>
+          : s ? <>Enquanto isso, ela não reserva cota.</> : null}
+      </div>
+      {outros.map(o => (
+        <Link key={o.id} to={`/yt/lives/${o.id}`} className={st.kv}
+          style={{ fontSize: 14, textDecoration: "none", color: "inherit", borderTop: "1px solid var(--div)", paddingTop: 11 }}>
+          <span>{nomeLink(o.link?.comecou_como ?? o.titulo, 48)}</span>
+          <b style={{ whiteSpace: "nowrap" }}>
+            {o.inicio ? `${o.estado === "no_ar" ? "no ar desde" : "abriu às"} ${hora(o.inicio, conta.tz)} · ` : ""}
+            {o.estado === "no_ar" ? "com coletor" : o.estado === "perdida" ? "sem coleta" : o.estado === "nao_escolhida" ? "não escolhida" : o.estado === "privada" ? "privada" : "coletada"} →
+          </b>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -123,7 +173,9 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
           </p>
         </div>
 
-        {!live.coletar ? (
+        {live.coletar && (p?.fora || (live.sumida && live.sumida.motivo !== "no_ar")) ? (
+          <ForaDoLink live={live} />
+        ) : !live.coletar ? (
           <div className={st.cartao} style={{ borderLeft: "3px solid var(--line2)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>Esta live não vai ser coletada</div>
@@ -180,7 +232,7 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
               </div>
               <div className={st.trilho}><div style={{ width: Math.min(100, resPct) + "%", height: "100%", background: resPct > 85 ? "var(--red)" : "var(--aud)", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }} /></div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--div)", paddingTop: 12 }}>
-                <div className={st.kv} style={{ fontSize: 13.5 }}><span>Esta transmissão</span><b className="mono tnum" style={{ fontSize: 13, color: p.escolhida ? undefined : "var(--ink4)" }}>{p.escolhida ? `~${n(p.custo)} un.` : "não escolhida"}</b></div>
+                <div className={st.kv} style={{ fontSize: 13.5 }}><span>Esta transmissão</span><b className="mono tnum" style={{ fontSize: 13, color: p.escolhida && !p.fora ? undefined : "var(--ink4)" }}>{!p.escolhida ? "não escolhida" : p.fora ? "não reserva" : `~${n(p.custo)} un.`}</b></div>
                 {p.outras.map(o => (
                   <div key={o.id} className={st.kv} style={{ fontSize: 13.5, borderTop: 0, paddingTop: 0 }}>
                     <span>{o.canal} · {dataHora(o.agendada_para, conta.tz).slice(6)}</span><b className="mono tnum" style={{ fontSize: 13 }}>~{n(o.custo)} un.</b>

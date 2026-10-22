@@ -105,6 +105,15 @@ def migrar(con):
     # todos os trechos.
     con.execute("""CREATE TABLE IF NOT EXISTS descarte (
         id TEXT PRIMARY KEY, motivo TEXT NOT NULL, em TEXT NOT NULL)""")
+    # live marcada que o videos.list parou de devolver, e o que a pagina do
+    # video diz dela: 'privada', 'indisponivel', 'fora_do_ar', 'no_ar' ou
+    # 'sem_resposta'. Quando o YouTube volta a devolver a live, marca
+    # voltou_em e a linha fica: live que foi ao ar privada nao tinha chat
+    # publico, e nao e perdida (api/transmissoes.py, estado "privada").
+    con.execute("""CREATE TABLE IF NOT EXISTS sumida (
+        video_id TEXT PRIMARY KEY, motivo TEXT NOT NULL,
+        desde TEXT NOT NULL, visto_em TEXT NOT NULL)""")
+    _add_coluna(con, "sumida", "voltou_em", "TEXT")
 
     # batimento do vigia: uma linha so, atualizada a cada ciclo. E o que a
     # interface consulta antes de dizer "coleta de pe".

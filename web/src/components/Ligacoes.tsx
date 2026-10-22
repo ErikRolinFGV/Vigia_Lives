@@ -124,6 +124,11 @@ function mesmoConteudo(live: LiveDetalhe): { alerta: boolean; texto: React.React
       Costuma ser a parte menor, porque o público tende a ficar no link onde já estava, mas o que não foi coletado não dá para medir.
     </>,
   };
+  const privadas = live.mesmo_jogo.filter(m => m.estado === "privada");
+  if (privadas.length && !fora.length) return {
+    alerta: false,
+    texto: <>O mesmo conteúdo também passou {privadas.length === 1 ? "no link" : "nos links"} {nomes(privadas)}, mas privado: só o canal via. Sem público por lá, não havia chat para coletar, e nada ficou de fora destes números.</>,
+  };
   if (!esta && outras.length) return {
     alerta: false,
     texto: <>Este link não foi coletado, mas o mesmo conteúdo foi coletado, ao mesmo tempo, {outras.length === 1 ? "no link" : "nos links"} {nomes(outras)}. Os dados da transmissão estão lá; só o chat deste link ficou de fora.</>,

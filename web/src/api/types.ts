@@ -8,7 +8,7 @@ export type Plano = {
 };
 
 // perdida: devia ser coletada e não foi (falha). nao_escolhida: ninguém escolheu coletar (decisão).
-export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida" | "nao_escolhida";
+export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida" | "nao_escolhida" | "privada";
 
 export type LiveResumo = {
   id: string;
@@ -120,6 +120,8 @@ export type LiveDetalhe = Omit<LiveResumo, "numero" | "estado"> & {
   mesmo_jogo: Ligada[];   // o mesmo conteúdo em outra transmissão do canal
   trechos: Ligada[];      // os trechos do mesmo vídeo, inclusive este
   links: LinkMapa[];      // este link e os outros do canal em volta (mesmo conteúdo ou coleta no mesmo horário)
+  // marcada que o YouTube parou de devolver, e o que a página do vídeo disse dela
+  sumida: { motivo: "privada" | "indisponivel" | "fora_do_ar" | "no_ar" | "sem_resposta"; desde: string; visto_em: string } | null;
 };
 
 export type SubAba = "resumo" | "audiencia" | "chat" | "pessoas" | "contexto" | "qualidade" | "comparar";
@@ -133,6 +135,7 @@ export type Previsao = {
   outras: { id: string; titulo: string; canal: string; agendada_para: string; custo: number }[];
   reservado: number;
   escolhida: boolean;  // não escolhida: custo é quanto custaria, fora do reservado
+  fora: boolean;       // o YouTube tirou do ar, ou o conteúdo foi para outro link: não reserva cota
 };
 
 // ---- seções da aba Dados (api/secoes.py). Campo null = sem dado.
