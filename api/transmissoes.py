@@ -14,6 +14,10 @@ from . import trechos
 # Abaixo disso a coleta e PARCIAL: ficou um buraco que o relatorio precisa
 # declarar. Acima, COLETADA.
 LIMIAR_PARCIAL = 90.0
+# link marcado que sumiu (privado/indisponivel) e nao voltou ate esta hora depois
+# do horario marcado: o vigia para de conferir (vigilancia._conferir_sumidas) e a
+# live sai de "agendada"
+FORA_APOS = timedelta(hours=3)
 JANELA = 60
 
 
@@ -44,6 +48,8 @@ def estado(l):
                    coletar: decisao, nao falha
     privada        foi ao ar privada (o vigia viu a pagina pedir login): sem
                    chat publico, nao havia o que coletar
+    fora_do_link   marcada, mas o link sumiu na hora (privado ou indisponivel)
+                   e nao voltou: o conteudo, se foi ao ar, foi em outro link
     None           live que so foi descoberta depois de acabar: nao vigiada,
                    fica fora da lista do canal (aparece so na comparacao)
     """
@@ -60,6 +66,10 @@ def estado(l):
             return "parcial"
         return "coletada"
     if l["status"] == "agendada":
+        sumiu = l["sumida_motivo"] if "sumida_motivo" in l.keys() else None
+        marcada = _ts(l["agendada_para"])
+        if sumiu in ("privada", "indisponivel") and marcada and marcada < datetime.now(timezone.utc) - FORA_APOS:
+            return "fora_do_link"
         return "agendada"
     detectada, fim = _ts(l["detectada_em"]), _ts(l["fim_real"])
     privada = _ts(l["privada_visto"]) if "privada_visto" in l.keys() else None
@@ -206,6 +216,8 @@ def lives_do_canal(con, canal_id):
         """SELECT l.*, c.modo_coleta,
                   (SELECT MAX(su.visto_em) FROM main.sumida su
                     WHERE su.video_id = l.video_id AND su.motivo = 'privada') AS privada_visto,
+                  (SELECT su.motivo FROM main.sumida su
+                    WHERE su.video_id = l.video_id AND su.voltou_em IS NULL) AS sumida_motivo,
                   (SELECT MAX(espectadores) FROM main.snapshot_audiencia s
                    WHERE s.video_id = l.video_id) AS pico,
                   (SELECT COUNT(*) FROM main.mensagem m

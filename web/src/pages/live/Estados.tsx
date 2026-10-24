@@ -126,17 +126,22 @@ const SUMIDA: Record<string, string> = {
 function ForaDoLink({ live }: { live: LiveDetalhe }) {
   const { conta } = useSessao();
   const s = live.sumida;
-  const outros = live.mesmo_jogo.filter(m => m.estado && m.estado !== "agendada");
+  const outros = live.mesmo_jogo.filter(m => m.estado && m.estado !== "agendada" && m.estado !== "fora_do_link");
+  // o vigia ja desistiu deste link (FORA_APOS na API): a tela conta o que houve, nao o que vai acontecer
+  const fim = live.estado === "fora_do_link";
+  const semColeta = outros.some(o => o.estado === "perdida" || o.estado === "nao_escolhida");
   const titulo = s ? SUMIDA[s.motivo] : "O conteúdo desta live foi para outro link";
   return (
     <div className={st.cartao} style={{ borderLeft: "3px solid var(--amb)", borderColor: "var(--ambLine)" }}>
       <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{titulo}</div>
       <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty", marginBottom: outros.length ? 14 : 0 }}>
         {s?.motivo === "privada" && <>A página do vídeo pede login: só o canal consegue ver. </>}
-        {s && <>O vigia percebeu às {hora(s.desde, conta.tz)} e confere de novo a cada ciclo; se o canal reabrir este link, o coletor sobe sozinho. </>}
+        {s && (fim
+          ? <>O vigia percebeu às {hora(s.desde, conta.tz)} e conferiu até {hora(s.visto_em, conta.tz)}; o link não voltou. </>
+          : <>O vigia percebeu às {hora(s.desde, conta.tz)} e confere de novo a cada ciclo; se o canal reabrir este link, o coletor sobe sozinho. </>)}
         {outros.length
-          ? <>O conteúdo desta live está {outros.some(o => o.estado === "no_ar") ? "passando" : "passou"} em outro link do canal. Esta live não reserva cota.</>
-          : s ? <>Enquanto isso, ela não reserva cota.</> : null}
+          ? <>O conteúdo desta live {outros.some(o => o.estado === "no_ar") ? "está passando" : "passou"} em outro link do canal{semColeta ? ", que ficou sem coleta" : ""}.{fim ? "" : " Esta live não reserva cota."}</>
+          : fim ? <>Não apareceu outro link do canal com este conteúdo no horário.</> : s ? <>Enquanto isso, ela não reserva cota.</> : null}
       </div>
       {outros.map(o => (
         <Link key={o.id} to={`/yt/lives/${o.id}`} className={st.kv}
@@ -159,21 +164,24 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
   const custoPct = p ? (p.custo / p.cota_dia) * 100 : 0;
   const resPct = p ? (p.reservado / p.cota_dia) * 100 : 0;
   const dia = p?.dia_cota ? dataCurta(p.dia_cota + "T12:00:00Z", "UTC").slice(0, 5) : "—";
+  const fora = live.estado === "fora_do_link";
 
   return (
     <div className={`${st.pagina} view-in`}>
       <div className={st.medio}>
         <div style={{ padding: "36px 0 22px" }}>
-          <Selo texto="AGENDADA" bg="var(--s3)" bd="var(--line)" ink="var(--ink2)" />
+          {fora
+            ? <Selo texto="FORA DO LINK" bg="transparent" bd="var(--ambLine)" ink="var(--ambInk)" />
+            : <Selo texto="AGENDADA" bg="var(--s3)" bd="var(--line)" ink="var(--ink2)" />}
           <div style={{ marginBottom: 12 }}><BotaoYouTube url={live.url} /></div>
           <h1 className={st.h1} style={{ fontSize: "clamp(23px,2.8vw,30px)", lineHeight: 1.18, marginBottom: 10, maxWidth: "56ch" }}>{nomeLive(live.titulo, 3)}</h1>
           <p className="mono" style={{ margin: 0, fontSize: 13, color: "var(--ink3)" }}>
             {live.canal.nome} · início previsto {dataHora(live.agendada_para, conta.tz)}
-            {live.agendada_para && new Date(live.agendada_para).getTime() < Date.now() ? ` · atrasada ${ha(live.agendada_para).replace("há ", "")}` : ""}
+            {!fora && live.agendada_para && new Date(live.agendada_para).getTime() < Date.now() ? ` · atrasada ${ha(live.agendada_para).replace("há ", "")}` : ""}
           </p>
         </div>
 
-        {live.coletar && (p?.fora || (live.sumida && live.sumida.motivo !== "no_ar")) ? (
+        {fora || (live.coletar && (p?.fora || (live.sumida && live.sumida.motivo !== "no_ar"))) ? (
           <ForaDoLink live={live} />
         ) : !live.coletar ? (
           <div className={st.cartao} style={{ borderLeft: "3px solid var(--line2)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
@@ -204,7 +212,7 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
         </div>
         )}
 
-        {p && (
+        {p && !fora && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16, marginBottom: 16 }}>
             <div className={st.cartao} style={{ marginBottom: 0, padding: "20px 22px" }}>
               <div className={st.rotulo} style={{ marginBottom: 12 }}>{p.escolhida ? "Custo estimado da coleta" : "Quanto custaria coletar"}</div>

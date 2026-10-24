@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from collector import config, vigilancia, yt
+from collector import config, gemeas, vigilancia, yt
 
 from .. import secoes
 from ..deps import conexao
@@ -70,7 +70,10 @@ def _gemeas_no_ar(con, l):
     Palmeiras x Fluminense no privado e passou o jogo em outro. Tambem a
     que continua uma live ainda no ar (titulo contem o dela): no mesmo dia o
     link do "Logo apos Palmeiras x Fluminense" virou privado e o pos-jogo
-    seguiu no link do jogo.
+    seguiu no link do jogo. E, se o link marcado sumiu (privado ou
+    indisponivel), a que entrou no ar no horario dele com o mesmo assunto
+    (collector/gemeas.py): em 23/10 a ginastica foi para um link de titulo
+    bem diferente.
     """
     ini = yt.parse_ts(l["agendada_para"])
     nuc = trechos.nucleo(l["titulo"])
@@ -88,8 +91,16 @@ def _gemeas_no_ar(con, l):
         if outro == nuc:
             return True
         contem = lambda a, b: b and f" {b} " in f" {a} "
+        # reprise ou compacto no ar nao continua a live de ninguem (23/10: "REPRISE: MUNDIAL DE
+        # GINASTICA ARTISTICA #4" contem "GINASTICA ARTISTICA" e virava gemea)
+        if (r["titulo"] or "").lstrip().upper().startswith(("REPRISE", "COMPACTO", "MELHORES MOMENTOS")):
+            return False
         return r["status"] == "ao_vivo" and (contem(nuc, outro) or contem(outro, nuc))
-    return [r["video_id"] for r in rows if mesmo(r)]
+    ids = [r["video_id"] for r in rows if mesmo(r)]
+    s = _sumida(con, l["video_id"])
+    if s and s["motivo"] in ("privada", "indisponivel"):
+        ids += [r["video_id"] for r in gemeas.pelo_horario(con, l) if r["video_id"] not in ids]
+    return ids
 
 
 def _nao_vai_subir(con, l):
@@ -120,10 +131,13 @@ def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
     mesmo = mesmo_conteudo(lista, video_id, l["titulo"], ref)
     # e o link para onde o conteudo dela foi (pos-jogo que seguiu no link do jogo)
     ja = {m["id"] for m in mesmo}
-    gemeas = set(_gemeas_no_ar(con, l)) if l["status"] == "agendada" else set()
+    gemeas_ = set(_gemeas_no_ar(con, l)) if l["status"] == "agendada" else set()
+    # a que so continua a live dela entra enquanto esta no ar; a do horario, mesmo encerrada
+    pelo_horario = {r["video_id"] for r in gemeas.pelo_horario(con, l)} if gemeas_ else set()
     mesmo += [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],
                "trecho": x["trecho"], "link": x["link"]}
-              for x in lista if x["link"]["video_id"] in gemeas and x["id"] not in ja and not x["fim"]]
+              for x in lista if x["link"]["video_id"] in gemeas_ and x["id"] not in ja
+              and (not x["fim"] or x["link"]["video_id"] in pelo_horario)]
     # trechos do mesmo video; aberto pelo id do video inteiro, lista os dele
     pai = r["trecho"]["video_id"] if r and r["trecho"] else video_id
     irmaos = [{"id": x["id"], "titulo": x["titulo"], "estado": x["estado"], "inicio": x["inicio"], "fim": x["fim"],

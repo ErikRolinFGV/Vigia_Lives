@@ -20,7 +20,7 @@ const BARRAS_MAX = 8;
 
 function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null; tz: string }) {
   // só o que foi ou vai ser coletado: não escolhida não tem pico nem falha a mostrar
-  const passadas = lives.filter(l => l.estado !== "agendada" && l.estado !== "nao_escolhida" && l.estado !== "privada" && !l.descartada);
+  const passadas = lives.filter(l => l.estado !== "agendada" && l.estado !== "nao_escolhida" && l.estado !== "privada" && l.estado !== "fora_do_link" && !l.descartada);
   const proximas = lives.filter(l => l.estado === "agendada" && l.coletar).slice(0, 2);
   const mostrar = [...passadas.slice(-(BARRAS_MAX - proximas.length)), ...proximas];
   return (
@@ -166,7 +166,7 @@ export function CanalPagina() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {lives.map(l => {
                 const ch = CHIP[l.estado];
-                const apagado = l.estado === "perdida" || l.estado === "nao_escolhida" || l.estado === "privada" || (l.estado === "agendada" && !l.coletar);
+                const apagado = l.estado === "perdida" || l.estado === "nao_escolhida" || l.estado === "privada" || l.estado === "fora_do_link" || (l.estado === "agendada" && !l.coletar);
                 const ir = () => nav(rotaLive(l));
                 // div e nao button: o botao de coletar fica dentro da linha
                 return (

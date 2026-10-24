@@ -54,7 +54,7 @@ export function LivePagina() {
   if (live.erro) return <div className={st.pagina}><div className={st.conteudo}><div className={st.erro}>{live.erro.message}</div></div></div>;
   if (!l) return <div className={st.pagina}><div className={`${st.conteudo} ${st.carregando}`}>carregando a transmissão…</div></div>;
 
-  if (l.estado === "agendada") return <Agendada live={l} reler={live.recarregar} />;
+  if (l.estado === "agendada" || l.estado === "fora_do_link") return <Agendada live={l} reler={live.recarregar} />;
   if (l.estado === "perdida" || l.estado === "privada") return <Perdida live={l} reler={live.recarregar} />;
   if (l.estado === "nao_escolhida") return <NaoEscolhida live={l} reler={live.recarregar} />;
   if (l.estado === "no_ar") return <AoVivo live={l} serie={serie.dados} reler={() => { live.recarregar(); serie.recarregar(); }} />;

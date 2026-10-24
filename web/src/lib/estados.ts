@@ -13,6 +13,8 @@ export const CHIP: Record<EstadoLive, Chip> = {
   nao_escolhida: { label: "NÃO ESCOLHIDA", bg: "transparent", border: "var(--line2)", ink: "var(--ink3)", accent: "var(--line)" },
   // foi ao ar privada: sem chat público, não havia o que coletar
   privada: { label: "PRIVADA", bg: "transparent", border: "var(--line2)", ink: "var(--ink3)", accent: "var(--line)" },
+  // marcada, mas o link sumiu na hora: o conteudo, se foi ao ar, foi em outro link
+  fora_do_link: { label: "FORA DO LINK", bg: "transparent", border: "var(--ambLine)", ink: "var(--ambInk)", accent: "var(--amb)" },
 };
 
 /** Selo pequeno do breadcrumb. */
@@ -24,4 +26,5 @@ export const TAG: Record<EstadoLive, { t: string; bg: string; bd: string; ink: s
   agendada: { t: "agendada", bg: "var(--s3)", bd: "var(--line2)", ink: "var(--ink2)" },
   nao_escolhida: { t: "não escolhida", bg: "transparent", bd: "var(--line2)", ink: "var(--ink3)" },
   privada: { t: "privada", bg: "transparent", bd: "var(--line2)", ink: "var(--ink3)" },
+  fora_do_link: { t: "fora do link", bg: "transparent", bd: "var(--ambLine)", ink: "var(--ambInk)" },
 };

@@ -274,6 +274,18 @@ A versão pública é uma **projeção no backend**, não um filtro de interface
   vigia" roda `VIGIA_LIGAR_CMD` quando definido. O config se recusa a
   gerar `PID_SALT` novo para um banco que já tem autores. A rota da
   interface não serve arquivo de fora de `web/dist`.
+- Gêmeo pelo horário (23/10): o link marcado da ginástica ficou
+  indisponível 29 s depois de outro link, agendado para o mesmo horário,
+  entrar no ar com a transmissão, com título bem diferente ("Flávia Saraiva
+  e Lorrane Oliveira na final!"). Nenhum dos dois foi coletado. Nova regra
+  em `collector/gemeas.py` (onde passa a morar o `nucleo`): link marcado que
+  sumiu (privado ou indisponível) + uma única live do canal que entrou no
+  ar a até 10 min do horário dele e divide 2 ou mais palavras do título.
+  O vigia marca esse gêmeo para coletar (sem desfazer quem o tirou da
+  coleta) e avisa no log; a API liga os dois na tela. Marcada que sumiu e
+  não voltou até 3 h depois do horário vira o estado "fora do link" e sai
+  das agendadas. Reprise ou compacto no ar não conta mais como continuação
+  de outra live.
 
 ## 7. Pendências da coleta de 18/10 (implementadas em 18/10, depois das lives)
 

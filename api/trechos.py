@@ -25,11 +25,10 @@ Como funciona:
     que e do video inteiro. O video inteiro segue acessivel pelo id original.
 """
 import json
-import re
-import unicodedata
 from datetime import timedelta
 
 from collector import db, yt
+from collector.gemeas import nucleo  # noqa: F401  (a regra mora no coletor, que o vigia tambem usa)
 
 SEP = "~"
 
@@ -41,15 +40,6 @@ def separar(tid):
         if n.isdigit():
             return v, int(n)
     return tid, None
-
-
-def nucleo(titulo):
-    """O que identifica o conteudo: 'AO VIVO: LEEDS X MAN UTD | PREMIER...' -> 'LEEDS X MAN UTD'."""
-    t = (titulo or "").split("|")[0]
-    t = unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().upper()
-    t = re.sub(r"\((SOM AMBIENTE|AO VIVO)\)", " ", t)
-    t = re.sub(r"^\s*(AO VIVO|JOGO COMPLETO|REPRISE|MELHORES MOMENTOS)\s*[:\-]?", " ", t)
-    return re.sub(r"[^A-Z0-9]+", " ", t).strip()
 
 
 def _off(l, iso):

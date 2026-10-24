@@ -8,7 +8,7 @@ export type Plano = {
 };
 
 // perdida: devia ser coletada e não foi (falha). nao_escolhida: ninguém escolheu coletar (decisão).
-export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida" | "nao_escolhida" | "privada";
+export type EstadoLive = "no_ar" | "coletada" | "parcial" | "agendada" | "perdida" | "nao_escolhida" | "privada" | "fora_do_link";
 
 export type LiveResumo = {
   id: string;

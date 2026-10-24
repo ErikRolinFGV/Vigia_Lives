@@ -14,9 +14,10 @@ import re
 from datetime import datetime, timedelta, timezone
 
 try:  # instalado como pacote
-    from . import db, yt
+    from . import db, gemeas, yt
 except ImportError:  # rodando o arquivo direto
     import db
+    import gemeas
     import yt
 
 
@@ -91,6 +92,10 @@ def _conferir_sumidas(con, pedidos, itens, avisar=None):
     pagina: vira ao_vivo e o vigia sobe o coletor, que tenta o videos.list
     de novo a cada ciclo ate o YouTube voltar a devolver a live.
 
+    Sumiu de vez (privada ou indisponivel) e o conteudo abriu em outro link
+    do canal no mesmo horario (gemeas.pelo_horario): o vigia passa a coletar
+    o outro link. Em 23/10 a ginastica foi ao ar assim e ficou sem coleta.
+
     Devolve os itens recuperados pela leitura individual.
     """
     voltaram = {i["id"] for i in itens}
@@ -105,7 +110,7 @@ def _conferir_sumidas(con, pedidos, itens, avisar=None):
     # agendada que nunca subiu (apagada) para de ser conferida depois de 3 h
     piso = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat(timespec="seconds")
     marcadas = con.execute(
-        f"""SELECT l.video_id, l.titulo, l.status FROM live l JOIN canal c ON c.canal_id = l.canal_id
+        f"""SELECT l.video_id, l.canal_id, l.titulo, l.status, l.agendada_para FROM live l JOIN canal c ON c.canal_id = l.canal_id
             WHERE l.video_id IN ({",".join("?" * len(faltam))})
               AND l.status IN ('agendada','ao_vivo') AND l.parar_pedido_em IS NULL
               AND (l.status = 'ao_vivo' OR l.agendada_para BETWEEN ? AND ?)
@@ -136,7 +141,21 @@ def _conferir_sumidas(con, pedidos, itens, avisar=None):
                      "privada": "a página do vídeo está privada", "indisponivel": "o vídeo está indisponível",
                      None: "a página do vídeo não respondeu"}[estado]
             avisar(f"ATENÇÃO: o YouTube não devolveu a live marcada {l['video_id']} ({l['titulo']}): {texto}")
+        if estado in ("privada", "indisponivel"):
+            _seguir_gemea(con, l, avisar)
     return achados
+
+
+def _seguir_gemea(con, l, avisar=None):
+    """O link marcado sumiu: marca para coletar o gemeo que esta no ar (sem desfazer quem o tirou da coleta)."""
+    for g in gemeas.pelo_horario(con, l):
+        if g["status"] != "ao_vivo" or g["coletar"] is not None:
+            continue
+        con.execute("UPDATE live SET coletar = 1 WHERE video_id = ? AND coletar IS NULL", (g["video_id"],))
+        con.commit()
+        if avisar:
+            avisar(f"ATENÇÃO: o conteúdo da live marcada {l['video_id']} abriu em outro link, {g['video_id']} "
+                   f"({g['titulo']}): o vigia passa a coletar esse link")
 
 
 _faltas_antes: dict[str, frozenset] = {}
