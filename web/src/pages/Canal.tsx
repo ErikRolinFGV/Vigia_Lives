@@ -82,11 +82,13 @@ export function CanalPagina() {
     <div className={`${s.pagina} view-in`}>
       <div className={s.conteudo}>
         <div className={s.cabecalho}>
-          <label className={s.fotoGrande} title={c.foto ? "Trocar a foto do canal" : "Adicionar a foto do canal"}>
-            <CanalAvatar id={c.id} nome={c.nome} foto={c.foto} />
-            <span className={s.fotoAcao}>{c.foto ? "trocar" : "adicionar"} foto</span>
-            <input type="file" accept="image/*" onChange={onFoto} style={{ display: "none" }} />
-          </label>
+          {c.pode_gerenciar ? (
+            <label className={s.fotoGrande} title={c.foto ? "Trocar a foto do canal" : "Adicionar a foto do canal"}>
+              <CanalAvatar id={c.id} nome={c.nome} foto={c.foto} />
+              <span className={s.fotoAcao}>{c.foto ? "trocar" : "adicionar"} foto</span>
+              <input type="file" accept="image/*" onChange={onFoto} style={{ display: "none" }} />
+            </label>
+          ) : <div className={s.fotoGrande} style={{ cursor: "default" }}><CanalAvatar id={c.id} nome={c.nome} foto={c.foto} /></div>}
           <div style={{ flex: 1, minWidth: 220 }}>
             <h1 className={s.h1}>{c.nome}</h1>
             <div className="mono" style={{ fontSize: 13, color: "var(--ink3)" }}>
@@ -106,7 +108,7 @@ export function CanalPagina() {
             </div>
             {coletadas.length >= 2 && <Link className={s.botaoLinha} to={`/yt/comparar?ids=${encodeURIComponent(coletadas.slice(-4).join(","))}`} title="Abre as últimas coletas deste canal lado a lado">Comparar lives</Link>}
             <a className={s.botaoLinha} href={c.url} target="_blank" rel="noopener noreferrer">Abrir no YouTube <span>↗</span></a>
-            {c.vigiado && <button type="button" className={`${s.botaoLinha} ${s.botaoPerigo}`} onClick={() => setParar(true)}>Parar de vigiar</button>}
+            {c.vigiado && c.pode_gerenciar && <button type="button" className={`${s.botaoLinha} ${s.botaoPerigo}`} onClick={() => setParar(true)}>Parar de vigiar</button>}
           </div>
         </div>
 
@@ -114,7 +116,12 @@ export function CanalPagina() {
           <div className={s.dois} style={{ marginBottom: 16 }}>
             <div className={s.resumo} style={{ gap: 12 }}>
               <div style={{ fontSize: 11.5, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--ink3)" }}>O que coletar</div>
-              <SeletorModo canalId={c.id} modo={c.modo_coleta} mudou={recarregar} />
+              <SeletorModo canalId={c.id} modo={c.modo_coleta} mudou={recarregar} pode={c.pode_gerenciar} />
+              {!c.pode_gerenciar && (
+                <div style={{ fontSize: 12.5, color: "var(--ink3)", textWrap: "pretty" }}>
+                  Canal compartilhado com você: o modo é de quem o adicionou. As lives, você marca uma a uma abaixo.
+                </div>
+              )}
               <div style={{ fontSize: 12.5, color: "var(--ink3)", textWrap: "pretty" }}>
                 Marque live a live em "Transmissões", abaixo. A escolha vale até a live começar; no ar, uma live não escolhida ainda pode ser coletada dali em diante.
               </div>

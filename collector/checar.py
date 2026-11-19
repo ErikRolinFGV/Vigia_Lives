@@ -85,6 +85,12 @@ def main():
             if t and (datetime.now(timezone.utc) - t).total_seconds() < 300 and processo.vivo(b["pid"]):
                 linha(AVISO, "vigia", f"um vigia ja esta de pe neste banco (pid {b['pid']}). "
                                       "Dois vigias com a mesma chave coletam em dobro")
+        # sem conta admin ninguem entra na interface (api/acessos.py)
+        agora = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        n_admin = con.execute("""SELECT COUNT(*) FROM acesso WHERE papel = 'admin' AND revogado_em IS NULL
+                                 AND (expira_em IS NULL OR expira_em > ?)""", (agora,)).fetchone()[0]
+        linha(OK if n_admin else AVISO, "conta admin",
+              f"{n_admin} ativa(s)" if n_admin else "nenhuma: crie com python -m api.acessos criar SEU_NOME --admin --escolher")
         con.close()
     livre = shutil.disk_usage(config.CAMINHO_DB.parent if config.CAMINHO_DB.parent.exists() else raiz).free / 1e9
     linha(OK if livre > 2 else AVISO, "disco livre", f"{livre:.1f} GB (o banco cresce ~10 MB por live movimentada)")

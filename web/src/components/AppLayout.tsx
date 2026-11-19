@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Navigate, Outlet, useNavigate } from "react-router-dom";
+import { api } from "../api/client";
 import { useSessao } from "../state/sessao";
 import { useSaude } from "../state/saude";
 import { ContaBotao, Logo, ThemeToggle } from "./basicos";
@@ -35,9 +36,39 @@ export function useShell() {
   return ctx;
 }
 
+// quando o admin abriu o Registro pela última vez: o selo conta o que veio depois
+export const CHAVE_VISTO = "vigia.registro.visto";
+
+/** Só para o admin: aparece quando houve erro depois da última vez que ele abriu o Registro. */
+function SeloRegistro() {
+  const [r, setR] = useState<{ erros_24h: number; ultimo_erro_em: string | null } | null>(null);
+  const [visto, setVisto] = useState(lerVisto);
+  useEffect(() => {
+    const ler = () => api<typeof r>("/operacao/eventos/resumo").then(setR, () => setR(null));
+    ler();
+    const t = window.setInterval(ler, 60_000);
+    const abriu = () => setVisto(lerVisto());
+    window.addEventListener(CHAVE_VISTO, abriu);
+    return () => { window.clearInterval(t); window.removeEventListener(CHAVE_VISTO, abriu); };
+  }, []);
+  if (!r?.ultimo_erro_em || (visto && r.ultimo_erro_em <= visto)) return null;
+  return (
+    <Link to="/yt/registro" className={u.pillBtn} style={{ textDecoration: "none", borderColor: "var(--redLine)", background: "var(--redT)" }}
+      title={`${r.erros_24h} erro(s) nas últimas 24 h. Clique para ver o registro.`}>
+      <span className={u.dot} style={{ background: "var(--red)" }} />
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--redInk)", whiteSpace: "nowrap" }}>erro novo</span>
+    </Link>
+  );
+}
+
+function lerVisto() {
+  try { return localStorage.getItem(CHAVE_VISTO) || ""; } catch { return ""; }
+}
+
 /** Exige sessão; sem login, volta para /login. */
 export function Protegido({ children }: { children: JSX.Element }) {
-  const { logado } = useSessao();
+  const { logado, verificando } = useSessao();
+  if (verificando) return null;
   return logado ? children : <Navigate to="/login" replace />;
 }
 
@@ -46,6 +77,7 @@ export function AppLayout() {
   const [ajuda, setAjuda] = useState(false);
   const [conta, setConta] = useState(false);
   const nav = useNavigate();
+  const { admin } = useSessao();
   const [vigia, setVigia] = useState(false);
   const saude = useSaude();
   const v = saude?.vigia;
@@ -95,14 +127,17 @@ export function AppLayout() {
             </nav>
 
             <div className={s.direita}>
-              <button type="button" className={u.pillBtn} disabled={!saude || transicao} onClick={() => setVigia(true)}
-                style={!saude || transicao ? { cursor: "default" } : undefined}
-                title={dePe ? "O vigia está lendo a agenda dos canais. Clique para desligar." : "O vigia não está rodando: nenhuma live será coletada até ele subir. Clique para ligar."}>
+              {admin && <SeloRegistro />}
+              {/* visitante vê o estado do vigia, sem ligar nem desligar */}
+              <button type="button" className={u.pillBtn} disabled={!saude || transicao || !admin} onClick={() => setVigia(true)}
+                style={!saude || transicao || !admin ? { cursor: "default" } : undefined}
+                title={!admin ? (dePe ? "O vigia está lendo a agenda dos canais." : "O vigia não está rodando.")
+                  : dePe ? "O vigia está lendo a agenda dos canais. Clique para desligar." : "O vigia não está rodando: nenhuma live será coletada até ele subir. Clique para ligar."}>
                 <span className={u.dot} style={dePe && !v?.parando
                   ? { background: "#1F9D55", animation: "pulseDot 2.4s ease-in-out infinite" }
                   : { background: "var(--amb)", animation: transicao ? "pulseDot 1.2s ease-in-out infinite" : undefined }} />
                 <span className="mono" style={{ fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap" }}>{rotulo}</span>
-                {saude && !transicao && <span style={{ fontSize: 11, color: "var(--ink3)" }}>{dePe ? "desligar" : "ligar"}</span>}
+                {saude && !transicao && admin && <span style={{ fontSize: 11, color: "var(--ink3)" }}>{dePe ? "desligar" : "ligar"}</span>}
               </button>
               <ThemeToggle />
               <button type="button" className={u.helpBtn} onClick={() => setAjuda(true)} title="O que é e como usar">?</button>

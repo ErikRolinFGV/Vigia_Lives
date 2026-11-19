@@ -55,22 +55,28 @@ function statusDoCanal(c: Canal, tz: string): Status {
 }
 
 function CardCanal({ c, abrir, parar, recarregar }: { c: Canal; abrir: () => void; parar: () => void; recarregar: () => void }) {
-  const { conta } = useSessao();
+  const { conta, admin } = useSessao();
   const st = statusDoCanal(c, conta.tz);
   const { onFoto, erro } = useTrocarFoto(c.id, recarregar);
+  const pode = c.pode_gerenciar;
   return (
     <div className={s.card} role="link" tabIndex={0} onClick={abrir} onKeyDown={e => e.key === "Enter" && abrir()}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 88 }}>
-        <label className={s.fotoMini} onClick={e => e.stopPropagation()} title={c.foto ? "Trocar a foto do canal" : "Adicionar a foto do canal"}>
-          <CanalAvatar id={c.id} nome={c.nome} foto={c.foto} />
-          <span className={s.fotoSelo}>{c.foto ? "trocar" : "foto"}</span>
-          <input type="file" accept="image/*" onChange={onFoto} style={{ display: "none" }} />
-        </label>
+        {pode ? (
+          <label className={s.fotoMini} onClick={e => e.stopPropagation()} title={c.foto ? "Trocar a foto do canal" : "Adicionar a foto do canal"}>
+            <CanalAvatar id={c.id} nome={c.nome} foto={c.foto} />
+            <span className={s.fotoSelo}>{c.foto ? "trocar" : "foto"}</span>
+            <input type="file" accept="image/*" onChange={onFoto} style={{ display: "none" }} />
+          </label>
+        ) : <CanalAvatar id={c.id} nome={c.nome} foto={c.foto} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className={s.nome}>{c.nome}</div>
           <div className={s.handle}>{c.handle || c.id}</div>
           <div style={{ fontSize: 12, color: "var(--ink3)", marginTop: 3 }}>{c.modo_coleta === "escolhidas" ? "coleta só as lives escolhidas" : "coleta todas as lives"}</div>
-          {!c.foto && <div style={{ fontSize: 11.5, color: "var(--ink4)", marginTop: 3 }}>foto do canal não encontrada · clique para adicionar</div>}
+          {/* de quem é o canal: o visitante vê o que foi compartilhado; o admin, o que cada conta adicionou */}
+          {c.compartilhado && <div style={{ fontSize: 12, color: "var(--ink3)", marginTop: 3 }}>compartilhado com você</div>}
+          {admin && c.dono && <div style={{ fontSize: 12, color: "var(--ink3)", marginTop: 3 }}>adicionado por {c.dono}</div>}
+          {!c.foto && pode && <div style={{ fontSize: 11.5, color: "var(--ink4)", marginTop: 3 }}>foto do canal não encontrada · clique para adicionar</div>}
           {erro && <div style={{ fontSize: 11.5, color: "var(--redInk)", marginTop: 3 }}>{erro}</div>}
         </div>
       </div>
@@ -86,7 +92,7 @@ function CardCanal({ c, abrir, parar, recarregar }: { c: Canal; abrir: () => voi
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink2)", whiteSpace: "nowrap" }}>Ver transmissões →</span>
-        <button type="button" className={s.parar} onClick={e => { e.stopPropagation(); parar(); }}>Parar de vigiar</button>
+        {pode && <button type="button" className={s.parar} onClick={e => { e.stopPropagation(); parar(); }}>Parar de vigiar</button>}
       </div>
     </div>
   );

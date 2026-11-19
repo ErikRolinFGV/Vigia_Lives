@@ -6,6 +6,9 @@ export class ErroApi extends Error {
   }
 }
 
+// sessão expirada ou revogada no meio do uso: a SessaoProvider volta ao login
+export const SEM_SESSAO = "vigia:sem-sessao";
+
 export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
   const r = await fetch("/api" + caminho, {
     ...init,
@@ -13,6 +16,7 @@ export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
       ? { "Content-Type": "application/json", ...init?.headers }
       : init?.headers,
   });
+  if (r.status === 401 && !caminho.startsWith("/auth/")) window.dispatchEvent(new Event(SEM_SESSAO));
   if (!r.ok) {
     let msg = r.statusText;
     try {

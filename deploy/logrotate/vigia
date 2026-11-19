@@ -1,0 +1,18 @@
+# Gira o data/vigia.log (saida do vigia e dos coletores) toda semana e
+# guarda 8 semanas comprimidas. O instalar.sh mostra o comando que copia
+# este arquivo para /etc/logrotate.d/ com o caminho certo.
+#
+# copytruncate: o vigia e o systemd seguem escrevendo no mesmo arquivo, sem
+# precisar reiniciar nada. Os erros que importam tambem ficam no banco
+# (pagina Registro da interface), entao o log de texto e so o historico fino.
+
+@RAIZ@/data/vigia.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su @USUARIO@ @USUARIO@
+}

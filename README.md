@@ -85,18 +85,24 @@ API, em **[INSTALL.md](INSTALL.md)**. Versão curta (Windows):
 py -m venv .venv && .venv\Scripts\activate
 pip install -e ".[api]"
 copy .env.example .env          # cole sua chave em YT_API_KEY
+python -m api.acessos criar SEU_NOME --admin --escolher   # sua conta
 lives-api                        # API em http://127.0.0.1:8000
 cd web && npm install && npm run dev    # interface em http://localhost:5173
 ```
 
 Na interface, o botão do cabeçalho liga o vigia. Ele roda como processo
 próprio: fechar ou reiniciar a API não interrompe uma coleta em andamento.
-Sem o vigia de pé nada é coletado, e a interface avisa. O login é de
-demonstração: qualquer e-mail válido e senha com 6 ou mais caracteres.
-Depois de `npm run build`, a própria API serve a interface.
+Sem o vigia de pé nada é coletado, e a interface avisa. Depois de
+`npm run build`, a própria API serve a interface.
+
+O login é de verdade: contas criadas pela linha de comando
+(`python -m api.acessos`), com dois papéis. O **admin** vê e faz tudo. O
+**visitante** usa o app num espaço próprio (os canais que ele adiciona e as
+lives que cola pelo link), mais os canais que o admin compartilhar com ele,
+e expira sozinho: é a conta para alguém experimentar o Vigia.
 
 Para rodar num servidor Linux, sempre ligado, veja **[deploy/README.md](deploy/README.md)**:
-serviços do systemd, nginx com senha, backup diário e a troca do PC para o servidor.
+serviços do systemd, nginx com HTTPS, contas, backup diário e a troca do PC para o servidor.
 
 ## Limites de hoje
 
@@ -107,8 +113,9 @@ serviços do systemd, nginx com senha, backup diário e a troca do PC para o ser
 - **Cota.** A cota gratuita do YouTube é de 10.000 unidades por dia. Uma live
   com chat movimentado gasta perto de 1.000 unidades por hora. A tela do canal
   prevê o gasto do dia antes de você marcar mais lives.
-- **Estrutura.** O banco é SQLite e o login é de demonstração. Servidor,
-  Postgres e contas de verdade ficam para quando a coleta sair do PC.
+- **Estrutura.** O banco é SQLite, e as contas e o compartilhamento são
+  criados pela linha de comando. Postgres e cadastro pela tela ficam para
+  quando houver clientes de verdade.
 
 ## Como está organizado
 

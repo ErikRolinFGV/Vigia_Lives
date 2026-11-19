@@ -33,12 +33,13 @@ import time
 from datetime import datetime, timedelta, timezone
 
 try:  # instalado como pacote
-    from . import config, db, processo, publico, report, vigilancia, yt
+    from . import config, db, processo, publico, registro, report, vigilancia, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
     import processo
     import publico
+    import registro
     import report
     import vigilancia
     import yt
@@ -63,8 +64,8 @@ def _sinal(sig, frame):
     print("\n[vigia] encerrando: os coletores em andamento continuam ate o fim de cada live")
 
 
-def log(msg):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] [vigia] {msg}", flush=True)
+# log("...") so na tela; log.aviso/log.erro tambem no banco (pagina Registro)
+log = registro.Registro("vigia")
 
 
 def _agora():
@@ -131,7 +132,7 @@ def ler_agendas(con):
             except yt.ErroCota:
                 raise
             except Exception as e:
-                log(f"agenda de {c['nome']} falhou ({e}), tento no próximo ciclo")
+                log.erro(f"agenda de {c['nome']} falhou, tento no próximo ciclo", e)
         if _velho(c["uploads_lidos_em"], UPLOADS_CADA):
             try:
                 publico.registrar_uploads(con, c["canal_id"], max_paginas=2)
@@ -140,7 +141,7 @@ def ler_agendas(con):
             except yt.ErroCota:
                 raise
             except Exception as e:
-                log(f"uploads de {c['nome']} falharam ({e})")
+                log.erro(f"uploads de {c['nome']} falharam", e)
 
 
 def ler_avulsas(con):
@@ -166,7 +167,7 @@ def ler_avulsas(con):
     except yt.ErroCota:
         raise
     except Exception as e:
-        log(f"lives pelo link falharam ({e}), tento no próximo ciclo")
+        log.erro("lives pelo link falharam, tento no próximo ciclo", e)
 
 
 def subir_coletores(con):
@@ -220,11 +221,12 @@ def fechar_orfas(con):
             continue
         con.execute("UPDATE live SET coleta_fim=? WHERE video_id=?", (ultima or db.agora(), l["video_id"]))
         con.commit()
-        log(f"coleta de {l['video_id']} estava aberta sem coletor: fechada em {ultima}")
+        # o coletor fecha a propria coleta ao terminar: chegar aqui e ele ter caido
+        log.aviso(f"coleta aberta sem coletor (o coletor caiu): fechada em {ultima}", video_id=l["video_id"])
         try:
             report.pos_coleta(con, l["video_id"])
         except Exception as e:
-            log(f"momentos de {l['video_id']} falharam ({e})")
+            log.erro("momentos da coleta falharam", e, video_id=l["video_id"])
         _coletores.pop(l["video_id"], None)
 
 
@@ -237,6 +239,7 @@ def ciclo(con, iniciado_em):
     n = publico.rodar_jobs(con)
     if n:
         log(f"{n} leitura(s) de depois da live feitas")
+    registro.limpar(con)
 
 
 def main():
@@ -246,6 +249,7 @@ def main():
     if not config.API_KEY:
         sys.exit("YT_API_KEY nao configurada. Veja o README e crie o arquivo .env")
     signal.signal(signal.SIGINT, _sinal)
+    log.capturar_quedas()
 
     con = db.conectar()
     iniciado = db.agora()
@@ -257,11 +261,11 @@ def main():
         try:
             ciclo(con, iniciado)
         except yt.ErroCota as e:
-            log(f"COTA ESGOTADA: {e}. Tento de novo em 15 min.")
+            log.erro(f"cota do YouTube esgotada: {e}. Tento de novo em 15 min.")
             _esperar(con, 15 * 60)
             continue
         except Exception as e:
-            log(f"ciclo falhou ({type(e).__name__}: {e}), sigo no próximo")
+            log.erro("ciclo falhou, sigo no próximo", e)
         _esperar(con, a.ciclo)
     # os coletores em andamento seguem ate o fim de cada live
     con.execute("UPDATE vigia_batimento SET encerrado_em = ?, parar_pedido_em = NULL WHERE id = 1", (db.agora(),))

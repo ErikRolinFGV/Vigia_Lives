@@ -24,11 +24,12 @@ import time
 from datetime import datetime, timezone
 
 try:  # instalado como pacote
-    from . import config, db, publico, report, yt
+    from . import config, db, publico, registro, report, yt
 except ImportError:  # rodando o arquivo direto
     import config
     import db
     import publico
+    import registro
     import report
     import yt
 
@@ -44,8 +45,9 @@ def _sinal(sig, frame):
 signal.signal(signal.SIGINT, _sinal)
 
 
-def log(msg):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
+# log("...") so na tela; log.aviso/log.erro tambem no banco (pagina Registro).
+# O id da live entra em main(), quando se sabe qual e.
+log = registro.Registro("coletor")
 
 
 # ------------------------------------------------------------------ live
@@ -126,11 +128,11 @@ def esperar_live(con, canal_id, intervalo=120):
         try:
             candidatos += [v for v, _, _ in yt.feed_rss(canal_id)[:5]]
         except Exception as e:
-            log(f"RSS indisponivel ({e})")
+            log.aviso(f"RSS indisponivel ({e})")
         try:
             candidatos += yt.ids_da_pagina(canal_id, "streams")[:5]
         except Exception as e:
-            log(f"aba /streams indisponivel ({e})")
+            log.aviso(f"aba /streams indisponivel ({e})")
 
         if not candidatos:
             log("nenhuma fonte respondeu, tentando de novo")
@@ -157,9 +159,9 @@ def _tentar(o_que, f):
     try:
         return f()
     except yt.ErroCota:
-        log(f"{o_que}: cota esgotada, seguindo sem")
+        log.aviso(f"{o_que}: cota esgotada, seguindo sem")
     except Exception as e:
-        log(f"{o_que}: falhou ({e}), seguindo")
+        log.erro(f"{o_que}: falhou, seguindo", e)
     return None
 
 
@@ -291,12 +293,12 @@ def coletar(con, info, limite_minutos=None):
             try:
                 atual = sincronizar_live(con, video_id, registrar=True)
             except yt.ErroCota as e:
-                log(f"COTA ESGOTADA: {e}")
+                log.erro(f"cota do YouTube esgotada, coleta encerrada: {e}")
                 break
             except (yt.ErroRede, yt.ErroAPI) as e:
                 # nunca derrubar a coleta por uma leitura de audiencia:
                 # perder um ponto da curva e barato, perder o chat nao e
-                log(f"falha ao ler audiencia ({e}), seguindo")
+                log.aviso(f"falha ao ler audiencia, seguindo ({e})")
                 atual = None
             if atual:
                 off = None
@@ -321,13 +323,12 @@ def coletar(con, info, limite_minutos=None):
             try:
                 resp = yt.pagina_chat(con, chat_id, page_token, video_id)
             except yt.ErroCota as e:
-                log(f"COTA ESGOTADA: {e}")
+                log.erro(f"cota do YouTube esgotada, coleta encerrada: {e}")
                 break
             except yt.ErroRede as e:
                 # internet caiu e nao voltou dentro da paciencia. Nao desiste
                 # do chat: continua o loop e tenta de novo na proxima janela.
-                log(f"{e}")
-                log("continuo tentando. A cobertura vai registrar esse buraco.")
+                log.aviso(f"sem rede para ler o chat, continuo tentando; a cobertura vai registrar o buraco ({e})")
                 proximo_chat = agora_s + janela
                 time.sleep(1)
                 continue
@@ -336,14 +337,12 @@ def coletar(con, info, limite_minutos=None):
                 # desistir, tenta uma vez sem o pageToken: apos uma queda longa
                 # o token guardado pode ter expirado.
                 if page_token:
-                    log(f"falha com o pageToken guardado ({e}), "
-                        "reconectando o chat do zero")
+                    log.aviso(f"falha com o pageToken guardado, reconectando o chat do zero ({e})")
                     page_token = None
                     proximo_chat = agora_s + 2
                     continue
-                log(f"falha ao ler o chat: {e}")
-                log("seguindo so com a coleta de audiencia. Se a live nao tiver "
-                    "acabado, veja o status e o corpo do erro em coleta_log.")
+                log.erro("o chat parou de responder: sigo só com a audiência. "
+                         "O status e o corpo do erro estão em coleta_log.", e)
                 chat_id = None
 
             itens = resp.get("items", [])
@@ -440,6 +439,8 @@ def main():
         sys.exit("YT_API_KEY nao configurada. Veja o README e crie o arquivo .env")
     if not args.video and not args.canal:
         sys.exit("informe --video VIDEO_ID ou --canal @handle")
+    log.video_id = args.video
+    log.capturar_quedas()
 
     con = db.conectar()
     n = db.expurgar_identidades(con)
@@ -460,6 +461,7 @@ def main():
         info = esperar_live(con, canal_id)
         if not info:
             return
+        log.video_id = info["video_id"]
 
     coletar(con, info, args.minutos)
     con.close()

@@ -49,8 +49,8 @@ export function BotaoColetar({ l, mudou }: { l: { id: string; estado: LiveResumo
   );
 }
 
-/** Todas as lives do canal ou só as escolhidas. */
-export function SeletorModo({ canalId, modo, mudou }: { canalId: string; modo: ModoColeta; mudou: () => void }) {
+/** Todas as lives do canal ou só as escolhidas. Em canal compartilhado, só mostra o modo (`pode` falso). */
+export function SeletorModo({ canalId, modo, mudou, pode }: { canalId: string; modo: ModoColeta; mudou: () => void; pode: boolean }) {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const escolher = async (m: ModoColeta) => {
@@ -74,8 +74,8 @@ export function SeletorModo({ canalId, modo, mudou }: { canalId: string; modo: M
     <div>
       <div role="radiogroup" aria-label="Modo de coleta" style={{ display: "inline-flex", background: "var(--s3)", border: "1px solid var(--line2)", borderRadius: 10, padding: 3, gap: 3 }}>
         {opcoes.map(o => (
-          <button key={o.m} type="button" role="radio" aria-checked={o.m === modo} onClick={() => escolher(o.m)} disabled={enviando}
-            style={{ fontSize: 13, fontWeight: 600, borderRadius: 8, padding: "7px 13px", border: 0, cursor: o.m === modo ? "default" : "pointer",
+          <button key={o.m} type="button" role="radio" aria-checked={o.m === modo} onClick={() => escolher(o.m)} disabled={enviando || !pode}
+            style={{ fontSize: 13, fontWeight: 600, borderRadius: 8, padding: "7px 13px", border: 0, cursor: o.m === modo || !pode ? "default" : "pointer",
               background: o.m === modo ? "var(--surface)" : "transparent", color: o.m === modo ? "var(--ink)" : "var(--ink3)",
               boxShadow: o.m === modo ? "0 1px 3px rgba(23,20,15,.12)" : "none" }}>
             {o.t}

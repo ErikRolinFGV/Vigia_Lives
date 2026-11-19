@@ -7,21 +7,29 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
-from collector import config, db, processo, yt
+from collector import config, db, processo, registro, yt
 
-from ..deps import LIMITE_SLOTS, conexao
+from ..deps import LIMITE_SLOTS, conexao, escopo
+from ..escopo import SLOTS_VISITANTE, Escopo
 
 router = APIRouter(tags=["operacao"])
+log = registro.Registro("api")
+
+
+def _nao_subiu(msg):
+    """O vigia nao subiu pelo botao: vai para o Registro e volta como erro para a tela."""
+    log.erro(msg)
+    return HTTPException(500, msg)
 
 
 @router.get("/plano")
-def plano(con: sqlite3.Connection = Depends(conexao)):
-    em_uso = con.execute(
-        "SELECT COUNT(*) FROM canal WHERE vigiado = 1 AND removido_em IS NULL"
-    ).fetchone()[0]
-    return {"nome": "Pesquisa", "limite_slots": LIMITE_SLOTS, "em_uso": em_uso}
+def plano(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
+    vigiados = [r[0] for r in con.execute("SELECT canal_id FROM canal WHERE vigiado = 1 AND removido_em IS NULL")]
+    if e.admin:
+        return {"nome": "Pesquisa", "limite_slots": LIMITE_SLOTS, "em_uso": len(vigiados)}
+    return {"nome": "Visitante", "limite_slots": SLOTS_VISITANTE, "em_uso": sum(1 for c in vigiados if c in e.proprios)}
 
 
 # Sem batimento ha mais que isso, o vigia e considerado parado.
@@ -60,7 +68,11 @@ def _subindo() -> bool:
 
 
 @router.get("/operacao/saude")
-def saude(con: sqlite3.Connection = Depends(conexao)):
+def saude(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
+    return _saude(con, e)
+
+
+def _saude(con, e: Escopo | None = None):
     ultima = con.execute("SELECT MAX(chamado_em) FROM coleta_log").fetchone()[0]
     b = _batimento(con)
     de_pe = _de_pe(b)
@@ -68,12 +80,15 @@ def saude(con: sqlite3.Connection = Depends(conexao)):
     # para nao parecer que a mesma live esta sendo coletada duas vezes
     hora = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
     coletas = [dict(r) for r in con.execute(
-        """SELECT l.video_id id, l.titulo, l.coleta_inicio desde, c.nome canal,
+        """SELECT l.video_id id, l.canal_id, l.titulo, l.coleta_inicio desde, c.nome canal,
                   (SELECT COALESCE(SUM(custo_unidades), 0) FROM coleta_log g WHERE g.video_id = l.video_id) unidades,
                   (SELECT COALESCE(SUM(custo_unidades), 0) FROM coleta_log g
                    WHERE g.video_id = l.video_id AND g.chamado_em >= ?) ultima_hora
            FROM live l JOIN canal c ON c.canal_id = l.canal_id
            WHERE l.coleta_inicio IS NOT NULL AND l.coleta_fim IS NULL ORDER BY l.coleta_inicio""", (hora,))]
+    # visitante: so as coletas do espaco dele (o vigia e o mesmo para todos)
+    if e is not None:
+        coletas = [c for c in coletas if e.live(c["id"], c["canal_id"])]
     ativas = len(coletas)
     return {
         "api": "ok",
@@ -108,12 +123,12 @@ def ligar_vigia(con: sqlite3.Connection = Depends(conexao)):
     if cmd:
         r = subprocess.run(shlex.split(cmd), capture_output=True, text=True, timeout=30)
         if r.returncode != 0:
-            raise HTTPException(500, f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
+            raise _nao_subiu(f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
         for _ in range(20):
             time.sleep(0.5)
             if _de_pe(_batimento(con)):
                 break
-        return saude(con)
+        return _saude(con)
     LOG_VIGIA.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_VIGIA, "a", encoding="utf-8") as saida:
         saida.write(f"\n--- ligado pela interface em {db.agora()} ---\n")
@@ -124,16 +139,16 @@ def ligar_vigia(con: sqlite3.Connection = Depends(conexao)):
                        capture_output=True, text=True, timeout=30,
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     if r.returncode != 0 or not r.stdout.strip().isdigit():
-        raise HTTPException(500, f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
+        raise _nao_subiu(f"O vigia não subiu: {(r.stderr or r.stdout).strip()[-300:]}")
     _vigia = int(r.stdout.strip())
     # o primeiro batimento sai logo no inicio do primeiro ciclo
     for _ in range(20):
         time.sleep(0.5)
         if _de_pe(_batimento(con)):
-            return saude(con)
+            return _saude(con)
         if not _processo_vivo(_vigia):
-            raise HTTPException(500, "O vigia saiu logo ao subir. Veja data/vigia.log.")
-    return saude(con)
+            raise _nao_subiu("O vigia saiu logo ao subir. Veja data/vigia.log.")
+    return _saude(con)
 
 
 @router.post("/operacao/vigia/desligar")
@@ -147,4 +162,40 @@ def desligar_vigia(con: sqlite3.Connection = Depends(conexao)):
         time.sleep(0.5)
         if not _de_pe(_batimento(con)):
             break
-    return saude(con)
+    return _saude(con)
+
+
+# ---------------------------------------------------------------- registro
+
+def _so_admin(req: Request):
+    if req.state.conta["papel"] != "admin":
+        raise HTTPException(403, "Só o administrador vê o registro do sistema.")
+
+
+@router.get("/operacao/eventos")
+def eventos(req: Request, nivel: str | None = None, origem: str | None = None, limite: int = 200,
+            con: sqlite3.Connection = Depends(conexao)):
+    """Avisos e erros do vigia, dos coletores e da API, do mais recente para o mais antigo."""
+    _so_admin(req)
+    filtros, args = [], []
+    if nivel == "erro":  # "erro" inclui o critico (processo que caiu)
+        filtros.append("nivel IN ('erro', 'critico')")
+    elif nivel:
+        filtros.append("nivel = ?"); args.append(nivel)
+    if origem:
+        filtros.append("origem = ?"); args.append(origem)
+    onde = ("WHERE " + " AND ".join(filtros)) if filtros else ""
+    linhas = con.execute(
+        f"""SELECT e.*, l.titulo FROM evento e LEFT JOIN live l ON l.video_id = e.video_id
+            {onde} ORDER BY e.ultimo_em DESC LIMIT ?""", (*args, max(1, min(limite, 1000)))).fetchall()
+    return {"eventos": [dict(r) for r in linhas], "guardados_dias": registro.GUARDAR.days}
+
+
+@router.get("/operacao/eventos/resumo")
+def eventos_resumo(req: Request, con: sqlite3.Connection = Depends(conexao)):
+    """Para o selo do cabecalho: quantos erros nas ultimas 24 h e quando foi o ultimo."""
+    _so_admin(req)
+    dia = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(timespec="seconds")
+    n = con.execute("SELECT COUNT(*) FROM evento WHERE nivel IN ('erro', 'critico') AND ultimo_em >= ?", (dia,)).fetchone()[0]
+    ultimo = con.execute("SELECT MAX(ultimo_em) FROM evento WHERE nivel IN ('erro', 'critico')").fetchone()[0]
+    return {"erros_24h": n, "ultimo_erro_em": ultimo}

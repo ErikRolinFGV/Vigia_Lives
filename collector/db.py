@@ -171,6 +171,33 @@ def migrar(con):
         video_id TEXT PRIMARY KEY, gerado_em TEXT NOT NULL, modelo TEXT NOT NULL,
         conteudo TEXT NOT NULL);
     """)
+    # contas da interface (api/acessos.py): admin faz tudo, visitante so le.
+    # Senha so como hash PBKDF2. expira_em nulo: sem prazo.
+    con.execute("""CREATE TABLE IF NOT EXISTS acesso (
+        usuario TEXT PRIMARY KEY, senha_hash TEXT NOT NULL, papel TEXT NOT NULL,
+        criado_em TEXT NOT NULL, expira_em TEXT, revogado_em TEXT)""")
+    # espaco de cada conta (api/escopo.py): canal.dono e quem adicionou o
+    # canal (nulo = o admin, como tudo o que veio antes das contas); o admin
+    # compartilha canais com um visitante; live colada pelo link fica com
+    # quem colou
+    _add_coluna(con, "canal", "dono", "TEXT")
+    con.executescript("""
+    CREATE TABLE IF NOT EXISTS canal_compartilhado (
+        usuario TEXT NOT NULL, canal_id TEXT NOT NULL, em TEXT NOT NULL,
+        PRIMARY KEY (usuario, canal_id));
+    CREATE TABLE IF NOT EXISTS live_acesso (
+        usuario TEXT NOT NULL, video_id TEXT NOT NULL, em TEXT NOT NULL,
+        PRIMARY KEY (usuario, video_id));
+    """)
+    # avisos e erros do vigia, dos coletores e da API (collector/registro.py):
+    # o que o admin le na pagina Registro quando o Vigia roda numa VM
+    con.executescript("""
+    CREATE TABLE IF NOT EXISTS evento (
+        id INTEGER PRIMARY KEY, em TEXT NOT NULL, ultimo_em TEXT NOT NULL,
+        nivel TEXT NOT NULL, origem TEXT NOT NULL, video_id TEXT,
+        mensagem TEXT NOT NULL, detalhe TEXT, repeticoes INTEGER NOT NULL DEFAULT 1);
+    CREATE INDEX IF NOT EXISTS evento_ultimo ON evento (ultimo_em);
+    """)
     # quem publicou o relatorio aparece no rodape do link publico
     _add_coluna(con, "publicacao", "autor_nome", "TEXT")
     _add_coluna(con, "publicacao", "instituicao", "TEXT")

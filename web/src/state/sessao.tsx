@@ -1,7 +1,8 @@
-// Sessão do MVP. Não existe usuário no backend: o login é de demonstração e
-// conta, preferências e tema vivem no navegador (localStorage).
+// Sessão. Quem entra e o papel vêm da API (cookie da sessão, api/acessos.py);
+// perfil, preferências e tema vivem no navegador (localStorage).
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { api, SEM_SESSAO } from "../api/client";
 import { aplicarTema, type Tema } from "../theme/tokens";
 
 export type Notif = { noar: boolean; rel: boolean; perdida: boolean };
@@ -16,11 +17,16 @@ export type Conta = {
   notif: Notif;
 };
 
+export type Acesso = { usuario: string; papel: "admin" | "visitante"; expira_em: string | null };
+
 type Sessao = {
   logado: boolean;
+  verificando: boolean;   // primeira pergunta à API ainda sem resposta
+  acesso: Acesso | null;
+  admin: boolean;         // vigia, Registro e contas; o resto vale por canal (pode_gerenciar)
   conta: Conta;
   tema: Tema;
-  entrar: (email: string) => void;
+  entrar: (usuario: string, senha: string) => Promise<void>;
   sair: () => void;
   atualizar: (p: Partial<Conta>) => void;
   setTema: (t: Tema) => void;
@@ -70,32 +76,48 @@ function lerTema(): Tema {
 const Ctx = createContext<Sessao | null>(null);
 
 export function SessaoProvider({ children }: { children: ReactNode }) {
-  const [estado, setEstado] = useState(() => ler(CHAVE, { logado: false, conta: contaPadrao }));
+  const [estado, setEstado] = useState(() => ({ conta: ler(CHAVE, { conta: contaPadrao }).conta }));
+  const [acesso, setAcesso] = useState<Acesso | null>(null);
+  const [verificando, setVerificando] = useState(true);
   const [tema, setTemaState] = useState<Tema>(lerTema);
 
   useEffect(() => { aplicarTema(tema); gravar(CHAVE_TEMA, tema); }, [tema]);
   useEffect(() => { gravar(CHAVE, estado); }, [estado]);
 
-  const entrar = useCallback((email: string) =>
-    setEstado(s => ({ logado: true, conta: { ...s.conta, email } })), []);
-  const sair = useCallback(() => setEstado(s => ({ ...s, logado: false })), []);
+  // a sessão é o cookie: pergunta à API quem está entrando
+  useEffect(() => {
+    api<Acesso>("/auth/eu").then(setAcesso).catch(() => setAcesso(null)).finally(() => setVerificando(false));
+    const caiu = () => setAcesso(null);
+    window.addEventListener(SEM_SESSAO, caiu);
+    return () => window.removeEventListener(SEM_SESSAO, caiu);
+  }, []);
+
+  const entrar = useCallback(async (usuario: string, senha: string) => {
+    const a = await api<Acesso>("/auth/entrar", { method: "POST", body: JSON.stringify({ usuario, senha }) });
+    setAcesso(a);
+    setEstado(s => ({ conta: { ...s.conta, email: a.usuario } }));
+  }, []);
+  const sair = useCallback(() => {
+    api("/auth/sair", { method: "POST" }).catch(() => { /* sem rede: o cookie expira sozinho */ });
+    setAcesso(null);
+  }, []);
   const atualizar = useCallback((p: Partial<Conta>) =>
     setEstado(s => ({ ...s, conta: { ...s.conta, ...p } })), []);
   const alternarTema = useCallback(() => setTemaState(t => (t === "claro" ? "escuro" : "claro")), []);
 
   const valor = useMemo<Sessao>(() => {
-    const email = estado.conta.email || "pesquisa@vigia.app";
+    const email = acesso?.usuario || estado.conta.email || "pesquisa@vigia.app";
     const padrao = email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const nomeConta = estado.conta.nome || padrao;
     const iniciais = nomeConta.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "V";
     return {
-      logado: estado.logado,
+      logado: !!acesso, verificando, acesso, admin: acesso?.papel === "admin",
       conta: { ...estado.conta, email },
       tema, entrar, sair, atualizar,
       setTema: setTemaState, alternarTema,
       nomeConta, iniciais,
     };
-  }, [estado, tema, entrar, sair, atualizar, alternarTema]);
+  }, [estado, acesso, verificando, tema, entrar, sair, atualizar, alternarTema]);
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

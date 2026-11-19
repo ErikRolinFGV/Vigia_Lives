@@ -58,7 +58,10 @@ Instalado. A API esta em http://127.0.0.1:8000 (systemctl --user status vigia-ap
 
 Falta, uma vez so:
   1. Servicos no boot sem login: sudo loginctl enable-linger $USER
-  2. nginx com senha na frente da API: deploy/nginx/vigia.conf
-  3. Ligar o vigia SO depois de desligar o do PC (deploy/README.md, "A troca"):
+  2. nginx e HTTPS na frente da API: deploy/nginx/vigia.conf
+  3. Sua conta de admin: .venv/bin/python -m api.acessos criar SEU_NOME --admin --escolher
+  4. Girar o data/vigia.log toda semana:
+       sed -e "s#@RAIZ@#$RAIZ#g" -e "s#@USUARIO@#$USER#g" deploy/logrotate/vigia | sudo tee /etc/logrotate.d/vigia >/dev/null
+  5. Ligar o vigia SO depois de desligar o do PC (deploy/README.md, "A troca"):
        systemctl --user start vigia
 FIM

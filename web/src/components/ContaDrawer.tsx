@@ -3,7 +3,7 @@ import type { ChangeEvent, KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSessao, type Notif } from "../state/sessao";
 import { usePlano } from "../state/plano";
-import { Avatar, emailValido } from "./basicos";
+import { Avatar } from "./basicos";
 import u from "./ui.module.css";
 import s from "./drawers.module.css";
 
@@ -40,18 +40,13 @@ export function useEsc(fechar: () => void) {
 }
 
 export function ContaDrawer({ fechar, mostrarTrocar }: { fechar: () => void; mostrarTrocar: boolean }) {
-  const { conta, nomeConta, atualizar, tema, setTema, sair } = useSessao();
+  const { conta, nomeConta, atualizar, tema, setTema, sair, acesso } = useSessao();
   const plano = usePlano();
   const nav = useNavigate();
   useEsc(fechar);
 
   const [editNome, setEditNome] = useState(false);
   const [nomeDraft, setNomeDraft] = useState(nomeConta);
-  const [acesso, setAcesso] = useState<null | "email" | "senha">(null);
-  const [emailDraft, setEmailDraft] = useState("");
-  const [senhaAtual, setSenhaAtual] = useState("");
-  const [senhaNova, setSenhaNova] = useState("");
-  const [msg, setMsg] = useState<{ t: string; erro: boolean } | null>(null);
   const [exportPedido, setExportPedido] = useState(false);
   const [excluir, setExcluir] = useState(false);
   const [excluirTxt, setExcluirTxt] = useState("");
@@ -73,20 +68,6 @@ export function ContaDrawer({ fechar, mostrarTrocar }: { fechar: () => void; mos
       .format(new Date(Date.UTC(2026, 8, 8, 12, 0)));
     tzExemplo = "A live Brasil × Canadá aparece como " + f;
   } catch { /* fuso inválido */ }
-
-  const salvarEmail = () => {
-    const v = emailDraft.trim();
-    if (!emailValido(v)) { setMsg({ t: "Informe um e-mail válido.", erro: true }); return; }
-    atualizar({ email: v });
-    setAcesso(null);
-    setMsg({ t: "E-mail atualizado. Enviamos um link de confirmação para " + v + ".", erro: false });
-  };
-  const salvarSenha = () => {
-    if (!senhaAtual) { setMsg({ t: "Informe a senha atual.", erro: true }); return; }
-    if (senhaNova.length < 6) { setMsg({ t: "A nova senha tem no mínimo 6 caracteres.", erro: true }); return; }
-    setAcesso(null); setSenhaAtual(""); setSenhaNova("");
-    setMsg({ t: "Senha atualizada. As outras sessões foram encerradas.", erro: false });
-  };
 
   const sairDaConta = () => { fechar(); sair(); nav("/login"); };
   const podeExcluir = excluirTxt.trim() === "EXCLUIR";
@@ -226,43 +207,30 @@ export function ContaDrawer({ fechar, mostrarTrocar }: { fechar: () => void; mos
             {tzExemplo && <div className={s.tzEx}>{tzExemplo}</div>}
           </div>
 
+          {/* a conta é criada e trocada por quem administra (python -m api.acessos) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div className={u.secLabel} style={{ marginBottom: 8 }}>Acesso e segurança</div>
+            <div className={u.secLabel} style={{ marginBottom: 8 }}>Acesso</div>
             <div className={s.acesso}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, color: "var(--ink3)" }}>E-mail</div>
-                <div className="mono" style={{ fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{conta.email}</div>
+                <div style={{ fontSize: 12.5, color: "var(--ink3)" }}>Usuário</div>
+                <div className="mono" style={{ fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acesso?.usuario}</div>
               </div>
-              <button type="button" className={s.acao} style={{ fontSize: 13 }} onClick={() => { setAcesso("email"); setEmailDraft(""); setMsg(null); }}>Trocar</button>
+              <span style={{ fontSize: 13, color: "var(--ink2)" }}>{acesso?.papel === "admin" ? "Administrador" : "Visitante"}</span>
             </div>
-            {acesso === "email" && (
-              <div className={s.acessoForm}>
-                <input className={u.inputSmMono} value={emailDraft} placeholder="novo e-mail" onChange={e => setEmailDraft(e.target.value)} />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" className={u.btnSm} onClick={salvarEmail}>Salvar</button>
-                  <button type="button" className={u.btnSmGhost} onClick={() => setAcesso(null)}>Cancelar</button>
-                </div>
+            {acesso?.expira_em && (
+              <div className={s.nota} style={{ marginTop: 6 }}>
+                Este acesso vale até {new Date(acesso.expira_em).toLocaleString("pt-BR", { timeZone: conta.tz, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.
               </div>
             )}
-            <div className={s.acesso}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12.5, color: "var(--ink3)" }}>Senha</div>
-                <div className="mono" style={{ fontSize: 13.5, letterSpacing: ".1em" }}>••••••••</div>
-              </div>
-              <button type="button" className={s.acao} style={{ fontSize: 13 }} onClick={() => { setAcesso("senha"); setMsg(null); }}>Trocar</button>
-            </div>
-            {acesso === "senha" && (
-              <div className={s.acessoForm}>
-                <input type="password" className={u.inputSmMono} value={senhaAtual} placeholder="senha atual" onChange={e => setSenhaAtual(e.target.value)} />
-                <input type="password" className={u.inputSmMono} value={senhaNova} placeholder="nova senha" onChange={e => setSenhaNova(e.target.value)} />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" className={u.btnSm} onClick={salvarSenha}>Salvar</button>
-                  <button type="button" className={u.btnSmGhost} onClick={() => setAcesso(null)}>Cancelar</button>
-                </div>
-              </div>
-            )}
-            {msg && <div style={{ fontSize: 12.5, color: msg.erro ? "var(--redInk)" : "var(--okInk)", marginTop: 8, textWrap: "pretty" }}>{msg.t}</div>}
           </div>
+
+          {acesso?.papel === "admin" && (
+            <button type="button" className={s.trocar} onClick={() => { fechar(); nav("/yt/registro"); }}>
+              <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600 }}>Registro do sistema</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>avisos e erros</span>
+              <span style={{ fontSize: 15, color: "var(--ink3)" }}>→</span>
+            </button>
+          )}
 
           {mostrarTrocar && (
             <button type="button" className={s.trocar} onClick={() => { fechar(); nav("/plataformas"); }}>

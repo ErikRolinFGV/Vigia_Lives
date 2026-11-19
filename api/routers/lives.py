@@ -6,10 +6,11 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from collector import config, gemeas, vigilancia, yt
+from collector import config, db, gemeas, vigilancia, yt
 
 from .. import secoes
-from ..deps import conexao
+from ..deps import conexao, escopo
+from ..escopo import Escopo
 from .. import trechos
 from ..transmissoes import lives_do_canal, mapa_links, mesmo_conteudo, resumo_live, serie
 
@@ -118,10 +119,11 @@ def _momentos(con, video_id):
 
 
 @router.get("/lives/{video_id}")
-def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao)):
+def detalhe(video_id: str, con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     l = _live_ou_404(con, video_id)
     r = _resumo(con, l)
-    lista = [resumo_live(d) for d in lives_do_canal(con, l["canal_id"])]
+    # links, trechos e "mesmo jogo" so entre as lives que a conta ve
+    lista = [resumo_live(d) for d in lives_do_canal(con, l["canal_id"]) if e.live(d["video_id"], l["canal_id"])]
     # o mesmo conteudo em outra transmissao do canal (link de reserva, trecho
     # de outro video): a tela liga as duas para nao parecerem duplicadas, e
     # avisa quando uma delas ficou sem coleta
@@ -318,7 +320,7 @@ def gasto_no_dia(con, dia):
     return sum(r["custo_unidades"] or 0 for r in rows if _dia_cota(r["chamado_em"]) == dia)
 
 
-def cota_por_dia(con):
+def cota_por_dia(con, e: Escopo | None = None):
     """
     O que as lives escolhidas devem gastar em cada dia de cota, contra o
     limite diario: soma estimada, quantas ao mesmo tempo no pior momento e,
@@ -336,7 +338,10 @@ def cota_por_dia(con):
             continue
         dur, _, _, _, custo = _estimar(con, o["canal_id"], cache)
         d = dias.setdefault(_dia_cota(o["agendada_para"]), [])
-        d.append({"id": o["video_id"], "titulo": o["titulo"], "canal": o["canal"],
+        # a cota e uma so para todas as contas: o total conta tudo, mas a
+        # coleta de outra conta entra sem titulo nem canal
+        ve = e is None or e.live(o["video_id"], o["canal_id"])
+        d.append({"id": o["video_id"] if ve else "", "titulo": o["titulo"] if ve else None, "canal": o["canal"] if ve else "",
                   "agendada_para": o["agendada_para"], "custo": custo,
                   "fim_estimado": (ini + timedelta(seconds=dur)).isoformat(timespec="seconds")})
     saida = []
@@ -366,8 +371,8 @@ def cota_por_dia(con):
 
 
 @router.get("/cota/previsao")
-def previsao_cota(con: sqlite3.Connection = Depends(conexao)):
-    return {"dias": cota_por_dia(con)}
+def previsao_cota(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
+    return {"dias": cota_por_dia(con, e)}
 
 
 @router.get("/lives/{video_id}/previsao")
@@ -517,7 +522,7 @@ def ler_link(corpo: Link, con: sqlite3.Connection = Depends(conexao)):
 
 
 @router.post("/lives/link", status_code=201)
-def coletar_link(corpo: Link, con: sqlite3.Connection = Depends(conexao)):
+def coletar_link(corpo: Link, con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     """
     Marca a live do link para coleta. Canal nao vigiado nao vira canal da
     lista nem ocupa slot: o vigia acompanha so esta live.
@@ -535,6 +540,10 @@ def coletar_link(corpo: Link, con: sqlite3.Connection = Depends(conexao)):
         avulsa = vigilancia.coletar_avulsa(con, item)
     except yt.ErroCota:
         raise HTTPException(503, "A cota diária da API do YouTube acabou. Tente de novo amanhã.")
+    if not e.admin:
+        con.execute("INSERT OR IGNORE INTO live_acesso (usuario, video_id, em) VALUES (?, ?, ?)",
+                    (e.usuario, video_id, db.agora()))
+        con.commit()
     return {"id": video_id, "avulsa": avulsa}
 
 

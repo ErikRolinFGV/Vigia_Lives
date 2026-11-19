@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useSessao } from "../state/sessao";
-import { Erro, Logo, ThemeToggle, emailValido } from "../components/basicos";
+import { Erro, Logo, ThemeToggle } from "../components/basicos";
 import { LoginDeco, useLarguraJanela } from "../components/LoginDeco";
 import u from "../components/ui.module.css";
 import s from "./auth.module.css";
@@ -24,21 +24,30 @@ function AuthShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Contas são criadas por quem administra (python -m api.acessos): não há
+// cadastro nem recuperação de senha pela tela.
 export function Login() {
-  const { conta, entrar } = useSessao();
+  const { entrar, logado, verificando } = useSessao();
   const nav = useNavigate();
-  const [email, setEmail] = useState(conta.email === "pesquisa@vigia.app" ? "" : conta.email);
+  const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [ver, setVer] = useState(false);
   const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  // Login de demonstração: qualquer credencial bem formada entra.
-  const enviar = (e: FormEvent) => {
+  if (!verificando && logado && !enviando) return <Navigate to="/plataformas" replace />;
+
+  const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    if (!emailValido(email)) return setErro("Informe um e-mail válido.");
-    if (senha.length < 6) return setErro("A senha tem no mínimo 6 caracteres.");
-    entrar(email.trim());
-    nav("/plataformas");
+    if (!usuario.trim() || !senha) return setErro("Informe o usuário e a senha.");
+    setEnviando(true);
+    try {
+      await entrar(usuario.trim(), senha);
+      nav("/plataformas");
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível entrar.");
+      setEnviando(false);
+    }
   };
 
   return (
@@ -46,9 +55,9 @@ export function Login() {
       <h1 className={s.titulo}>Entrar na sua conta</h1>
       <form className={s.campos} onSubmit={enviar} noValidate>
         <div className={s.campo}>
-          <label className={u.label} htmlFor="email">E-mail</label>
-          <input id="email" type="email" autoComplete="email" className={u.input} value={email}
-            onChange={e => { setEmail(e.target.value); setErro(""); }} />
+          <label className={u.label} htmlFor="usuario">Usuário</label>
+          <input id="usuario" autoComplete="username" autoCapitalize="none" spellCheck={false} className={u.input} value={usuario}
+            onChange={e => { setUsuario(e.target.value); setErro(""); }} />
         </div>
         <div className={s.campo}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
@@ -59,52 +68,10 @@ export function Login() {
             onChange={e => { setSenha(e.target.value); setErro(""); }} />
         </div>
         {erro && <Erro texto={erro} />}
-        <button type="submit" className={u.btnPrimary} style={{ marginTop: 2 }}>Entrar</button>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 2 }}>
-          <button type="button" className={u.linkBtn} onClick={() => nav("/recuperar", { state: { email } })}>Esqueci a senha</button>
-        </div>
+        <button type="submit" className={u.btnPrimary} style={{ marginTop: 2 }} disabled={enviando}>
+          {enviando ? "Entrando…" : "Entrar"}
+        </button>
       </form>
-    </AuthShell>
-  );
-}
-
-export function Recuperar() {
-  const nav = useNavigate();
-  const { conta } = useSessao();
-  const veio = (useLocation().state as { email?: string } | null)?.email;
-  const [email, setEmail] = useState(veio || (conta.email === "pesquisa@vigia.app" ? "" : conta.email));
-  const [enviado, setEnviado] = useState("");
-  const [erro, setErro] = useState("");
-
-  const enviar = (e: FormEvent) => {
-    e.preventDefault();
-    if (!emailValido(email)) return setErro("Informe um e-mail válido.");
-    setErro("");
-    setEnviado(email.trim());
-  };
-
-  return (
-    <AuthShell>
-      {!enviado ? (
-        <form onSubmit={enviar} noValidate>
-          <h1 className={s.titulo} style={{ marginBottom: 8 }}>Recuperar acesso</h1>
-          <p className={s.sub}>Enviamos um link de redefinição. Ele vale por 30 minutos e só pode ser usado uma vez.</p>
-          <div className={s.campo} style={{ marginBottom: 14 }}>
-            <label className={u.label} htmlFor="rec">E-mail da conta</label>
-            <input id="rec" type="email" className={u.input} value={email} onChange={e => { setEmail(e.target.value); setErro(""); }} />
-          </div>
-          {erro && <div style={{ marginBottom: 14 }}><Erro texto={erro} /></div>}
-          <button type="submit" className={u.btnPrimary}>Enviar link</button>
-        </form>
-      ) : (
-        <div style={{ animation: "riseIn .26s ease-out both" }}>
-          <div className={s.okIcone}><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--ok)" }} /></div>
-          <h1 className={s.titulo} style={{ marginBottom: 8 }}>Link enviado</h1>
-          <p className={s.sub} style={{ fontSize: 13.5, marginBottom: 6 }}>Se existir conta para este endereço, o link chega em alguns minutos.</p>
-          <div className={s.destino}>{enviado}</div>
-        </div>
-      )}
-      <button type="button" className={u.linkBtn} style={{ display: "block", margin: "14px auto 0" }} onClick={() => nav("/login")}>Voltar ao login</button>
     </AuthShell>
   );
 }

@@ -92,6 +92,10 @@ export type Canal = {
   n_nao_escolhidas: number;
   cobertura_media: number | null;
   pico: number | null;
+  // espaço de cada conta (api/escopo.py)
+  dono: string | null;          // quem adicionou; nulo = o admin
+  pode_gerenciar: boolean;      // modo, foto e parar de vigiar
+  compartilhado: boolean;       // o admin liberou este canal para a conta
 };
 
 export type CanalDetalhe = Canal & { lives: LiveResumo[] };

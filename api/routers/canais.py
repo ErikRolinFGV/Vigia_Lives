@@ -10,7 +10,8 @@ from pydantic import BaseModel
 
 from collector import config, db, vigilancia, yt
 
-from ..deps import LIMITE_SLOTS, conexao
+from ..deps import LIMITE_SLOTS, conexao, escopo
+from ..escopo import SLOTS_VISITANTE, Escopo
 from ..transmissoes import lives_do_canal, mesmo_conteudo, outro_link, resumo_live, vai_coletar
 from .lives import cota_por_dia
 
@@ -78,8 +79,11 @@ def _com_outro_link(resumos):
     return resumos
 
 
-def _visao_canal(con, c):
+def _visao_canal(con, c, e: Escopo):
     lives = lives_do_canal(con, c["canal_id"])
+    # canal de que a conta so colou lives pelo link: so essas aparecem
+    if not e.canal(c["canal_id"]):
+        lives = [l for l in lives if e.live(l["video_id"], c["canal_id"])]
     # descartada nao entra em total nenhum do canal
     coletadas = [l for l in lives if l["estado"] in ("coletada", "parcial") and not l["_descarte"]]
     # no ar = o YouTube diz que esta no ar, com ou sem coletor. Sem coletor
@@ -113,6 +117,7 @@ def _visao_canal(con, c):
         "cobertura_media": round(sum(cobs) / len(cobs), 1) if cobs else None,
         "pico": max(picos) if picos else None,
         "lives": _com_outro_link([resumo_live(l) for l in lives]),
+        **e.marcas(c["canal_id"], c["dono"]),
     }
     return v
 
@@ -124,19 +129,26 @@ def _vigiados(con):
 
 
 @router.get("/canais")
-def listar(con: sqlite3.Connection = Depends(conexao)):
-    canais = _vigiados(con)
+def listar(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
+    canais = [c for c in _vigiados(con) if e.canal(c["canal_id"])]
     for c in canais:
         if _velha(c["agenda_lida_em"]):
             _sincronizar_em_fundo(c["canal_id"])
-    lista = [_visao_canal(con, c) for c in canais]
+    lista = [_visao_canal(con, c, e) for c in canais]
     for v in lista:
         v.pop("lives")
-    return {"limite_slots": LIMITE_SLOTS, "em_uso": len(lista), "canais": lista}
+    return {**_slots(con, e), "canais": lista}
+
+
+def _slots(con, e):
+    """Admin: os slots do plano, todas as contas somadas. Visitante: os dele (canais compartilhados nao contam)."""
+    if e.admin:
+        return {"limite_slots": LIMITE_SLOTS, "em_uso": len(_vigiados(con))}
+    return {"limite_slots": SLOTS_VISITANTE, "em_uso": sum(1 for c in _vigiados(con) if c["canal_id"] in e.proprios)}
 
 
 @router.get("/agenda")
-def agenda(con: sqlite3.Connection = Depends(conexao)):
+def agenda(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     """
     O que os canais vigiados vao transmitir e as ultimas coletas, mais as
     lives coladas pelo link (de canais que nao sao vigiados: so elas, nao o
@@ -151,6 +163,8 @@ def agenda(con: sqlite3.Connection = Depends(conexao)):
         for l in lives_do_canal(con, c["canal_id"]):
             if avulsas and not l["avulsa"]:
                 continue
+            if not e.live(l["video_id"], c["canal_id"]):
+                continue
             item = {"canal_id": c["canal_id"], "canal": c["nome"], **resumo_live(l)}
             no_ar_sem_escolha = l["estado"] == "nao_escolhida" and l["status"] == "ao_vivo"
             if l["estado"] == "no_ar" or no_ar_sem_escolha or (l["estado"] == "agendada" and (l["agendada_para"] or "") >= agora[:16]):
@@ -160,15 +174,15 @@ def agenda(con: sqlite3.Connection = Depends(conexao)):
     proximas.sort(key=lambda x: (not x["ao_vivo"], x["agendada_para"] or ""))
     recentes.sort(key=lambda x: x["inicio"] or x["agendada_para"] or "", reverse=True)
     # a agenda inteira (nao so as 6 primeiras): e nela que se escolhe o que coletar
-    return {"proximas": proximas, "recentes": recentes[:5], "cota": cota_por_dia(con)}
+    return {"proximas": proximas, "recentes": recentes[:5], "cota": cota_por_dia(con, e)}
 
 
 @router.get("/canais/{canal_id}")
-def detalhe(canal_id: str, con: sqlite3.Connection = Depends(conexao)):
+def detalhe(canal_id: str, con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     c = _canal_ou_404(con, canal_id)
     if c["vigiado"] and _velha(c["agenda_lida_em"]):
         _sincronizar_em_fundo(canal_id)
-    return _visao_canal(con, c)
+    return _visao_canal(con, c, e)
 
 
 class NovoCanal(BaseModel):
@@ -176,7 +190,7 @@ class NovoCanal(BaseModel):
 
 
 @router.post("/canais", status_code=201)
-def vigiar(corpo: NovoCanal, con: sqlite3.Connection = Depends(conexao)):
+def vigiar(corpo: NovoCanal, con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     entrada = corpo.handle.strip()
     if not entrada:
         raise HTTPException(422, "Informe um @handle, um id UC… ou o link do canal.")
@@ -187,18 +201,31 @@ def vigiar(corpo: NovoCanal, con: sqlite3.Connection = Depends(conexao)):
         canal_id = yt.resolver_canal_id(entrada)
     except Exception:
         raise HTTPException(404, f"Não encontrei um canal do YouTube para {entrada}.")
-    ja = con.execute("SELECT vigiado, removido_em FROM canal WHERE canal_id=?", (canal_id,)).fetchone()
+    ja = con.execute("SELECT vigiado, removido_em, dono FROM canal WHERE canal_id=?", (canal_id,)).fetchone()
     ja_vigiado = ja and ja["vigiado"] and not ja["removido_em"]
+    if not e.admin and ja and ja["dono"] != e.usuario:
+        # canal de outra conta (ou do admin) com historico: so o admin libera
+        tem_dados = ja_vigiado or con.execute("SELECT 1 FROM live WHERE canal_id=? LIMIT 1", (canal_id,)).fetchone()
+        if ja["dono"] or tem_dados:
+            if e.canal(canal_id):
+                return _visao_canal(con, _canal_ou_404(con, canal_id), e)
+            raise HTTPException(409, "Esse canal já é acompanhado por outra conta. Peça ao administrador para compartilhá-lo com você.")
     if not ja_vigiado and em_uso >= LIMITE_SLOTS:
         raise HTTPException(409, f"Todos os {LIMITE_SLOTS} slots do plano estão em uso.")
+    if not e.admin and not ja_vigiado and _slots(con, e)["em_uso"] >= SLOTS_VISITANTE:
+        raise HTTPException(409, f"Sua conta pode vigiar até {SLOTS_VISITANTE} canais. Pare de vigiar um para abrir espaço.")
     try:
         vigilancia.vigiar(con, canal_id)
+        if not e.admin:
+            con.execute("UPDATE canal SET dono = ? WHERE canal_id = ?", (e.usuario, canal_id))
+            con.commit()
+            e.proprios.add(canal_id)
         vigilancia.sincronizar_agenda(con, canal_id)
     except yt.ErroCota:
         raise HTTPException(503, "A cota diária da API do YouTube acabou. Tente de novo amanhã.")
-    except (yt.ErroAPI, yt.ErroRede) as e:
-        raise HTTPException(502, f"O YouTube não respondeu: {e}")
-    return _visao_canal(con, _canal_ou_404(con, canal_id))
+    except (yt.ErroAPI, yt.ErroRede) as erro:
+        raise HTTPException(502, f"O YouTube não respondeu: {erro}")
+    return _visao_canal(con, _canal_ou_404(con, canal_id), e)
 
 
 @router.delete("/canais/{canal_id}", status_code=204)
@@ -212,7 +239,7 @@ class Modo(BaseModel):
 
 
 @router.put("/canais/{canal_id}/modo")
-def mudar_modo(canal_id: str, corpo: Modo, con: sqlite3.Connection = Depends(conexao)):
+def mudar_modo(canal_id: str, corpo: Modo, con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo)):
     """
     'todas': toda live do canal vira coleta (menos as tiradas uma a uma).
     'escolhidas': so as marcadas. As escolhas feitas live a live ficam.
@@ -229,7 +256,7 @@ def mudar_modo(canal_id: str, corpo: Modo, con: sqlite3.Connection = Depends(con
         (1 if (c["modo_coleta"] or "todas") == "todas" else 0, canal_id))
     con.execute("UPDATE canal SET modo_coleta = ? WHERE canal_id = ?", (corpo.modo, canal_id))
     con.commit()
-    return _visao_canal(con, _canal_ou_404(con, canal_id))
+    return _visao_canal(con, _canal_ou_404(con, canal_id), e)
 
 
 @router.post("/canais/{canal_id}/agenda")
