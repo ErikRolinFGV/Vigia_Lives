@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from collector import config, db, vigilancia, yt
 
 from ..deps import LIMITE_SLOTS, conexao, escopo
-from ..escopo import SLOTS_VISITANTE, Escopo
+from ..escopo import Escopo
 from ..transmissoes import lives_do_canal, mesmo_conteudo, outro_link, resumo_live, vai_coletar
 from .lives import cota_por_dia
 
@@ -141,10 +141,11 @@ def listar(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escop
 
 
 def _slots(con, e):
-    """Admin: os slots do plano, todas as contas somadas. Visitante: os dele (canais compartilhados nao contam)."""
+    """Admin: os slots do plano, todas as contas somadas. Outras contas: os delas (canais compartilhados nao contam)."""
     if e.admin:
         return {"limite_slots": LIMITE_SLOTS, "em_uso": len(_vigiados(con))}
-    return {"limite_slots": SLOTS_VISITANTE, "em_uso": sum(1 for c in _vigiados(con) if c["canal_id"] in e.proprios)}
+    return {"limite_slots": e.limite_proprio or LIMITE_SLOTS,
+            "em_uso": sum(1 for c in _vigiados(con) if c["canal_id"] in e.proprios)}
 
 
 @router.get("/agenda")
@@ -212,8 +213,9 @@ def vigiar(corpo: NovoCanal, con: sqlite3.Connection = Depends(conexao), e: Esco
             raise HTTPException(409, "Esse canal já é acompanhado por outra conta. Peça ao administrador para compartilhá-lo com você.")
     if not ja_vigiado and em_uso >= LIMITE_SLOTS:
         raise HTTPException(409, f"Todos os {LIMITE_SLOTS} slots do plano estão em uso.")
-    if not e.admin and not ja_vigiado and _slots(con, e)["em_uso"] >= SLOTS_VISITANTE:
-        raise HTTPException(409, f"Sua conta pode vigiar até {SLOTS_VISITANTE} canais. Pare de vigiar um para abrir espaço.")
+    if e.limite_proprio and not ja_vigiado and _slots(con, e)["em_uso"] >= e.limite_proprio:
+        n = e.limite_proprio
+        raise HTTPException(409, f"Seu plano acompanha até {n} {'canal' if n == 1 else 'canais'}. Pare de acompanhar um para abrir espaço.")
     try:
         vigilancia.vigiar(con, canal_id)
         if not e.admin:

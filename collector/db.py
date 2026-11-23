@@ -171,11 +171,21 @@ def migrar(con):
         video_id TEXT PRIMARY KEY, gerado_em TEXT NOT NULL, modelo TEXT NOT NULL,
         conteudo TEXT NOT NULL);
     """)
-    # contas da interface (api/acessos.py): admin faz tudo, visitante so le.
+    # contas da interface (api/acessos.py): admin faz tudo; usuario (fixo) e
+    # visitante (expira) usam um espaco proprio (api/escopo.py).
     # Senha so como hash PBKDF2. expira_em nulo: sem prazo.
     con.execute("""CREATE TABLE IF NOT EXISTS acesso (
         usuario TEXT PRIMARY KEY, senha_hash TEXT NOT NULL, papel TEXT NOT NULL,
         criado_em TEXT NOT NULL, expira_em TEXT, revogado_em TEXT)""")
+    # entrar com o Google (api/google.py): o e-mail liga a conta; o sub do
+    # Google fica gravado no primeiro login e passa a valer no lugar dele
+    _add_coluna(con, "acesso", "email", "TEXT")
+    _add_coluna(con, "acesso", "google_sub", "TEXT")
+    # plano da conta fixa (papel usuario): gratuito, pesquisador ou empresarial
+    _add_coluna(con, "acesso", "plano", "TEXT")
+    con.execute("UPDATE acesso SET plano = 'gratuito' WHERE papel = 'usuario' AND plano IS NULL")
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS acesso_email ON acesso(email) WHERE email IS NOT NULL")
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS acesso_google ON acesso(google_sub) WHERE google_sub IS NOT NULL")
     # espaco de cada conta (api/escopo.py): canal.dono e quem adicionou o
     # canal (nulo = o admin, como tudo o que veio antes das contas); o admin
     # compartilha canais com um visitante; live colada pelo link fica com
@@ -190,7 +200,7 @@ def migrar(con):
         PRIMARY KEY (usuario, video_id));
     """)
     # avisos e erros do vigia, dos coletores e da API (collector/registro.py):
-    # o que o admin le na pagina Registro quando o Vigia roda numa VM
+    # o que o admin le na pagina Registro quando a Lively roda numa VM
     con.executescript("""
     CREATE TABLE IF NOT EXISTS evento (
         id INTEGER PRIMARY KEY, em TEXT NOT NULL, ultimo_em TEXT NOT NULL,

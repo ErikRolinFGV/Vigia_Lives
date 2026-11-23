@@ -50,7 +50,7 @@ def limpar(manter: int):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Copia segura do banco do Vigia")
+    p = argparse.ArgumentParser(description="Copia segura do banco da Lively")
     p.add_argument("--para", type=Path, help="arquivo de destino (padrao: data/backups/lives-<data>.db)")
     p.add_argument("--manter", type=int, default=0, help="copias diarias a manter (0 = nao apaga nenhuma)")
     a = p.parse_args()

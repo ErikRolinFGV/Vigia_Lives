@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from collector import config, db, processo, registro, yt
 
 from ..deps import LIMITE_SLOTS, conexao, escopo
-from ..escopo import SLOTS_VISITANTE, Escopo
+from ..escopo import NOME_PLANO, Escopo
 
 router = APIRouter(tags=["operacao"])
 log = registro.Registro("api")
@@ -29,7 +29,9 @@ def plano(con: sqlite3.Connection = Depends(conexao), e: Escopo = Depends(escopo
     vigiados = [r[0] for r in con.execute("SELECT canal_id FROM canal WHERE vigiado = 1 AND removido_em IS NULL")]
     if e.admin:
         return {"nome": "Pesquisa", "limite_slots": LIMITE_SLOTS, "em_uso": len(vigiados)}
-    return {"nome": "Visitante", "limite_slots": SLOTS_VISITANTE, "em_uso": sum(1 for c in vigiados if c in e.proprios)}
+    nome = "Visitante" if e.papel == "visitante" else NOME_PLANO.get(e.plano or "gratuito", "Gratuito")
+    return {"nome": nome, "limite_slots": e.limite_proprio or LIMITE_SLOTS,
+            "em_uso": sum(1 for c in vigiados if c in e.proprios)}
 
 
 # Sem batimento ha mais que isso, o vigia e considerado parado.

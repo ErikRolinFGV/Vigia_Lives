@@ -1,5 +1,5 @@
 """
-Confere se esta maquina esta pronta para rodar o Vigia, antes de ligar o
+Confere se esta maquina esta pronta para rodar a Lively, antes de ligar o
 vigia nela (deploy/README.md). Nao muda nada, a nao ser 1 unidade de cota
 para testar a chave (pule com --sem-cota).
 
@@ -42,7 +42,7 @@ def _env(raiz: Path) -> dict:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Confere se esta maquina esta pronta para o Vigia")
+    p = argparse.ArgumentParser(description="Confere se esta maquina esta pronta para a Lively")
     p.add_argument("--sem-cota", action="store_true", help="nao testa a chave da API (economiza 1 unidade)")
     a = p.parse_args()
 

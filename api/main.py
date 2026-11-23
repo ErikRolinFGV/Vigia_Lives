@@ -1,5 +1,5 @@
 """
-API do Vigia.
+API da Lively.
 
     lives-api                 # http://127.0.0.1:8000, docs em /api/docs
     lives-api --porta 8080
@@ -28,7 +28,7 @@ from collector import config, db, registro
 from . import acessos, escopo
 from .routers import acesso, canais, comparar, lives, operacao, relatorio
 
-app = FastAPI(title="Vigia", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(title="Lively", docs_url="/api/docs", openapi_url="/api/openapi.json")
 log = registro.Registro("api")
 
 
@@ -86,7 +86,7 @@ if DIST.exists():
 
 def main():
     import uvicorn
-    p = argparse.ArgumentParser(description="API do Vigia")
+    p = argparse.ArgumentParser(description="API da Lively")
     p.add_argument("--host", default=os.environ.get("VIGIA_HOST", "127.0.0.1"))
     p.add_argument("--porta", type=int, default=int(os.environ.get("VIGIA_PORTA", "8000")))
     p.add_argument("--reload", action="store_true", help="recarrega ao editar o codigo")

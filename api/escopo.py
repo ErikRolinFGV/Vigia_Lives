@@ -1,8 +1,8 @@
 """
 O que cada conta enxerga e o que pode mudar.
 
-O admin ve e faz tudo. Cada visitante tem um espaco proprio, mais o que o
-admin compartilhar com ele:
+O admin ve e faz tudo. As outras contas (usuario, que e fixa, e visitante,
+que expira) tem um espaco proprio, mais o que o admin compartilhar com elas:
 
   canal visivel   o que ele adicionou (canal.dono = ele) ou que o admin
                   compartilhou (canal_compartilhado; python -m api.acessos
@@ -23,8 +23,12 @@ andamento) filtram no proprio router, com Escopo.
 import re
 
 # visitante pode ter ate tantos canais proprios vigiados (a cota do YouTube e
-# uma so para todo mundo; o limite geral do plano continua valendo)
+# uma so para todo mundo; o limite geral do plano continua valendo). O usuario
+# fixo fica so com o limite do plano.
 SLOTS_VISITANTE = 3
+# canais proprios por plano da conta fixa (api/acessos.py, PLANOS)
+CANAIS_POR_PLANO = {"gratuito": 1, "pesquisador": 10, "empresarial": 4}
+NOME_PLANO = {"gratuito": "Gratuito", "pesquisador": "Pesquisador", "empresarial": "Empresarial"}
 
 SO_ADMIN = [("POST", re.compile(r"^/api/operacao/vigia/")), ("GET", re.compile(r"^/api/operacao/eventos"))]
 CANAL = re.compile(r"^/api/canais/([^/]+)(/[^/]+)?$")
@@ -40,7 +44,12 @@ def base(video_id):
 class Escopo:
     def __init__(self, con, conta):
         self.usuario = conta["usuario"]
-        self.admin = conta["papel"] == "admin"
+        self.papel = conta["papel"]
+        self.admin = self.papel == "admin"
+        self.plano = conta.get("plano") if self.papel == "usuario" else None
+        # None (admin): sem limite proprio, vale so o geral
+        self.limite_proprio = (SLOTS_VISITANTE if self.papel == "visitante"
+                               else CANAIS_POR_PLANO.get(self.plano or "gratuito") if self.papel == "usuario" else None)
         self.proprios, self.compartilhados, self.soltas, self.parciais = set(), set(), set(), set()
         if self.admin:
             return
