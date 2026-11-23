@@ -1,6 +1,8 @@
-# Vigia — monitoramento de lives do YouTube
+# Lively — monitoramento de lives do YouTube
 
-O Vigia acompanha os canais escolhidos, coleta as lives enquanto estão no ar e
+> Antes se chamava Vigia. O nome segue em pedaços internos (o processo `collector/vigia.py`, os serviços de `deploy/`, as chaves do navegador e o nome do repositório), que mudam em outro passo.
+
+A Lively acompanha os canais escolhidos, coleta as lives enquanto estão no ar e
 mostra o que aconteceu: quanta gente assistiu, minuto a minuto, quanto da
 audiência escreveu no chat, os momentos em que o chat reagiu e o apoio pago.
 Depois, compara cada live com as outras e gera um relatório pronto para
@@ -8,7 +10,7 @@ compartilhar.
 
 O motivo de existir: **o chat ao vivo some quando a live acaba.** A API do
 YouTube não devolve as mensagens depois. Quem não coletou durante a
-transmissão perdeu esse dado para sempre. O Vigia fica de olho na agenda dos
+transmissão perdeu esse dado para sempre. A Lively fica de olho na agenda dos
 canais e começa a coletar sozinho quando a live sobe.
 
 ## O que ele faz
@@ -96,10 +98,18 @@ Sem o vigia de pé nada é coletado, e a interface avisa. Depois de
 `npm run build`, a própria API serve a interface.
 
 O login é de verdade: contas criadas pela linha de comando
-(`python -m api.acessos`), com dois papéis. O **admin** vê e faz tudo. O
-**visitante** usa o app num espaço próprio (os canais que ele adiciona e as
-lives que cola pelo link), mais os canais que o admin compartilhar com ele,
-e expira sozinho: é a conta para alguém experimentar o Vigia.
+(`python -m api.acessos`), com três papéis. O **admin** vê e faz tudo. O
+**usuário** é a conta fixa de quem usa a Lively de verdade: tem um espaço
+próprio (os canais que adiciona e as lives que cola pelo link), mais os
+canais que o admin compartilhar. O **visitante** é igual, mas expira sozinho
+e vigia até 3 canais: é a conta para alguém experimentar a Lively.
+
+Com `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env`, a tela de entrada
+mostra "Continuar com o Google". Só entra quem tem o e-mail ligado a uma
+conta (`python -m api.acessos email SEU_NOME voce@gmail.com`, ou
+`criar ... --email`); a senha fica como porta de emergência do admin. O passo
+a passo do Google Cloud está em `api/google.py`. O login com Google só
+identifica a pessoa: não dá acesso a dados do YouTube.
 
 Para rodar num servidor Linux, sempre ligado, veja **[deploy/README.md](deploy/README.md)**:
 serviços do systemd, nginx com HTTPS, contas, backup diário e a troca do PC para o servidor.
@@ -159,6 +169,6 @@ lives-coletar --canal @canal              # esperar a live do canal subir
 lives-report --video VIDEO_ID             # relatório da live coletada
 lives-quota --dias 7                      # auditoria de cota
 python -m collector.backup                # copia segura do banco, com o vigia rodando
-python -m collector.checar                # esta maquina esta pronta para o vigia?
+python -m collector.checar                # esta maquina esta pronta para a Lively?
 lives-demo && lives-report --video DEMO_SINTETICO   # testar sem chave nem live
 ```
