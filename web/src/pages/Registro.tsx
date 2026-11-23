@@ -1,6 +1,6 @@
 // Registro do sistema: avisos e erros do vigia, dos coletores e da API
 // (collector/registro.py). Só o admin vê. É o que substitui olhar o terminal
-// quando o Vigia roda numa VM.
+// quando a Lively roda numa VM.
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useApi } from "../api/client";
@@ -45,7 +45,7 @@ function Linha({ e, tz }: { e: Evento; tz: string }) {
             )}
           </div>
           {aberto && e.detalhe && (
-            <pre className="mono" style={{ fontSize: 11.5, background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 8,
+            <pre className="mono" style={{ fontSize: 11.5, background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4,
               padding: "10px 12px", marginTop: 8, overflowX: "auto", whiteSpace: "pre", color: "var(--ink2)" }}>{e.detalhe}</pre>
           )}
         </div>
@@ -71,7 +71,7 @@ export function Registro() {
 
   if (!admin) return <Navigate to="/yt/canais" replace />;
   const lista = dados?.eventos ?? [];
-  const sel = { fontSize: 13, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" };
+  const sel = { fontSize: 13, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" };
 
   return (
     <div className={`${s.pagina} view-in`}>

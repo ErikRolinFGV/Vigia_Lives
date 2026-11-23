@@ -16,7 +16,7 @@ function Marca({ m, tom }: { m: string; tom: "ok" | "red" | "neutro" }) {
     : tom === "red" ? ["var(--redT)", "var(--redLine)", "var(--redInk)"]
       : ["var(--s3)", "var(--line)", "var(--ink3)"];
   return (
-    <span style={{ width: 22, height: 22, flex: "0 0 22px", borderRadius: 7, background: c[0], border: `1px solid ${c[1]}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c[2] }}>{m}</span>
+    <span style={{ width: 22, height: 22, flex: "0 0 22px", borderRadius: 4, background: c[0], border: `1px solid ${c[1]}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c[2] }}>{m}</span>
   );
 }
 
@@ -62,7 +62,7 @@ export function VigiarModal({ fechar, adicionado }: { fechar: () => void; adicio
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--ok)", animation: "pulseDot 2s infinite" }} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 800, letterSpacing: "-.02em" }}>Vigiando {canal.handle || canal.nome}</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 600, letterSpacing: "-.02em" }}>Vigiando {canal.handle || canal.nome}</div>
             <div style={{ fontSize: 13, color: "var(--ink3)" }}>o vigia passou a acompanhar este canal</div>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function VigiarModal({ fechar, adicionado }: { fechar: () => void; adicio
           <Item m="✓" tom="ok">Quando uma live subir — agendada ou não — um coletor entra no ar junto com ela.</Item>
           <Item m="·" tom="neutro">Não há nada mais a fazer. O relatório fica pronto quando a transmissão encerrar.</Item>
         </div>
-        <div style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 11, padding: "14px 16px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
+        <div style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "14px 16px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
           {prox
             ? `A agenda foi lida agora: ${nAg} ${nAg === 1 ? "transmissão marcada" : "transmissões marcadas"}. A próxima é ${apelido(prox.titulo, 60)}.`
             : "A agenda foi lida agora e não há transmissão marcada. O vigia continua olhando."}
@@ -88,19 +88,19 @@ export function VigiarModal({ fechar, adicionado }: { fechar: () => void; adicio
       <form onSubmit={enviar}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Vigiar um canal</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>Vigiar um canal</div>
             <div style={{ fontSize: 13.5, color: "var(--ink3)" }}>Uma vez só. Depois é automático.</div>
           </div>
-          <button type="button" className={u.closeBtn} style={{ width: 30, height: 30, borderRadius: 8, fontSize: 16 }} onClick={fechar} aria-label="Fechar">×</button>
+          <button type="button" className={u.closeBtn} style={{ width: 30, height: 30, borderRadius: 4, fontSize: 16 }} onClick={fechar} aria-label="Fechar">×</button>
         </div>
 
         <label htmlFor="handle" style={{ display: "block", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 8 }}>Canal do YouTube</label>
         <input id="handle" autoFocus value={handle} onChange={e => { setHandle(e.target.value); setErro(""); }} placeholder="@handle ou UC…"
-          className={u.input} style={{ background: "var(--surface)", borderRadius: 10, padding: "13px 15px" }} />
+          className={u.input} style={{ background: "var(--surface)", borderRadius: 4, padding: "13px 15px" }} />
         <div className="mono" style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 8 }}>resolver o canal e ler a agenda não consome cota</div>
         {erro && <div style={{ marginTop: 12 }}><Erro texto={erro} /></div>}
 
-        <div style={{ background: "var(--redT)", border: "1px solid var(--redLine)", borderRadius: 11, padding: "15px 17px", marginTop: 20 }}>
+        <div style={{ background: "var(--redT)", border: "1px solid var(--redLine)", borderRadius: 4, padding: "15px 17px", marginTop: 20 }}>
           <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 5, textWrap: "pretty" }}>As transmissões anteriores deste canal não serão recuperadas.</div>
           <div style={{ fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>O chat de uma live só existe enquanto ela está no ar. A vigilância começa na próxima transmissão que subir.</div>
         </div>
@@ -134,7 +134,7 @@ export function PararModal({ canal, fechar, parado }: { canal: Canal; fechar: ()
 
   return (
     <Modal fechar={fechar} largura={500} estilo={{ boxShadow: "var(--cardShadow)" }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Parar de vigiar {canal.nome}?</div>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>Parar de vigiar {canal.nome}?</div>
       <div className="mono" style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 18 }}>{canal.handle}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
         <Item m="✓" tom="ok">O slot fica livre na hora, para vigiar outro canal.</Item>
@@ -177,7 +177,7 @@ export function VigiaModal({ saude, fechar }: { saude: Saude | null; fechar: () 
 
   return (
     <Modal fechar={fechar} largura={500} estilo={{ boxShadow: "var(--cardShadow)" }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>{dePe ? "Desligar o vigia?" : "Ligar o vigia"}</div>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>{dePe ? "Desligar o vigia?" : "Ligar o vigia"}</div>
       <div style={{ fontSize: 13.5, color: "var(--ink3)", marginBottom: 18 }}>
         {dePe
           ? `Rodando ${ha(saude?.vigia.desde ?? null)}.`
@@ -201,7 +201,7 @@ export function VigiaModal({ saude, fechar }: { saude: Saude | null; fechar: () 
         )}
       </div>
       {!!saude?.coletas?.length && (
-        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 11, padding: "12px 14px", marginBottom: 16 }}>
+        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "12px 14px", marginBottom: 16 }}>
           <div style={{ fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 8 }}>
             Coletando agora · um coletor por vídeo
           </div>
@@ -266,8 +266,8 @@ export function LinkModal({ fechar, marcada }: { fechar: () => void; marcada: (i
     const quando = lido.no_ar ? "no ar agora" : lido.agendada_para ? `${dataHora(lido.agendada_para, conta.tz)} · ${falta(lido.agendada_para)}` : "sem horário marcado";
     return (
       <Modal fechar={fechar}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 14 }}>Coletar esta live?</div>
-        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 11, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 14 }}>Coletar esta live?</div>
+        <div style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "14px 16px", marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", textWrap: "pretty" }}>{nomeLive(lido.titulo)}</div>
           <div className="mono" style={{ fontSize: 12, color: "var(--ink3)", marginTop: 5 }}>{lido.canal} · {quando}</div>
         </div>
@@ -294,14 +294,14 @@ export function LinkModal({ fechar, marcada }: { fechar: () => void; marcada: (i
       <form onSubmit={ler}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Coletar uma live pelo link</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>Coletar uma live pelo link</div>
             <div style={{ fontSize: 13.5, color: "var(--ink3)", textWrap: "pretty" }}>Para uma live de um canal que não está na lista, ou que a agenda não mostrou.</div>
           </div>
-          <button type="button" className={u.closeBtn} style={{ width: 30, height: 30, borderRadius: 8, fontSize: 16 }} onClick={fechar} aria-label="Fechar">×</button>
+          <button type="button" className={u.closeBtn} style={{ width: 30, height: 30, borderRadius: 4, fontSize: 16 }} onClick={fechar} aria-label="Fechar">×</button>
         </div>
         <label htmlFor="link" style={{ display: "block", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 8 }}>Link da live</label>
         <input id="link" autoFocus value={link} onChange={e => { setLink(e.target.value); setErro(""); }} placeholder="https://www.youtube.com/watch?v=…"
-          className={u.input} style={{ background: "var(--surface)", borderRadius: 10, padding: "13px 15px" }} />
+          className={u.input} style={{ background: "var(--surface)", borderRadius: 4, padding: "13px 15px" }} />
         <div className="mono" style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 8 }}>ler o link gasta 1 unidade de cota · agendada ou já no ar</div>
         {erro && <div style={{ marginTop: 12 }}><Erro texto={erro} /></div>}
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 22 }}>

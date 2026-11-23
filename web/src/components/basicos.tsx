@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useSessao } from "../state/sessao";
 import s from "./ui.module.css";
 
-/** Balão de chat com três pontos: a marca do Vigia. */
+/** Balão de chat com três pontos: o logo atual da Lively (a deusa da repaginação ainda não entrou). */
 export function Logo({ size = 28, cor = "#DC2A25" }: { size?: number; cor?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" style={{ display: "block", flex: `0 0 ${size}px` }} aria-hidden>
@@ -16,8 +16,8 @@ export function Logo({ size = 28, cor = "#DC2A25" }: { size?: number; cor?: stri
 
 export function Wordmark({ size = 19 }: { size?: number }) {
   return (
-    <span style={{ fontFamily: "Figtree, sans-serif", fontWeight: 700, fontSize: size, letterSpacing: size >= 30 ? "-.035em" : "-.03em", color: "var(--ink)" }}>
-      vigia
+    <span style={{ fontFamily: "Figtree, sans-serif", fontWeight: 800, fontSize: size, letterSpacing: size >= 30 ? "-.035em" : "-.03em", color: "var(--marca)" }}>
+      live<span style={{ color: "var(--latao)" }}>ly</span>
     </span>
   );
 }
@@ -46,7 +46,7 @@ export function Avatar({ size, fs }: { size: number; fs: number }) {
   const base: CSSProperties = { width: size, height: size, borderRadius: "50%", display: "block" };
   if (conta.foto) return <img src={conta.foto} alt="" style={{ ...base, objectFit: "cover" }} />;
   return (
-    <span style={{ ...base, display: "flex", alignItems: "center", justifyContent: "center", background: "#F57F5B", color: "#17140F", fontFamily: "Figtree, sans-serif", fontWeight: 700, fontSize: fs }}>
+    <span style={{ ...base, display: "flex", alignItems: "center", justifyContent: "center", background: "#F0B54A", color: "#242424", fontFamily: "var(--fonte)", fontWeight: 600, fontSize: fs }}>
       {iniciais}
     </span>
   );

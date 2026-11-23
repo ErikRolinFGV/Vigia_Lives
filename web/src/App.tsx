@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout, Protegido } from "./components/AppLayout";
 import { Login } from "./pages/Login";
-import { Plataformas } from "./pages/Plataformas";
+import { Inicio } from "./pages/Inicio";
+import { Acervo } from "./pages/Acervo";
+import { NoAr } from "./pages/NoAr";
 import { Canais } from "./pages/Canais";
 import { CanalPagina } from "./pages/Canal";
 import { LivePagina } from "./pages/live/LivePagina";
@@ -15,9 +17,13 @@ export function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/r/:canal/:slug" element={<Publico />} />
-      <Route path="/plataformas" element={<Protegido><Plataformas /></Protegido>} />
+      {/* a escolha de plataforma virou campo de "Acompanhar canal" */}
+      <Route path="/plataformas" element={<Navigate to="/yt/inicio" replace />} />
       <Route path="/yt" element={<Protegido><AppLayout /></Protegido>}>
-        <Route index element={<Navigate to="canais" replace />} />
+        <Route index element={<Navigate to="inicio" replace />} />
+        <Route path="inicio" element={<Inicio />} />
+        <Route path="acervo" element={<Acervo />} />
+        <Route path="aovivo" element={<NoAr />} />
         <Route path="canais" element={<Canais />} />
         <Route path="canais/:id" element={<CanalPagina />} />
         <Route path="lives/:id" element={<LivePagina />} />
@@ -25,7 +31,7 @@ export function App() {
         <Route path="comparar" element={<Comparar />} />
         <Route path="registro" element={<Registro />} />
       </Route>
-      <Route path="*" element={<Navigate to="/yt/canais" replace />} />
+      <Route path="*" element={<Navigate to="/yt/inicio" replace />} />
     </Routes>
   );
 }

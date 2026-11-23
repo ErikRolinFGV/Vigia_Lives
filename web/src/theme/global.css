@@ -3,24 +3,27 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+:root { --fonte: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif; }
+
 body {
   margin: 0;
-  background: var(--bg, #EFEBE1);
-  color: var(--ink, #17140F);
+  background: var(--bg, #F5F5F5);
+  color: var(--ink, #242424);
   transition: background .3s ease;
-  font-family: Figtree, system-ui, sans-serif;
-  font-size: 15px;
+  font-family: var(--fonte);
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line2); }
-a:hover { color: var(--ink2); text-decoration-color: currentColor; }
+a { color: var(--marcaInk, #1F2C8F); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
 button { font: inherit; color: inherit; }
 input, select, textarea { font: inherit; color: inherit; }
 
-.mono { font-family: 'IBM Plex Mono', monospace; }
+/* era a fonte técnica; no estilo novo os números usam a mesma fonte, alinhados */
+.mono { font-family: var(--fonte); font-variant-numeric: tabular-nums; }
 .tnum { font-variant-numeric: tabular-nums; }
 
 @keyframes pulseDot { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
@@ -52,13 +55,13 @@ a:hover > .kpi-link { border-color: var(--lineH) !important; transform: translat
 .ver-trecho:hover { border-color: var(--lineH); background: var(--s2); color: var(--ink); }
 
 .botao-escuro {
-  font-family: Figtree, sans-serif; font-size: 16px; font-weight: 700; color: var(--onAccent); background: var(--accent);
-  border: 0; border-radius: 10px; padding: 14px 22px; cursor: pointer; transition: background .18s ease, transform .18s ease;
+  font-family: var(--fonte); font-size: 14px; font-weight: 600; color: var(--onAccent); background: var(--accent);
+  border: 1px solid var(--accent); border-radius: 4px; padding: 9px 16px; cursor: pointer; transition: background .15s ease;
 }
-.botao-escuro:hover { background: var(--accentH); transform: translateY(-2px); }
-.botao-escuro:disabled { opacity: .6; cursor: default; transform: none; }
+.botao-escuro:hover { background: var(--accentH); }
+.botao-escuro:disabled { opacity: .6; cursor: default; }
 .botao-claro {
-  font-size: 14px; font-weight: 600; color: var(--ink2); border: 1px solid var(--line2); background: transparent;
-  border-radius: 9px; padding: 10px 16px; cursor: pointer; transition: border-color .18s ease, background .18s ease;
+  font-size: 14px; font-weight: 600; color: var(--ink); border: 1px solid var(--line2); background: var(--surface);
+  border-radius: 4px; padding: 9px 16px; cursor: pointer; transition: border-color .15s ease, background .15s ease;
 }
 .botao-claro:hover { border-color: var(--lineH); background: var(--surface); }

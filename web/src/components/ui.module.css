@@ -2,7 +2,7 @@
 
 .iconBtn {
   width: 34px; height: 34px; flex: 0 0 34px;
-  border-radius: 10px; border: 1px solid var(--line2); background: var(--s3);
+  border-radius: 4px; border: 1px solid var(--line2); background: var(--s3);
   color: var(--ink2); display: flex; align-items: center; justify-content: center;
   cursor: pointer; padding: 0;
   transition: background .18s ease, border-color .18s ease;
@@ -10,9 +10,9 @@
 .iconBtn:hover { background: var(--line); border-color: var(--lineH); }
 
 .helpBtn {
-  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line2);
+  width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--line2);
   background: var(--s3); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-family: Figtree, sans-serif; font-weight: 700; font-size: 15px;
+  cursor: pointer; font-family: var(--fonte); font-weight: 700; font-size: 15px;
   color: var(--ink2); transition: background .18s ease; padding: 0;
 }
 .helpBtn:hover { background: var(--line); }
@@ -45,23 +45,23 @@
   font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3);
 }
 .input {
-  width: 100%; background: var(--s2); border: 1px solid var(--line2); border-radius: 11px;
-  padding: 15px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 15px;
+  width: 100%; background: var(--s2); border: 1px solid var(--line2); border-radius: 4px;
+  padding: 15px 16px; font-family: var(--fonte); font-size: 15px;
   color: var(--ink); outline: none; transition: border-color .18s ease;
 }
 .input:focus { border-color: var(--lineH); }
 
 .inputSm {
-  width: 100%; border: 1px solid var(--line2); border-radius: 9px; padding: 10px 12px;
-  font-family: Figtree, sans-serif; font-size: 14.5px; color: var(--ink); outline: none;
+  width: 100%; border: 1px solid var(--line2); border-radius: 4px; padding: 10px 12px;
+  font-family: var(--fonte); font-size: 14.5px; color: var(--ink); outline: none;
   background: var(--surface);
 }
 .inputSm:focus { border-color: var(--lineH); }
-.inputSmMono { composes: inputSm; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
+.inputSmMono { composes: inputSm; font-family: var(--fonte); font-size: 13.5px; }
 
 .btnPrimary {
-  display: block; width: 100%; padding: 16px; border-radius: 11px; border: 0;
-  background: var(--accent); text-align: center; font-family: Figtree, sans-serif;
+  display: block; width: 100%; padding: 16px; border-radius: 4px; border: 0;
+  background: var(--accent); text-align: center; font-family: var(--fonte);
   font-size: 16px; font-weight: 700; color: var(--onAccent); cursor: pointer;
   transition: transform .16s cubic-bezier(.2, .8, .2, 1), background .18s ease;
 }
@@ -70,11 +70,11 @@
 
 .btnSm {
   font-size: 13px; font-weight: 700; color: var(--onAccent); background: var(--accent);
-  border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 0;
+  border-radius: 4px; padding: 8px 14px; cursor: pointer; border: 0;
 }
 .btnSmGhost {
   font-size: 13px; font-weight: 600; color: var(--ink2); border: 1px solid var(--line2);
-  background: transparent; border-radius: 8px; padding: 8px 14px; cursor: pointer;
+  background: transparent; border-radius: 4px; padding: 8px 14px; cursor: pointer;
 }
 
 .linkBtn {
@@ -84,7 +84,7 @@
 
 .erro {
   display: flex; align-items: center; gap: 8px; background: var(--redT);
-  border: 1px solid var(--redLine); border-radius: 9px; padding: 9px 11px;
+  border: 1px solid var(--redLine); border-radius: 4px; padding: 9px 11px;
   animation: riseIn .2s ease-out both;
 }
 .erroDot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex: 0 0 6px; }
@@ -97,7 +97,7 @@
   justify-content: flex-end; animation: fadeIn .2s ease-out both;
 }
 .closeBtn {
-  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line);
+  width: 32px; height: 32px; border-radius: 4px; border: 1px solid var(--line);
   background: transparent; display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 17px; color: var(--ink2); padding: 0;
 }

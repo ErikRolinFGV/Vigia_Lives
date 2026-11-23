@@ -6,20 +6,23 @@ export type Tema = "claro" | "escuro";
 
 type Tokens = Record<string, string>;
 
+// Lively (v2): neutros de programa de escritório e o azul da marca nos botões.
 const neutros: Record<Tema, Tokens> = {
   claro: {
-    bg: "#EFEBE1", surface: "#FFFFFF", s2: "#FBFAF8", s3: "#F4F2EE", modal: "#FBF9F4",
-    ink: "#17140F", ink2: "#4E4A42", ink3: "#6C6559", ink4: "#8F887C",
-    line: "#E6E2DB", line2: "#DDD8CF", lineH: "#C9C2B6", lineDash: "#D8D3C9",
-    div: "#F0EDE7", track: "#EFECE5", modalLine: "#DFD9CC", grid: "#DCD6C8",
-    overlay: "rgba(23,20,15,.36)", accentH: "#2E2A24",
+    bg: "#F5F5F5", surface: "#FFFFFF", s2: "#FAFAFA", s3: "#F3F3F3", modal: "#FFFFFF",
+    ink: "#242424", ink2: "#424242", ink3: "#616161", ink4: "#707070",
+    line: "#E0E0E0", line2: "#D1D1D1", lineH: "#A6A6A6", lineDash: "#D1D1D1",
+    div: "#EDEDED", track: "#EDEDED", modalLine: "#E0E0E0", grid: "#E6E6E6",
+    overlay: "rgba(0,0,0,.32)", accentH: "#2B3BAA",
+    marca: "#3347C9", marcaT: "#EBEEFA", marcaInk: "#1F2C8F", latao: "#C08A1C",
   },
   escuro: {
-    bg: "#14120F", surface: "#1D1B17", s2: "#221F1B", s3: "#2A2722", modal: "#1D1B17",
-    ink: "#F2EEE7", ink2: "#CDC6BA", ink3: "#A39C90", ink4: "#7E776C",
-    line: "#302C27", line2: "#3B3731", lineH: "#59524A", lineDash: "#403B35",
-    div: "#28251F", track: "#2E2A25", modalLine: "#3B3731", grid: "#2F2B26",
-    overlay: "rgba(0,0,0,.55)", accentH: "#D9D3C8",
+    bg: "#1F1F1F", surface: "#292929", s2: "#2E2E2E", s3: "#333333", modal: "#292929",
+    ink: "#FFFFFF", ink2: "#D6D6D6", ink3: "#ADADAD", ink4: "#8F8F8F",
+    line: "#3D3D3D", line2: "#474747", lineH: "#666666", lineDash: "#474747",
+    div: "#333333", track: "#3D3D3D", modalLine: "#474747", grid: "#3D3D3D",
+    overlay: "rgba(0,0,0,.6)", accentH: "#4B5DD6",
+    marca: "#3347C9", marcaT: "rgba(140,155,245,.16)", marcaInk: "#B9C2F8", latao: "#F0B54A",
   },
 };
 
@@ -49,10 +52,10 @@ export function tokens(tema: Tema): Tokens {
   return {
     ...n,
     ...semanticos[tema],
-    accent: n.ink,
-    onAccent: tema === "escuro" ? n.bg : "#FFFFFF",
-    cardShadow: tema === "escuro" ? "0 24px 64px rgba(0,0,0,.45)" : "0 18px 48px rgba(23,20,15,.10)",
-    hoverShadow: tema === "escuro" ? "0 18px 40px rgba(0,0,0,.5)" : "0 12px 30px rgba(23,20,15,.12)",
+    accent: "#3347C9",
+    onAccent: "#FFFFFF",
+    cardShadow: tema === "escuro" ? "0 1px 2px rgba(0,0,0,.4)" : "0 1px 2px rgba(0,0,0,.06)",
+    hoverShadow: tema === "escuro" ? "0 2px 8px rgba(0,0,0,.5)" : "0 2px 8px rgba(0,0,0,.10)",
   };
 }
 

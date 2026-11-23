@@ -75,15 +75,15 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
   const decorrido = (serie.t[fim] - serie.t[0]) + 60;
   const every = Math.max(6, Math.round(fim / 6));
   const cotaPct = (cota / COTA_DIA) * 100;
-  const kpi = (bg: string, bd: string) => ({ background: bg, border: `1px solid ${bd}`, borderRadius: 14, padding: "18px 20px" });
+  const kpi = (bg: string, bd: string) => ({ background: bg, border: `1px solid ${bd}`, borderRadius: 6, padding: "18px 20px" });
   const rot = { fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase" as const, color: "var(--ink3)", marginBottom: 7 };
-  const valor = (c: string) => ({ fontFamily: "Figtree, sans-serif", fontSize: 34, lineHeight: 1, fontWeight: 700, letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: c });
+  const valor = (c: string) => ({ fontFamily: "var(--fonte)", fontSize: 34, lineHeight: 1, fontWeight: 700, letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: c });
 
   return (
     <div className={`${st.pagina} view-in`}>
       <div className={st.conteudo}>
         {replay && (
-          <div style={{ marginTop: 24, background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 13.5 }}>
+          <div style={{ marginTop: 24, background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 6, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 13.5 }}>
             <b>Replay da coleta de {dataCurta(live.inicio, conta.tz)}.</b>
             <span style={{ color: "var(--ink2)" }}>Nada aqui está acontecendo agora: a série gravada avança uma janela a cada {PASSO_REPLAY_MS / 1000} s, com os números de cada minuto.</span>
             <Link to={`/yt/lives/${live.id}`} className={st.botao} style={{ marginLeft: "auto", fontSize: 13, padding: "7px 13px" }}>Voltar aos dados</Link>
@@ -144,12 +144,12 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,320px),1fr))", gap: 12, marginBottom: 12 }}>
           <div style={{ ...kpi("var(--audT)", "var(--audLine)"), paddingBottom: 8 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Pessoas assistindo ao mesmo tempo</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Pessoas assistindo ao mesmo tempo</div>
             <div style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 6 }}>a curva cresce enquanto a transmissão está no ar</div>
             <SerieChart vals={esp} times={tt} H={220} tipo="linha" cor="var(--aud)" every={every} animar={false} cabeca />
           </div>
           <div style={{ ...kpi("var(--msgT)", "var(--msgLine)"), paddingBottom: 8 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Mensagens por minuto</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Mensagens por minuto</div>
             <div style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 6 }}>cada barra é uma janela de 60 segundos já fechada</div>
             <SerieChart vals={mpm} times={tt} H={220} tipo="barras" cor="var(--msg)" every={every} animar={false} />
           </div>
@@ -158,14 +158,14 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: 12 }}>
           <div className={st.cartao} style={{ marginBottom: 0, padding: "18px 20px" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 13, flexWrap: "wrap" }}>
-              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Momentos detectados até agora</div>
+              <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Momentos detectados até agora</div>
               <span className="mono" style={{ fontSize: 12, color: "var(--ink3)" }}>{n(moms.length)} nesta coleta</span>
             </div>
             {moms.length ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {moms.map(m => (
-                  <div key={m.t} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 13px", display: "flex", alignItems: "center", gap: 12, animation: "riseIn .3s ease-out both" }}>
-                    <span className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 700, width: 48, flex: "0 0 48px" }}>{hhmm(m.t)}</span>
+                  <div key={m.t} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "11px 13px", display: "flex", alignItems: "center", gap: 12, animation: "riseIn .3s ease-out both" }}>
+                    <span className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 16, fontWeight: 700, width: 48, flex: "0 0 48px" }}>{hhmm(m.t)}</span>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: "var(--ink2)" }}>{m.tipo === "queda_audiencia" ? "queda de audiência" : "pico de chat"}</span>
                     <span className="mono tnum" style={{ fontSize: 12.5, flex: "0 0 auto", color: m.tipo === "pico_chat" && m.magnitude >= 8 ? "var(--msg)" : "var(--ink3)" }}>
                       {m.tipo === "queda_audiencia" ? `−${n(m.magnitude * 100)}%` : `${n(m.magnitude, 1)} σ`}
@@ -177,7 +177,7 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
           </div>
 
           <div className={st.cartao} style={{ marginBottom: 0, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Coleta em andamento</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Coleta em andamento</div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 7 }}>
                 <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Consulta de espectadores</span>
@@ -192,7 +192,7 @@ export function AoVivo({ live, serie, replay = false, reler }: { live: LiveDetal
               <div className={st.kv} style={{ fontSize: 13.5 }}><span>Pessoas distintas no chat</span><span className="mono" style={{ fontSize: 12.5, color: "var(--ink3)" }}>só no fechamento</span></div>
               <div className={st.kv} style={{ fontSize: 13.5, borderTop: 0, paddingTop: 0 }}><span>Enquetes capturadas</span><span className="mono" style={{ fontSize: 12.5, color: "var(--ink3)" }}>não consta ao vivo</span></div>
             </div>
-            <div style={{ marginTop: "auto", background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 11, padding: "13px 15px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
+            <div style={{ marginTop: "auto", background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "13px 15px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
               {replay
                 ? "No dia, o relatório ficou pronto quando a coleta encerrou. Os dados completos estão na aba da transmissão."
                 : "O relatório final fica pronto quando a transmissão encerrar. Pode fechar a aba: quem garante a coleta é o processo."}

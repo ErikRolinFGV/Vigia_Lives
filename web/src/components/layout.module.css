@@ -1,42 +1,86 @@
+/* Casca da Lively (v2): barra azul no topo, menu à esquerda, conteúdo sobre cinza-claro. */
 .app { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
 
-.header {
-  position: sticky; top: 0; z-index: 30; background: var(--surface);
-  border-bottom: 1px solid var(--line); display: flex; justify-content: center;
+.topo {
+  position: sticky; top: 0; z-index: 30; height: 48px; flex: 0 0 48px; background: var(--marca); color: #FFFFFF;
+  display: flex; align-items: center; gap: 16px; padding: 0 12px 0 16px;
 }
-.headerIn {
-  width: 100%; max-width: 1180px; padding: 0 24px; display: flex; align-items: center;
-  gap: 14px; height: 58px;
-}
-.marca { display: flex; align-items: center; gap: 9px; cursor: pointer; flex: 0 0 auto; text-decoration: none; }
-.wordmark { font-family: Figtree, sans-serif; font-weight: 700; font-size: 19px; letter-spacing: -.03em; color: var(--ink); }
+.marca { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #FFFFFF; flex: 0 0 auto; }
+.marca:hover { text-decoration: none; }
+.wordmark { font-family: Figtree, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; color: #FFFFFF; }
 
-.crumbs { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
-.crumb { display: flex; align-items: center; gap: 8px; }
-.crumbNum { flex: 0 0 auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: var(--ink2); }
-.crumbLabel {
-  font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px;
-  text-decoration: none;
+.busca {
+  flex: 0 1 460px; margin: 0 auto; height: 32px; display: flex; align-items: center; gap: 8px;
+  background: #FFFFFF; border-radius: 4px; padding: 0 10px;
 }
-a.crumbLabel:hover { text-decoration: underline; text-decoration-color: var(--line2); }
-.tag {
-  flex: 0 0 auto; display: flex; align-items: center; gap: 5px; border: 1px solid;
-  border-radius: 99px; padding: 2px 8px;
+.busca input { border: 0; outline: 0; font: inherit; font-size: 14px; color: #242424; width: 100%; background: transparent; }
+
+/* botões da barra (tema, ajuda, conta) ficam brancos sobre o azul */
+.direita { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.direita button { background: transparent !important; border-color: transparent !important; color: #FFFFFF !important; }
+.direita button:hover { background: rgba(255, 255, 255, .14) !important; }
+.direita button svg { stroke: currentColor; }
+.ajuda {
+  width: 36px; height: 36px; border-radius: 4px; border: 0; display: inline-flex; align-items: center;
+  justify-content: center; cursor: pointer; font-weight: 600; font-size: 15px;
 }
+
+.corpo { flex: 1; display: flex; min-height: 0; }
+
+.menu {
+  flex: 0 0 220px; background: var(--surface); border-right: 1px solid var(--line); padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 2px; position: sticky; top: 48px; height: calc(100vh - 48px); overflow-y: auto;
+}
+.item {
+  display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 4px;
+  color: var(--ink2); text-decoration: none; font-size: 14px;
+}
+.item:hover { background: var(--s3); color: var(--ink); text-decoration: none; }
+.on { background: var(--marcaT); color: var(--marcaInk); font-weight: 600; box-shadow: inset 3px 0 0 var(--marca); }
+.on:hover { background: var(--marcaT); color: var(--marcaInk); }
+.sep { height: 1px; background: var(--div); margin: 8px 4px; }
+
+.servico {
+  margin-top: auto; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px;
+  border: 0; border-radius: 4px; background: transparent; color: var(--ink2); font-size: 13px; text-align: left; cursor: pointer;
+}
+.servico:hover:not(:disabled) { background: var(--s3); }
+.servico:disabled { cursor: default; }
+.ponto { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.trilha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 16px 32px 0; font-size: 13px; color: var(--ink3); }
+.trilha a { color: var(--ink3); }
+.trilha a:hover { color: var(--ink); }
+.tag { display: inline-flex; align-items: center; gap: 5px; border: 1px solid; border-radius: 4px; padding: 1px 8px; }
 .tagDot { width: 6px; height: 6px; border-radius: 50%; animation: pulseDot 2s infinite; }
-.tagTxt { font-size: 11px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+.tagTxt { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
-.direita { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin-left: auto; }
-
-.main { flex: 1; display: flex; flex-direction: column; }
-
-/* telas estreitas: o status "coleta de pé" e o nome da conta são os primeiros a sair */
-@media (max-width: 900px) {
-  .direita > div:first-child { display: none; }
+.selo {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 4px;
+  background: #FDECEC; color: #A4262C; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap;
 }
-@media (max-width: 640px) {
-  .headerIn { gap: 10px; padding: 0 16px; }
+
+@media (max-width: 860px) {
+  .busca { display: none; }
+  .corpo { flex-direction: column; }
+  .menu { position: static; height: auto; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
+  .sep { display: none; }
+  .servico { margin-top: 0; }
+  .trilha { padding: 12px 16px 0; }
+}
+@media (max-width: 520px) {
   .wordmark { display: none; }
-  .crumbs { display: none; }
-  .headerIn > button:first-of-type { display: none; }
+}
+
+/* nome da conta e seta, em branco sobre o azul */
+.direita [class*="contaNome"], .direita [class*="contaSub"] { color: #FFFFFF !important; }
+.direita [class*="contaSub"] { opacity: .8; }
+.direita button > svg path { stroke: #FFFFFF !important; }
+
+/* quantas lives estão sendo ouvidas agora */
+.conta {
+  margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #E5484D; color: #FFFFFF;
+  font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
 }

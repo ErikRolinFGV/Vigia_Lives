@@ -28,23 +28,26 @@ export function BotaoColetar({ l, mudou }: { l: { id: string; estado: LiveResumo
     }
   };
 
-  const estilo = agora
-    ? { color: "#FFFFFF", background: "var(--red)", border: "1px solid var(--red)" }
-    : l.coletar
-      ? { color: "var(--okInk)", background: "var(--okT)", border: "1px solid var(--okLine)" }
-      : { color: "var(--ink3)", background: "transparent", border: "1px dashed var(--line2)" };
-  const texto = agora ? "Coletar agora" : l.coletar ? "✓ vai coletar" : "não vai coletar";
-  const dica = agora
-    ? "Sobe um coletor no próximo ciclo do vigia (até 1 min). O chat de antes disso não volta."
-    : l.coletar ? "Clique para não coletar esta live" : "Clique para coletar esta live";
+  const dica = agora ? "Começa a ouvir em até 1 minuto. O chat de antes não volta."
+    : l.coletar ? "Não ouvir esta live" : "Ouvir esta live";
 
   return (
-    <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flex: "0 0 auto" }}>
-      <button type="button" onClick={trocar} disabled={enviando} title={dica}
-        style={{ ...estilo, fontSize: 12, fontWeight: 700, borderRadius: 99, padding: "5px 11px", cursor: enviando ? "default" : "pointer", whiteSpace: "nowrap", opacity: enviando ? 0.6 : 1 }}>
-        {enviando ? "…" : texto}
-      </button>
-      {erro && <span style={{ fontSize: 11, color: "var(--redInk)", maxWidth: 220, textAlign: "right" }}>{erro}</span>}
+    <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 3, flex: "0 0 auto" }}>
+      {agora ? (
+        <button type="button" className="botao-escuro" onClick={trocar} disabled={enviando} title={dica} style={{ padding: "6px 12px", fontSize: 13, whiteSpace: "nowrap" }}>
+          {enviando ? "…" : "Ouvir agora"}
+        </button>
+      ) : (
+        <button type="button" role="switch" aria-checked={l.coletar} onClick={trocar} disabled={enviando} title={dica}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, padding: "0 4px", border: 0, background: "transparent", cursor: enviando ? "default" : "pointer", opacity: enviando ? 0.6 : 1, fontSize: 13, color: "var(--ink2)" }}>
+          <span style={{ position: "relative", width: 40, height: 20, borderRadius: 10, boxSizing: "border-box", flex: "0 0 40px",
+            border: `1px solid ${l.coletar ? "#3347C9" : "var(--ink3)"}`, background: l.coletar ? "#3347C9" : "var(--surface)", transition: "background .12s" }}>
+            <i style={{ position: "absolute", top: 3, left: l.coletar ? 23 : 3, width: 12, height: 12, borderRadius: "50%", background: l.coletar ? "#FFFFFF" : "var(--ink3)", transition: "left .12s" }} />
+          </span>
+          Ouvir
+        </button>
+      )}
+      {erro && <span style={{ fontSize: 11, color: "var(--redInk)", maxWidth: 220 }}>{erro}</span>}
     </span>
   );
 }
@@ -67,15 +70,15 @@ export function SeletorModo({ canalId, modo, mudou, pode }: { canalId: string; m
     }
   };
   const opcoes: { m: ModoColeta; t: string; d: string }[] = [
-    { m: "todas", t: "Todas as lives", d: "toda live que o canal fizer vira coleta" },
-    { m: "escolhidas", t: "Só as escolhidas", d: "o vigia acompanha a agenda e só coleta o que você marcar" },
+    { m: "todas", t: "Todas as lives", d: "toda live do canal" },
+    { m: "escolhidas", t: "Só as que eu marcar", d: "você escolhe na agenda" },
   ];
   return (
     <div>
-      <div role="radiogroup" aria-label="Modo de coleta" style={{ display: "inline-flex", background: "var(--s3)", border: "1px solid var(--line2)", borderRadius: 10, padding: 3, gap: 3 }}>
+      <div role="radiogroup" aria-label="Modo de coleta" style={{ display: "inline-flex", background: "var(--s3)", border: "1px solid var(--line2)", borderRadius: 4, padding: 3, gap: 3 }}>
         {opcoes.map(o => (
           <button key={o.m} type="button" role="radio" aria-checked={o.m === modo} onClick={() => escolher(o.m)} disabled={enviando || !pode}
-            style={{ fontSize: 13, fontWeight: 600, borderRadius: 8, padding: "7px 13px", border: 0, cursor: o.m === modo || !pode ? "default" : "pointer",
+            style={{ fontSize: 13, fontWeight: 600, borderRadius: 4, padding: "7px 13px", border: 0, cursor: o.m === modo || !pode ? "default" : "pointer",
               background: o.m === modo ? "var(--surface)" : "transparent", color: o.m === modo ? "var(--ink)" : "var(--ink3)",
               boxShadow: o.m === modo ? "0 1px 3px rgba(23,20,15,.12)" : "none" }}>
             {o.t}
@@ -101,7 +104,7 @@ export function CotaPrevista({ dias, tz, max = 2 }: { dias: CotaDia[]; tz: strin
         const cor = fr > 1 ? "var(--red)" : fr >= 0.8 ? "var(--amb)" : "var(--ok)";
         const passa = d.total > d.limite;
         return (
-          <div key={d.dia} style={{ background: passa ? "var(--redT)" : "var(--s2)", border: `1px solid ${passa ? "var(--redLine)" : "var(--div)"}`, borderRadius: 10, padding: "11px 13px" }}>
+          <div key={d.dia} style={{ background: passa ? "var(--redT)" : "var(--s2)", border: `1px solid ${passa ? "var(--redLine)" : "var(--div)"}`, borderRadius: 4, padding: "11px 13px" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 7 }}>
               <span style={{ fontSize: 13, fontWeight: 700 }}>Cota de {dataCurta(d.dia + "T12:00:00Z", "UTC").slice(0, 5)}</span>
               <span className="mono tnum" style={{ fontSize: 12, color: passa ? "var(--redInk)" : "var(--ink2)" }}>~{n(d.total)} de {n(d.limite)} un.</span>

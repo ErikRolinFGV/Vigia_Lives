@@ -17,7 +17,7 @@ export type Conta = {
   notif: Notif;
 };
 
-export type Acesso = { usuario: string; papel: "admin" | "visitante"; expira_em: string | null };
+export type Acesso = { usuario: string; papel: "admin" | "usuario" | "visitante"; plano?: "gratuito" | "pesquisador" | "empresarial" | null; expira_em: string | null };
 
 type Sessao = {
   logado: boolean;

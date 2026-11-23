@@ -90,7 +90,7 @@ export function SecaoPosicao({ id }: { id: string }) {
           </div>
         }>
         {(f.curta || f.parcial || f.trecho) && (
-          <div style={{ fontSize: 13, color: "var(--ink2)", background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 13px", marginBottom: 6, textWrap: "pretty" }}>
+          <div style={{ fontSize: 13, color: "var(--ink2)", background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "10px 13px", marginBottom: 6, textWrap: "pretty" }}>
             {f.curta
               ? "A coleta desta live durou menos de 15 minutos: os números aparecem, mas nenhum entra no ranking."
               : <>

@@ -133,7 +133,7 @@ function ForaDoLink({ live }: { live: LiveDetalhe }) {
   const titulo = s ? SUMIDA[s.motivo] : "O conteúdo desta live foi para outro link";
   return (
     <div className={st.cartao} style={{ borderLeft: "3px solid var(--amb)", borderColor: "var(--ambLine)" }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{titulo}</div>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{titulo}</div>
       <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty", marginBottom: outros.length ? 14 : 0 }}>
         {s?.motivo === "privada" && <>A página do vídeo pede login: só o canal consegue ver. </>}
         {s && (fim
@@ -186,7 +186,7 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
         ) : !live.coletar ? (
           <div className={st.cartao} style={{ borderLeft: "3px solid var(--line2)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>Esta live não vai ser coletada</div>
+              <div style={{ fontFamily: "var(--fonte)", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>Esta live não vai ser coletada</div>
               <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>
                 {live.coletar_escolha === false
                   ? "Você tirou esta live da coleta. Ela não gasta cota e, quando acabar, aparece como não escolhida, não como perdida."
@@ -201,7 +201,7 @@ export function Agendada({ live, reler }: { live: LiveDetalhe; reler: () => void
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: dePe ? "var(--ok)" : "var(--amb)", animation: dePe ? "pulseDot 2s infinite" : "none" }} />
           </span>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>{dePe ? "Coletor a postos" : "Coletor não está a postos"}</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 16.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 3 }}>{dePe ? "Coletor a postos" : "Coletor não está a postos"}</div>
             <div style={{ fontSize: 14, color: "var(--ink2)", textWrap: "pretty" }}>
               {dePe
                 ? "Não há nada a configurar nem a apertar. Quando a transmissão subir, um coletor entra no ar junto com ela."

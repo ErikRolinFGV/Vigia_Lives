@@ -124,7 +124,7 @@ export function SecaoQualidade({ live, s, d }: { live: LiveDetalhe; s: Serie | n
   return (
     <Painel>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Consulta de espectadores, janela por janela</div>
+        <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Consulta de espectadores, janela por janela</div>
         <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>cada traço é uma consulta de 60 s ao contador de simultâneos</span>
         <span className="mono tnum" style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--ink2)" }}>{n(d.comNumero)} de {n(s.t.length)} com número reportado</span>
       </div>
@@ -136,7 +136,7 @@ export function SecaoQualidade({ live, s, d }: { live: LiveDetalhe; s: Serie | n
         {legenda("var(--redSoft)", `consulta sem resposta · ${n(d.semResposta)} janelas, nada interpolado`)}
         {legenda("var(--line2)", `antes do primeiro número · ${n(d.lead)} janelas no começo da coleta`)}
       </div>
-      <div style={{ fontSize: 12.5, color: "var(--ink2)", marginTop: 11, background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 9, padding: "11px 13px", textWrap: "pretty" }}>
+      <div style={{ fontSize: 12.5, color: "var(--ink2)", marginTop: 11, background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 4, padding: "11px 13px", textWrap: "pretty" }}>
         O contador do YouTube oscila: entre janelas vizinhas a variação chega a <b>±{n(d.jitter)}</b> espectadores. Por isso a plataforma não mostra crescimento por minuto — nessa escala o número seria ruído da fonte, não movimento de público.
       </div>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 11, fontSize: 12.5, color: "var(--ink3)" }}>

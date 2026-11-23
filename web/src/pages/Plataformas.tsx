@@ -33,7 +33,7 @@ export function Plataformas() {
       <div className={s.platBarra}>
         <div className={s.platBarraIn}>
           <Logo size={28} cor="#F57F5B" />
-          <span style={{ fontFamily: "Figtree, sans-serif", fontWeight: 700, fontSize: 19, letterSpacing: "-.03em", color: "var(--ink)", flex: 1 }}>vigia</span>
+          <span style={{ fontFamily: "var(--fonte)", fontWeight: 700, fontSize: 19, letterSpacing: "-.03em", color: "var(--ink)", flex: 1 }}>lively</span>
           <ThemeToggle />
           <ContaBotao onClick={() => setConta(true)} />
         </div>

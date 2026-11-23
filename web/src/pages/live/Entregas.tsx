@@ -6,17 +6,17 @@ import { Modal } from "../../components/Modal";
 import { apelido, dataCurta, n, pct } from "../../lib/format";
 import { useSessao } from "../../state/sessao";
 
-const caixa = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 18px" } as const;
+const caixa = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, padding: "16px 18px" } as const;
 const rot = { fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase" as const, color: "var(--ink3)" };
 
 function Topo({ titulo, sub, fechar }: { titulo: string; sub: string; fechar: () => void }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 8 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>{titulo}</div>
+        <div style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>{titulo}</div>
         <div style={{ fontSize: 13.5, color: "var(--ink3)" }}>{sub}</div>
       </div>
-      <button type="button" onClick={fechar} aria-label="Fechar" style={{ width: 30, height: 30, flex: "0 0 30px", borderRadius: 8, border: "1px solid var(--modalLine)", background: "none", cursor: "pointer", fontSize: 16, color: "var(--ink2)" }}>×</button>
+      <button type="button" onClick={fechar} aria-label="Fechar" style={{ width: 30, height: 30, flex: "0 0 30px", borderRadius: 4, border: "1px solid var(--modalLine)", background: "none", cursor: "pointer", fontSize: 16, color: "var(--ink2)" }}>×</button>
     </div>
   );
 }
@@ -57,7 +57,7 @@ export function ExportarModal({ live, fechar }: { live: LiveDetalhe; fechar: () 
   return (
     <Modal fechar={fechar} largura={760} estilo={modalEstilo}>
       <Topo titulo="Exportar dados da coleta" sub={`${live.canal.nome} · ${apelido(live.titulo)} · ${dataCurta(live.inicio, conta.tz)}`} fechar={fechar} />
-      <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 11, padding: "14px 16px", margin: "16px 0", fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
+      <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 4, padding: "14px 16px", margin: "16px 0", fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
         O arquivo é para você, então leva tudo — inclusive cota consumida e custo por método. Diferente do link público, que é para terceiros e não expõe operação. Em nenhum formato vai texto de chat ou identificador de autor.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 16 }}>
@@ -65,12 +65,12 @@ export function ExportarModal({ live, fechar }: { live: LiveDetalhe; fechar: () 
           const sel = f.id === fmt && !f.bloq;
           return (
             <button key={f.id} type="button" disabled={!!f.bloq} onClick={() => setFmt(f.id)}
-              style={{ background: f.bloq ? "var(--s3)" : sel ? "var(--surface)" : "var(--s2)", border: `1px solid ${sel ? "var(--red)" : "var(--line)"}`, borderRadius: 12, padding: "15px 17px", cursor: f.bloq ? "default" : "pointer", display: "flex", alignItems: "flex-start", gap: 13, textAlign: "left", color: "inherit", transition: "border-color .18s ease, background .18s ease" }}>
+              style={{ background: f.bloq ? "var(--s3)" : sel ? "var(--surface)" : "var(--s2)", border: `1px solid ${sel ? "var(--red)" : "var(--line)"}`, borderRadius: 6, padding: "15px 17px", cursor: f.bloq ? "default" : "pointer", display: "flex", alignItems: "flex-start", gap: 13, textAlign: "left", color: "inherit", transition: "border-color .18s ease, background .18s ease" }}>
               <span style={{ width: 18, height: 18, flex: "0 0 18px", borderRadius: "50%", border: `2px solid ${f.bloq ? "var(--lineDash)" : sel ? "var(--red)" : "var(--ink4)"}`, background: sel ? "var(--red)" : "transparent", marginTop: 2 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap", marginBottom: 3 }}>
                   <span className="mono" style={{ fontSize: 13.5, fontWeight: 500, color: f.bloq ? "var(--ink4)" : "var(--ink)" }}>{f.ext}</span>
-                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, letterSpacing: "-.01em", color: f.bloq ? "var(--ink4)" : "var(--ink)" }}>{f.nome}</span>
+                  <span style={{ fontFamily: "var(--fonte)", fontSize: 15, fontWeight: 700, letterSpacing: "-.01em", color: f.bloq ? "var(--ink4)" : "var(--ink)" }}>{f.nome}</span>
                 </div>
                 <div style={{ fontSize: 13.5, color: "var(--ink3)", textWrap: "pretty" }}>{f.desc}</div>
                 {f.bloq && <div style={{ fontSize: 12.5, color: "var(--redInk)", marginTop: 6 }}>{f.bloq}</div>}
@@ -84,14 +84,14 @@ export function ExportarModal({ live, fechar }: { live: LiveDetalhe; fechar: () 
           <div style={rot}>Prévia do {fmt}</div>
           <span className="mono" style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--ink3)" }}>{previa?.nota}</span>
         </div>
-        <div className="mono" style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 9, padding: "13px 15px", fontSize: 12.5, lineHeight: 1.75, whiteSpace: "pre", overflowX: "auto", minHeight: 60 }}>
+        <div className="mono" style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "13px 15px", fontSize: 12.5, lineHeight: 1.75, whiteSpace: "pre", overflowX: "auto", minHeight: 60 }}>
           {previa ? previa.texto : "gerando a prévia…"}
         </div>
       </div>
       <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
         <span className="mono" style={{ flex: 1, minWidth: 200, fontSize: 12, color: "var(--ink3)", overflowWrap: "anywhere" }}>{previa?.nome}</span>
         <button type="button" className="botao-claro" onClick={fechar}>Fechar</button>
-        <a href={url} download={previa?.nome} className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 9, textDecoration: "none" }}>Baixar</a>
+        <a href={url} download={previa?.nome} className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 4, textDecoration: "none" }}>Baixar</a>
       </div>
     </Modal>
   );
@@ -149,8 +149,8 @@ export function PublicarModal({ live, dossie, fechar }: { live: LiveDetalhe; dos
       <div style={{ ...caixa, margin: "20px 0 16px" }}>
         <div style={{ ...rot, marginBottom: 9 }}>{pub ? "Endereço publicado" : "Endereço gerado"}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span className="mono" style={{ fontSize: 14, background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 12px", flex: 1, minWidth: 240, overflowWrap: "anywhere" }}>{url}</span>
-          {pub && <button type="button" className="botao-escuro" style={{ fontSize: 13.5, padding: "10px 15px", borderRadius: 8 }} onClick={() => copiar(url, "Link copiado.")}>Copiar</button>}
+          <span className="mono" style={{ fontSize: 14, background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "10px 12px", flex: 1, minWidth: 240, overflowWrap: "anywhere" }}>{url}</span>
+          {pub && <button type="button" className="botao-escuro" style={{ fontSize: 13.5, padding: "10px 15px", borderRadius: 4 }} onClick={() => copiar(url, "Link copiado.")}>Copiar</button>}
         </div>
         <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 9, textWrap: "pretty" }}>
           O endereço usa o nome da transmissão, não um código: <span className="mono">{est.dados?.proposta.slug}</span>, com o dia para diferenciar duas lives do mesmo canal.
@@ -172,14 +172,14 @@ export function PublicarModal({ live, dossie, fechar }: { live: LiveDetalhe; dos
           <div style={rot}>Texto pronto para enviar</div>
           <button type="button" onClick={() => copiar(texto, "Texto copiado.")} style={{ marginLeft: "auto", fontSize: 13, fontWeight: 600, background: "none", border: 0, cursor: "pointer", color: "var(--ink)" }}>Copiar texto</button>
         </div>
-        <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 9, padding: "15px 16px", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line" }}>{texto}</div>
+        <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 4, padding: "15px 16px", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line" }}>{texto}</div>
         <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 10 }}>Os números vêm do banco da coleta, não são redigitados.</div>
       </div>
       <div style={{ ...caixa, marginBottom: 18 }}>
         <div style={{ ...rot, marginBottom: 11 }}>O que acontece no backend</div>
         {passos.map((p, i) => (
           <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 9 }}>
-            <span style={{ width: 22, height: 22, flex: "0 0 22px", borderRadius: 7, background: "var(--s3)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, fontWeight: 700, color: "var(--ink2)" }}>{i + 1}</span>
+            <span style={{ width: 22, height: 22, flex: "0 0 22px", borderRadius: 4, background: "var(--s3)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, fontWeight: 700, color: "var(--ink2)" }}>{i + 1}</span>
             <div style={{ fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>{p}</div>
           </div>
         ))}
@@ -189,7 +189,7 @@ export function PublicarModal({ live, dossie, fechar }: { live: LiveDetalhe; dos
         {pub && <button type="button" className="botao-claro" style={{ color: "var(--redInk)", borderColor: "var(--redLine)" }} onClick={revogar}>Revogar publicação</button>}
         {pub && <a className="botao-claro" href={caminho} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>Abrir link ↗</a>}
         <button type="button" className="botao-claro" onClick={fechar}>Fechar</button>
-        {!pub && <button type="button" className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 9 }} onClick={publicar} disabled={!est.dados}>Publicar e copiar link</button>}
+        {!pub && <button type="button" className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 4 }} onClick={publicar} disabled={!est.dados}>Publicar e copiar link</button>}
       </div>
     </Modal>
   );

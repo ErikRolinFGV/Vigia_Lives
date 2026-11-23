@@ -61,8 +61,8 @@ function linha(vals: number[], W: number, H: number, max: number, min = 0) {
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-BR");
-const lab: CSSProperties = { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink4)" };
-const panel: CSSProperties = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14 };
+const lab: CSSProperties = { fontFamily: "var(--fonte)", fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink4)" };
+const panel: CSSProperties = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 };
 
 export function useLarguraJanela() {
   const [, render] = useReducer(x => x + 1, 0);
@@ -73,7 +73,8 @@ export function useLarguraJanela() {
   return window.innerWidth;
 }
 
-export function LoginDeco() {
+/** embutido: só o chat e os mini-gráficos, no fluxo da página (painel azul da Lively); rodape vai sob os gráficos. */
+export function LoginDeco({ embutido = false, rodape }: { embutido?: boolean; rodape?: ReactNode } = {}) {
   const ref = useRef<Estado>();
   if (!ref.current) ref.current = criar();
   const [, render] = useReducer(x => x + 1, 0);
@@ -132,7 +133,7 @@ export function LoginDeco() {
       {L.marks.map(m => {
         const f = (ww - 1 - (L.tick - m.t)) / (ww - 1);
         return (
-          <div key={m.t} style={{ position: "absolute", left: f * 100 + "%", top: 0, transform: "translateX(6px)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--redInk)", whiteSpace: "nowrap", animation: "fadeIn .4s ease-out both" }}>
+          <div key={m.t} style={{ position: "absolute", left: f * 100 + "%", top: 0, transform: "translateX(6px)", fontFamily: "var(--fonte)", fontSize: 11, color: "var(--redInk)", whiteSpace: "nowrap", animation: "fadeIn .4s ease-out both" }}>
             {"momento " + m.hora + " · " + m.sigma + " σ"}
           </div>
         );
@@ -143,11 +144,11 @@ export function LoginDeco() {
     <div style={{ position: "absolute", left: 0, bottom: 0, width: largura, height: "60%", background: "radial-gradient(ellipse 60% 70% at 50% 100%, rgba(228,99,94,0.10), transparent 70%)", opacity: hypeOn ? 1 : 0, transition: "opacity .8s ease" }} />
   );
   const raiz: CSSProperties = { position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" };
-  if (!wide) return <div style={raiz} aria-hidden>{brilho}{onda}</div>;
+  if (!wide && !embutido) return <div style={raiz} aria-hidden>{brilho}{onda}</div>;
 
   // ---- terço direito: chat e mini-gráficos
   const badge = (b: Msg["badge"]) => b && (
-    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: 3, marginRight: 5, verticalAlign: "-2px", background: b === "mod" ? "#2F7D4F" : "#3A3F7A", color: "#FFFFFF", fontSize: 9, fontWeight: 800, fontFamily: "Figtree, sans-serif" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: 3, marginRight: 5, verticalAlign: "-2px", background: b === "mod" ? "#2F7D4F" : "#3A3F7A", color: "#FFFFFF", fontSize: 9, fontWeight: 600, fontFamily: "var(--fonte)" }}>
       {b === "mod" ? "M" : "★"}
     </span>
   );
@@ -163,22 +164,19 @@ export function LoginDeco() {
     <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.25fr)", alignItems: "center", gap: 14, padding: "12px 14px", borderTop: key === "e" ? "none" : "1px solid var(--line)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
         <div style={lab}>{titulo}</div>
-        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: "-.02em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{valor}</span>
+        <span style={{ fontFamily: "var(--fonte)", fontSize: 20, fontWeight: 700, letterSpacing: "-.02em", color: "var(--ink)", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{valor}</span>
         <span style={{ fontSize: 11, color: "var(--ink4)" }}>{sub}</span>
       </div>
       {svg}
     </div>
   );
 
-  return (
-    <div style={raiz} aria-hidden>
-      {brilho}{onda}
-      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "33.333%", padding: "28px 24px", background: "var(--s2)", borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ ...panel, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+  const chat = (
+    <>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#E4635E", animation: "pulseDot 1.4s infinite" }} />
             <span style={{ ...lab, color: "var(--ink2)", flex: 1 }}>chat ao vivo</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--ink4)" }}>{fmt(L.acc + 2980)} msgs</span>
+            <span style={{ fontFamily: "var(--fonte)", fontSize: 11, color: "var(--ink4)" }}>{fmt(L.acc + 2980)} msgs</span>
           </div>
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 7, padding: "10px 14px 14px", WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, #000 28%)", maskImage: "linear-gradient(to bottom, transparent 0%, #000 28%)" }}>
             {L.msgs.map(m => (
@@ -190,9 +188,10 @@ export function LoginDeco() {
               </div>
             ))}
           </div>
-        </div>
-
-        <div style={{ ...panel, flex: "0 0 auto", display: "flex", flexDirection: "column" }}>
+    </>
+  );
+  const cartoes = (
+    <>
           {card("e", "espectadores agora", fmt(L.v), "simultâneos",
             <svg viewBox="0 0 260 70" style={{ display: "block", width: "100%", height: "auto" }}>
               <path d={e.area} style={{ fill: "var(--ink)" }} fillOpacity={0.05} />
@@ -203,7 +202,7 @@ export function LoginDeco() {
             <svg viewBox="0 0 260 60" style={{ display: "block", width: "100%", height: "auto" }}>
               {L.mpm.map((v, k) => (
                 <rect key={k} x={k * bw + 0.8} width={bw - 1.6} y={60 - (v / mMax) * 58} height={(v / mMax) * 58} rx={1}
-                  style={{ fill: k === L.mpm.length - 1 ? (hypeOn ? "var(--red)" : "var(--msg)") : v > 120 ? "var(--msgMid)" : "var(--line2)", transition: "y .4s ease, height .4s ease" }} />
+                  style={{ fill: k === L.mpm.length - 1 ? (hypeOn ? "var(--latao)" : "var(--msg)") : v > 120 ? "var(--msgMid)" : "var(--line2)", transition: "y .4s ease, height .4s ease" }} />
               ))}
             </svg>)}
           {card("p", "participação", (L.part[L.part.length - 1] * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%", "escreveu na janela",
@@ -211,8 +210,28 @@ export function LoginDeco() {
               <path d={p.d} fill="none" strokeWidth={1.8} strokeDasharray="3 3" style={{ stroke: "var(--part)" }} />
               <circle cx={p.last[0] - 2} cy={p.last[1]} r={3} style={{ fill: "var(--part)" }} />
             </svg>)}
+    </>
+  );
+
+  if (embutido) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
+        <div aria-hidden style={{ ...panel, height: 500, display: "flex", flexDirection: "column", overflow: "hidden", border: 0 }}>{chat}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div aria-hidden style={{ ...panel, display: "flex", flexDirection: "column", border: 0 }}>{cartoes}</div>
+          {rodape}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--ink4)", padding: "0 4px" }}>dados ilustrativos</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={raiz} aria-hidden>
+      {brilho}{onda}
+      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "33.333%", padding: "28px 24px", background: "var(--s2)", borderLeft: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ ...panel, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>{chat}</div>
+        <div style={{ ...panel, flex: "0 0 auto", display: "flex", flexDirection: "column" }}>{cartoes}</div>
+        <div style={{ fontFamily: "var(--fonte)", fontSize: 11, color: "var(--ink4)", padding: "0 4px" }}>dados ilustrativos</div>
       </div>
     </div>
   );

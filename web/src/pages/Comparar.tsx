@@ -29,7 +29,7 @@ function Linhas({ linhas, xMax, xTicks, yFmt, yMax, H = 280, fs = 15 }: {
   const g = gbox(H, fs, fs);
   const max = yMax ?? nice(Math.max(1e-9, ...linhas.flatMap(l => l.ys.filter((v): v is number => v != null))));
   const x = (v: number) => g.L + (g.W * v) / (xMax || 1);
-  const txt = { fontSize: fs, fontFamily: "IBM Plex Mono, monospace", style: { fill: "var(--ink4)" } } as const;
+  const txt = { fontSize: fs, fontFamily: "Segoe UI, system-ui, sans-serif", style: { fill: "var(--ink4)" } } as const;
   return (
     <svg viewBox={`0 0 1000 ${H}`} style={{ display: "block", width: "100%", height: "auto" }} role="img">
       {[0, 1, 2, 3, 4].map(k => {
@@ -112,7 +112,7 @@ function Escolher({ fichas, ids, mudar }: { fichas: Ficha[]; ids: string[]; muda
           const marcada = i >= 0;
           const bloqueada = !marcada && cheio;
           return (
-            <label key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 10,
+            <label key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 4,
               border: `1px solid ${marcada ? "var(--lineH)" : "var(--div)"}`, cursor: bloqueada ? "not-allowed" : "pointer", opacity: bloqueada ? 0.5 : 1 }}>
               <input type="checkbox" checked={marcada} disabled={bloqueada}
                 onChange={() => mudar(marcada ? ids.filter(x => x !== f.id) : [...ids, f.id])} />
@@ -134,7 +134,7 @@ function Escolher({ fichas, ids, mudar }: { fichas: Ficha[]; ids: string[]; muda
 function Legenda({ fichas }: { fichas: Ficha[] }) {
   const { conta } = useSessao();
   return (
-    <div style={{ position: "sticky", top: 64, zIndex: 2, display: "flex", gap: 8, flexWrap: "wrap", padding: "10px 12px", borderRadius: 12,
+    <div style={{ position: "sticky", top: 64, zIndex: 2, display: "flex", gap: 8, flexWrap: "wrap", padding: "10px 12px", borderRadius: 6,
       background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "0 4px 14px rgba(0,0,0,.12)" }}>
       {fichas.map((f, i) => (
         <Link key={f.id} to={`/yt/lives/${f.id}?aba=dados&sub=comparar`} style={{ display: "flex", alignItems: "center", gap: 7, textDecoration: "none", color: "var(--ink)",

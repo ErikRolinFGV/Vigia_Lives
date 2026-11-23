@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../api/client";
-import type { Agenda, Canal, ItemAgenda, ListaCanais } from "../api/types";
+import type { Canal, ListaCanais } from "../api/types";
 import { useCrumbs } from "../components/AppLayout";
 import { CanalAvatar, useTrocarFoto } from "../components/CanalFoto";
-import { BotaoColetar, CotaPrevista } from "../components/Coleta";
-import { Filtros, grupo } from "../components/Filtro";
-import type { Grupo } from "../components/Filtro";
 import { LinkModal, PararModal, VigiarModal } from "../components/ModaisCanal";
-import { dataHora, duracao, falta, ha, n, nomeLive, origemTrecho } from "../lib/format";
+import { dataHora, falta, ha, nomeLive } from "../lib/format";
 import { useSaude } from "../state/saude";
 import { useSessao } from "../state/sessao";
 import s from "./canais.module.css";
@@ -92,7 +89,7 @@ function CardCanal({ c, abrir, parar, recarregar }: { c: Canal; abrir: () => voi
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink2)", whiteSpace: "nowrap" }}>Ver transmissões →</span>
-        {pode && <button type="button" className={s.parar} onClick={e => { e.stopPropagation(); parar(); }}>Parar de vigiar</button>}
+        {pode && <button type="button" className={s.parar} onClick={e => { e.stopPropagation(); parar(); }}>Parar de acompanhar</button>}
       </div>
     </div>
   );
@@ -105,10 +102,8 @@ export function rotaLive(l: { id: string }) {
 export function Canais() {
   useCrumbs([]);
   const nav = useNavigate();
-  const { conta } = useSessao();
   const saude = useSaude();
   const lista = useApi<ListaCanais>("/canais");
-  const agenda = useApi<Agenda>("/agenda");
   const [add, setAdd] = useState(false);
   const [porLink, setPorLink] = useState(false);
   const [parar, setParar] = useState<Canal | null>(null);
@@ -119,33 +114,28 @@ export function Canais() {
   const fr = emUso / limite;
   const slotsTexto = `${emUso} de ${limite} slots em uso`;
   const slotsCor = fr >= 0.8 ? "var(--red)" : fr >= 0.5 ? "var(--amb)" : "var(--ok)";
-  const recarregar = () => { lista.recarregar(); agenda.recarregar(); };
+  const recarregar = () => { lista.recarregar(); };
   const vigia = saude?.vigia.de_pe ? `coleta de pé ${ha(saude.vigia.desde)}` : "vigia parado";
-  // a agenda mostra o que esta no ar e as proximas 48 h: e ali que se escolhe
-  const limite48 = Date.now() + 48 * 3600 * 1000;
-  const todas = agenda.dados?.proximas ?? [];
-  const [filtro, setFiltro] = useState<Grupo>("todas");
-  const janela = todas.filter(a => a.ao_vivo || a.estado === "no_ar" || !a.agendada_para || new Date(a.agendada_para).getTime() <= limite48);
-  const proximas = filtro === "todas" ? janela : janela.filter(a => grupo(a) === filtro);
-  const depois = todas.length - janela.length;
-
   return (
     <div className={`${s.pagina} view-in`}>
       <div className={s.conteudo}>
-        <div style={{ padding: "36px 0 6px" }}>
-          <h1 className={s.h1}>Canais vigiados</h1>
-          <p style={{ margin: 0, fontSize: 15, color: "var(--ink2)" }}>Clique num canal para ver as transmissões coletadas.</p>
+        <div style={{ padding: "24px 0 4px", display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+          <h1 className={s.h1} style={{ margin: 0 }}>Canais</h1>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="botao-claro" onClick={() => setPorLink(true)}>Ouvir live pelo link</button>
+            <button type="button" className="botao-escuro" onClick={() => setAdd(true)}>+ Acompanhar canal</button>
+          </div>
         </div>
 
         <div className={s.slots}>
-          <h2 className={s.h2}>Em vigilância</h2>
+          <h2 className={s.h2}>Acompanhados</h2>
           <span style={{ fontSize: 13.5, color: "var(--ink3)", whiteSpace: "nowrap" }}>{slotsTexto} · {vigia}</span>
           <div className={s.slotBarra} onMouseEnter={() => setTip(true)} onMouseLeave={() => setTip(false)}>
             <div className={s.slotTrilho}><div className={s.slotFill} style={{ width: Math.round(fr * 100) + "%", background: slotsCor }} /></div>
             {tip && (
               <div className={s.slotTip}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>Slots do plano: {slotsTexto}</div>
-                <div style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 10, textWrap: "pretty" }}>Cada canal vigiado ocupa um slot. Para liberar um, use "Parar de vigiar" no card do canal.</div>
+                <div style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 10, textWrap: "pretty" }}>Cada canal vigiado ocupa um slot. Para liberar um, use "Parar de acompanhar" no card do canal.</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: 12, color: "var(--ink2)" }}>
                   <span className={s.legenda}><span style={{ background: "var(--ok)" }} />com folga · até 4 slots</span>
                   <span className={s.legenda}><span style={{ background: "var(--amb)" }} />metade · 5 a 7 slots</span>
@@ -165,104 +155,25 @@ export function Canais() {
           {lista.dados && (emUso < limite ? (
             <button type="button" className={s.addCard} onClick={() => setAdd(true)}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 9, background: "var(--redT)", border: "1px solid var(--redLine)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 600, color: "var(--ink)", flex: "0 0 30px", lineHeight: 1 }}>+</span>
-                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 17, fontWeight: 700, color: "var(--ink2)" }}>Abrir mais um slot</span>
+                <span style={{ width: 30, height: 30, borderRadius: 4, background: "var(--redT)", border: "1px solid var(--redLine)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 600, color: "var(--ink)", flex: "0 0 30px", lineHeight: 1 }}>+</span>
+                <span style={{ fontFamily: "var(--fonte)", fontSize: 17, fontWeight: 700, color: "var(--ink2)" }}>Abrir mais um slot</span>
               </div>
               <div style={{ fontSize: 13.5, color: "var(--ink3)", textWrap: "pretty" }}>Cole um @handle. A coleta começa na próxima transmissão que subir — nada é retroativo.</div>
               <div className="mono" style={{ fontSize: 11.5, color: "var(--ink4)" }}>{slotsTexto}</div>
             </button>
           ) : (
             <div className={s.cheio}>
-              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 17, fontWeight: 700, color: "var(--ink4)" }}>Todos os slots em uso</div>
+              <div style={{ fontFamily: "var(--fonte)", fontSize: 17, fontWeight: 700, color: "var(--ink4)" }}>Todos os slots em uso</div>
               <div style={{ fontSize: 13.5, color: "var(--ink3)", textWrap: "pretty" }}>O plano de pesquisa vigia até {limite} canais ao mesmo tempo. Libere um slot para acompanhar outro canal.</div>
             </div>
           ))}
         </div>
 
-        <div className={s.paineis}>
-          <div className={s.painel}>
-            <div className={s.painelTopo}>
-              <h2 className={s.h2}>Agenda</h2>
-              <span style={{ fontSize: 13, color: "var(--ink3)" }}>o que os canais vigiados vão transmitir</span>
-              <button type="button" className={s.botaoLinha} style={{ marginLeft: "auto", alignSelf: "center", padding: "6px 12px", fontSize: 12.5 }}
-                onClick={() => setPorLink(true)} title="Coleta uma live só, sem vigiar o canal">+ Coletar pelo link</button>
-            </div>
-            {agenda.dados && <CotaPrevista dias={agenda.dados.cota} tz={conta.tz} />}
-            {janela.length > 0 && <div style={{ marginBottom: 12 }}><Filtros itens={janela} ativo={filtro} mudar={setFiltro} grupos={["todas", "coletando", "vao", "nao_escolhidas"]} /></div>}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {proximas.map(a => <LinhaAgenda key={a.id} a={a} tz={conta.tz} ir={() => nav(rotaLive(a))} mudou={recarregar} />)}
-              {depois > 0 && <div className={s.vazioLista}>e mais {depois} {depois === 1 ? "transmissão" : "transmissões"} depois de 48 h, na página de cada canal.</div>}
-              {agenda.dados && agenda.dados.proximas.length === 0 && (
-                <div className={s.vazioLista}>Nenhum canal vigiado tem transmissão marcada. Estado normal: o vigia continua lendo a agenda.</div>
-              )}
-            </div>
-          </div>
-          <div className={s.painel}>
-            <div className={s.painelTopo}>
-              <h2 className={s.h2}>Últimas coletas</h2>
-              <span style={{ fontSize: 13, color: "var(--ink3)" }}>inclusive o que foi perdido</span>
-              <button type="button" className={s.botaoLinha} style={{ marginLeft: "auto", alignSelf: "center", padding: "6px 12px", fontSize: 12.5 }}
-                onClick={() => nav("/yt/comparar")} title="As mesmas métricas, lado a lado, para lives coletadas">Comparar lives</button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {agenda.dados?.recentes.map(r => <LinhaRecente key={r.id} r={r} tz={conta.tz} ir={() => nav(rotaLive(r))} />)}
-              {agenda.dados && agenda.dados.recentes.length === 0 && (
-                <div className={s.vazioLista}>Nenhuma transmissão coletada ainda.</div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {porLink && <LinkModal fechar={() => setPorLink(false)} marcada={id => { setPorLink(false); nav(rotaLive({ id })); }} />}
       {add && <VigiarModal fechar={() => setAdd(false)} adicionado={recarregar} />}
       {parar && <PararModal canal={parar} fechar={() => setParar(null)} parado={() => { setParar(null); recarregar(); }} />}
     </div>
-  );
-}
-
-function LinhaAgenda({ a, tz, ir, mudou }: { a: ItemAgenda; tz: string; ir: () => void; mudou: () => void }) {
-  const noAr = a.estado === "no_ar";
-  const noArSem = a.ao_vivo && !noAr;
-  const fora = !a.coletar && !noAr;
-  // div e nao button: o botao de coletar fica dentro da linha
-  return (
-    <div role="link" tabIndex={0} className={s.linha} onClick={ir} onKeyDown={e => e.key === "Enter" && ir()}
-      style={{ borderLeft: `3px solid ${noAr ? "var(--red)" : a.coletar ? "var(--ok)" : "var(--line2)"}` }}>
-      <div style={{ width: 86, flex: "0 0 86px" }}>
-        <div className="mono tnum" style={{ fontSize: 12.5, color: fora ? "var(--ink3)" : "var(--ink)" }}>{noAr || noArSem ? "agora" : dataHora(a.agendada_para, tz)}</div>
-        <div style={{ fontSize: 11.5, fontWeight: 600, color: noAr ? "var(--redInk)" : "var(--ink2)" }}>{noAr ? "coletando" : noArSem ? "no ar" : falta(a.agendada_para)}</div>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className={s.titulo1} style={{ color: fora ? "var(--ink3)" : undefined }}>{nomeLive(a.titulo)}</div>
-        <div className={s.mono12}>{a.canal}{a.avulsa && " · pelo link"}</div>
-      </div>
-      <BotaoColetar l={a} mudou={mudou} />
-      <span style={{ fontSize: 14, color: "var(--ink4)" }}>→</span>
-    </div>
-  );
-}
-
-function LinhaRecente({ r, tz, ir }: { r: ItemAgenda; tz: string; ir: () => void }) {
-  const perdida = r.estado === "perdida";
-  const chip = perdida
-    ? { t: "PERDIDA", ink: "var(--redInk)", bg: "var(--redT)", bd: "var(--redLine)" }
-    : r.estado === "parcial"
-      ? { t: "PARCIAL", ink: "var(--ambInk)", bg: "var(--ambT)", bd: "var(--ambLine)" }
-      : { t: "RELATÓRIO PRONTO", ink: "var(--okInk)", bg: "var(--okT)", bd: "var(--okLine)" };
-  return (
-    <button type="button" className={s.linha} onClick={ir}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className={s.titulo1}>{perdida ? (r.ao_vivo ? "No ar agora, sem coleta" : "Transmissão sem coleta") : nomeLive(r.titulo)}</div>
-        <div className={s.mono12}>{r.canal}{r.avulsa && " · pelo link"} · {dataHora(r.inicio || r.agendada_para, tz)}{r.trecho && ` · ${origemTrecho(r.trecho.n, r.link.comecou_como, 24)}`}</div>
-      </div>
-      <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-        <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, color: perdida ? "var(--redInk)" : "var(--aud)" }}>
-          {perdida ? (r.ao_vivo ? "no ar" : duracao(r.duracao_s)) : n(r.pico)}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--ink4)" }}>{perdida ? (r.ao_vivo ? "perdendo agora" : "sem dado") : "pico"}</div>
-      </div>
-      <span className={s.chipP} style={{ color: chip.ink, background: chip.bg, borderColor: chip.bd }}>{chip.t}</span>
-    </button>
   );
 }

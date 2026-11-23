@@ -52,7 +52,7 @@ function ModalDescartar({ live, fechar, mudou }: { live: LiveDetalhe; fechar: ()
 
   return (
     <Modal fechar={fechar} largura={480}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Descartar coleta</div>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>Descartar coleta</div>
       <div style={{ fontSize: 13.5, color: "var(--ink3)", marginBottom: 16, textWrap: "pretty" }}>
         {inteiro ? "O link inteiro e todos os trechos dele" : "Esta coleta"} sai da lista do canal, das comparações, do ranking e dos totais.
         Nada é apagado: os dados ficam guardados, a coleta aparece no filtro “Descartadas” e pode ser restaurada.
@@ -67,7 +67,7 @@ function ModalDescartar({ live, fechar, mudou }: { live: LiveDetalhe; fechar: ()
         ))}
         {escolha === "outro" && (
           <input autoFocus value={outro} onChange={e => setOutro(e.target.value)} maxLength={200} placeholder="Escreva o motivo"
-            style={{ fontSize: 14, padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" }} />
+            style={{ fontSize: 14, padding: "9px 11px", borderRadius: 4, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" }} />
         )}
       </div>
       {erro && <div style={{ margin: "6px 0 10px" }}><Erro texto={erro} /></div>}
@@ -101,7 +101,7 @@ export function AvisoDescartada({ live, mudou }: { live: LiveDetalhe; mudou: () 
   };
 
   return (
-    <div style={{ background: "var(--s3)", border: "1px solid var(--line2)", borderLeft: "3px solid var(--ink4)", borderRadius: 12, padding: "12px 16px", marginBottom: 16,
+    <div style={{ background: "var(--s3)", border: "1px solid var(--line2)", borderLeft: "3px solid var(--ink4)", borderRadius: 6, padding: "12px 16px", marginBottom: 16,
       display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <div style={{ flex: 1, minWidth: 240, fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
         <b>Coleta descartada</b>{d.do_video ? " junto com o link inteiro" : ""} em {dataHora(d.em, conta.tz)}: {d.motivo}.

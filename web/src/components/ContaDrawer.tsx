@@ -215,7 +215,7 @@ export function ContaDrawer({ fechar, mostrarTrocar }: { fechar: () => void; mos
                 <div style={{ fontSize: 12.5, color: "var(--ink3)" }}>Usuário</div>
                 <div className="mono" style={{ fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acesso?.usuario}</div>
               </div>
-              <span style={{ fontSize: 13, color: "var(--ink2)" }}>{acesso?.papel === "admin" ? "Administrador" : "Visitante"}</span>
+              <span style={{ fontSize: 13, color: "var(--ink2)" }}>{acesso?.papel === "admin" ? "Administrador" : acesso?.papel === "usuario" ? `Plano ${({ gratuito: "Gratuito", pesquisador: "Pesquisador", empresarial: "Empresarial" } as const)[acesso.plano ?? "gratuito"]}` : "Visitante"}</span>
             </div>
             {acesso?.expira_em && (
               <div className={s.nota} style={{ marginTop: 6 }}>

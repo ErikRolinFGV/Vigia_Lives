@@ -14,14 +14,14 @@ const PASSOS = [
   "redige o dossiê sobre esses números (texto fixo nesta versão)",
 ];
 const COR = { aud: "var(--aud)", msg: "var(--msg)", part: "var(--part)", ink3: "var(--ink3)" } as const;
-const card = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14 } as const;
+const card = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 } as const;
 const rot = { fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase" as const, color: "var(--ink3)" };
 
 function Passo({ texto, estado }: { texto: string; estado: "feito" | "agora" | "fila" }) {
   const c = estado === "feito" ? ["var(--okT)", "var(--okLine)", "var(--okInk)", "✓"]
     : estado === "agora" ? ["var(--redT)", "var(--redLine)", "var(--redInk)", "·"] : ["var(--s2)", "var(--line)", "var(--ink4)", ""];
   return (
-    <div style={{ display: "flex", gap: 11, alignItems: "center", background: c[0], border: `1px solid ${c[1]}`, borderRadius: 10, padding: "11px 13px", transition: "background .3s ease, border-color .3s ease" }}>
+    <div style={{ display: "flex", gap: 11, alignItems: "center", background: c[0], border: `1px solid ${c[1]}`, borderRadius: 4, padding: "11px 13px", transition: "background .3s ease, border-color .3s ease" }}>
       <span style={{ width: 20, height: 20, flex: "0 0 20px", borderRadius: 6, background: "var(--surface)", border: `1px solid ${c[1]}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c[2] }}>{c[3]}</span>
       <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: estado === "fila" ? "var(--ink4)" : "var(--ink)" }}>{texto}</span>
     </div>
@@ -39,7 +39,7 @@ function Duplo({ s }: { s: Serie }) {
       {[0, 1, 2, 3].map(k => { const y = py((1.08 * k) / 3, 1.08, g); return <line key={k} x1={g.L} x2={g.L + g.W} y1={y} y2={y} strokeWidth={1} style={{ stroke: "var(--grid)" }} />; })}
       <path d={aud} fill="none" strokeWidth={2.4} pathLength={1} strokeDasharray={1} style={{ stroke: "var(--aud)", animation: "drawIn 1.7s cubic-bezier(.3,.7,.3,1) both" }} />
       <path d={part} fill="none" strokeWidth={2.4} pathLength={1} strokeDasharray={1} style={{ stroke: "var(--part)", animation: "drawIn 1.7s cubic-bezier(.3,.7,.3,1) .35s both" }} />
-      {s.t.map((t, i) => i % every === 0 && <text key={i} x={px(i, s.t.length, g)} y={244} textAnchor="middle" fontSize={13} fontFamily="IBM Plex Mono, monospace" style={{ fill: "var(--ink4)" }}>{hhmm(t)}</text>)}
+      {s.t.map((t, i) => i % every === 0 && <text key={i} x={px(i, s.t.length, g)} y={244} textAnchor="middle" fontSize={13} fontFamily="Segoe UI, system-ui, sans-serif" style={{ fill: "var(--ink4)" }}>{hhmm(t)}</text>)}
     </svg>
   );
 }
@@ -85,11 +85,11 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         {gerando ? (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--red)", animation: "pulseDot 1.4s infinite", flex: "0 0 9px" }} />
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 800, letterSpacing: "-.02em" }}>Gerando o dossiê</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 600, letterSpacing: "-.02em" }}>Gerando o dossiê</div>
           </div>
         ) : (
           <div style={{ maxWidth: "60ch" }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 21, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 9 }}>O dossiê desta transmissão ainda não foi gerado</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 21, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 9 }}>O dossiê desta transmissão ainda não foi gerado</div>
             <div style={{ fontSize: 15, color: "var(--ink2)", textWrap: "pretty" }}>
               Os dados da coleta já estão completos na aba ao lado. O dossiê é uma segunda camada: consolida os números e redige a leitura sobre eles. Os números nunca vêm do texto: o texto vem dos números.
             </div>
@@ -105,7 +105,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
               <span style={{ fontSize: 13, color: "var(--ink3)", flex: 1, minWidth: 220, textWrap: "pretty" }}>Não consome cota da API do YouTube. Pode ser gerado de novo quantas vezes quiser.</span>
             </div>
             {erro && <div style={{ fontSize: 13, color: "var(--redInk)" }}>{erro}</div>}
-            <div style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 11, padding: "13px 15px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
+            <div style={{ background: "var(--s3)", border: "1px solid var(--line)", borderRadius: 4, padding: "13px 15px", fontSize: 13, color: "var(--ink2)", textWrap: "pretty" }}>
               Nesta versão nenhum modelo de linguagem é chamado: o texto é fixo, escolhido pelo que os números mostram, e cada número sai da coleta. Quando o modelo entrar, ele recebe exatamente os mesmos agregados.
             </div>
           </>
@@ -118,7 +118,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
   const enquete = com.dados?.enquetes.find(e => e.detalhe) ?? null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ ...card, borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div style={{ ...card, borderRadius: 6, padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--okT)", border: "1px solid var(--okLine)", borderRadius: 99, padding: "4px 11px", flex: "0 0 auto" }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ok)" }} />
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--okInk)" }}>dossiê gerado</span>
@@ -127,12 +127,12 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         <button type="button" className="botao-claro" onClick={gerar}>Gerar de novo</button>
       </div>
       {estado.modelo_atual && d.modelo !== estado.modelo_atual && (
-        <div style={{ background: "var(--ambT)", border: "1px solid var(--ambLine)", borderRadius: 12, padding: "13px 17px", fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
+        <div style={{ background: "var(--ambT)", border: "1px solid var(--ambLine)", borderRadius: 6, padding: "13px 17px", fontSize: 13.5, color: "var(--ink2)", textWrap: "pretty" }}>
           <b>Este dossiê é da versão antiga ({d.modelo}).</b> A versão atual ({estado.modelo_atual}) compara a live com o histórico do canal e lê enquetes, momentos e as views de depois da live. Use "Gerar de novo" para atualizar.
         </div>
       )}
 
-      <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 14, padding: "26px 28px" }}>
+      <div style={{ background: "var(--dosT)", border: "1px solid var(--dosLine)", borderRadius: 6, padding: "26px 28px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
           <span style={rot}>Como essa live performou</span>
           <span className="mono" style={{ fontSize: 11, color: "var(--ambInk)", background: "var(--ambT)", border: "1px solid var(--ambLine)", borderRadius: 99, padding: "3px 9px" }}>texto fixo · {d.modelo}</span>
@@ -143,13 +143,13 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
 
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Insights do dossiê</span>
+          <span style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Insights do dossiê</span>
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>{d.insights.length} leituras, cada uma ancorada num número da coleta</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
           {d.insights.map(i => (
-            <div key={i.titulo} style={{ ...card, borderLeft: "3px solid var(--msg)", borderRadius: 12, padding: "16px 19px" }}>
-              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{i.titulo}</div>
+            <div key={i.titulo} style={{ ...card, borderLeft: "3px solid var(--msg)", borderRadius: 6, padding: "16px 19px" }}>
+              <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 5 }}>{i.titulo}</div>
               <div style={{ fontSize: 14.5, color: "var(--ink2)", textWrap: "pretty" }}>{i.texto}</div>
               <div className="mono" style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 9, borderTop: "1px solid var(--div)", paddingTop: 9 }}>base: {i.base}</div>
             </div>
@@ -157,7 +157,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         </div>
       </div>
 
-      <div style={{ background: "var(--msgT)", border: "1px solid var(--msgLine)", borderRadius: 14, padding: "20px 22px" }}>
+      <div style={{ background: "var(--msgT)", border: "1px solid var(--msgLine)", borderRadius: 6, padding: "20px 22px" }}>
         <div style={{ ...rot, marginBottom: 10 }}>Recomendação</div>
         <div style={{ fontSize: 15.5, maxWidth: "70ch", textWrap: "pretty" }}>{d.recomendacao}</div>
       </div>
@@ -167,7 +167,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
           <div key={a.rotulo} style={{ ...card, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 13 }}>
             <div style={rot}>{a.rotulo}</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
-              <span className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 34, lineHeight: 1, fontWeight: 700, letterSpacing: "-.03em", color: COR[a.cor] }}>{a.valor}</span>
+              <span className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 34, lineHeight: 1, fontWeight: 700, letterSpacing: "-.03em", color: COR[a.cor] }}>{a.valor}</span>
               <span style={{ fontSize: 13, color: "var(--ink3)" }}>{a.unidade}</span>
             </div>
             <div style={{ height: 8, background: "var(--track)", borderRadius: 4, overflow: "hidden", display: "flex" }}>
@@ -180,7 +180,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
 
       {s && (
         <div style={{ ...card, padding: "22px 24px" }}>
-          <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Audiência e conversa, no mesmo tempo</div>
+          <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em", marginBottom: 2 }}>Audiência e conversa, no mesmo tempo</div>
           <div style={{ fontSize: 13, color: "var(--ink3)", marginBottom: 14 }}>as duas séries normalizadas no próprio máximo, para caberem num eixo só de 0 a 1</div>
           <Duplo s={s} />
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", borderTop: "1px solid var(--div)", paddingTop: 13, marginTop: 6 }}>
@@ -198,7 +198,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
             <div style={{ fontSize: 16.5, fontWeight: 600, marginBottom: 4, textWrap: "pretty" }}>{enquete.pergunta}</div>
             <div className="mono" style={{ fontSize: 12.5, color: "var(--ink3)", marginBottom: 14 }}>{enquete.total != null ? `${enquete.total} votos` : "votos não registrados"}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {enquete.opcoes.map(o => <div key={o.texto} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 9, padding: "11px 13px", fontSize: 14 }}>{o.texto}{o.votos != null && enquete.total ? ` · ${pct((o.votos / enquete.total) * 100, 0)}` : ""}</div>)}
+              {enquete.opcoes.map(o => <div key={o.texto} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "11px 13px", fontSize: 14 }}>{o.texto}{o.votos != null && enquete.total ? ` · ${pct((o.votos / enquete.total) * 100, 0)}` : ""}</div>)}
             </div>
           </div>
         )}
@@ -240,7 +240,7 @@ export function Relatorio({ live, s, estado, recarregar }: { live: LiveDetalhe; 
         <div style={{ flex: 1, minWidth: 240, fontSize: 14.5, color: "var(--ink2)", textWrap: "pretty" }}>Publicar gera um link sem login, para mandar a um anunciante ou parceiro. A versão pública não mostra custo de coleta nem detalhe de operação.</div>
         <div style={{ display: "flex", gap: 9, flex: "0 0 auto" }}>
           <button type="button" className="botao-claro" onClick={() => setExp(true)}>Exportar</button>
-          <button type="button" className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 9 }} onClick={() => setPub(true)}>Publicar link</button>
+          <button type="button" className="botao-escuro" style={{ fontSize: 14, padding: "10px 18px", borderRadius: 4 }} onClick={() => setPub(true)}>Publicar link</button>
         </div>
       </div>
 

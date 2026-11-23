@@ -4,7 +4,7 @@ import s from "./drawers.module.css";
 
 const PASSOS = [
   { titulo: "Cole o canal", texto: "Um @handle, uma vez só. Resolver o canal e ler a agenda não consome nada." },
-  { titulo: "Veja o que será vigiado", texto: "O Vigia lê a agenda do canal e já sabe quando precisa estar pronto." },
+  { titulo: "Veja o que será vigiado", texto: "A Lively lê a agenda do canal e já sabe quando precisa estar pronto." },
   { titulo: "Espere", texto: "Não há botão a apertar. Pode fechar a aba: quem garante a coleta é o processo, não a sua presença." },
   { titulo: "Leia o relatório", texto: "Fica pronto quando a transmissão encerra, com uma conclusão de como ela performou." },
 ];
@@ -28,9 +28,9 @@ export function AjudaDrawer({ fechar }: { fechar: () => void }) {
   useEsc(fechar);
   return (
     <div className={u.overlay} style={{ zIndex: 40, animation: "none" }} onClick={fechar}>
-      <aside className={s.painelAjuda} onClick={e => e.stopPropagation()} aria-label="O que é o Vigia">
+      <aside className={s.painelAjuda} onClick={e => e.stopPropagation()} aria-label="O que é a Lively">
         <div className={s.ajudaTopo}>
-          <div className={s.ajudaTitulo}>O que é o Vigia</div>
+          <div className={s.ajudaTitulo}>O que é a Lively</div>
           <button type="button" className={u.closeBtn} onClick={fechar} aria-label="Fechar">×</button>
         </div>
 
@@ -71,7 +71,7 @@ export function AjudaDrawer({ fechar }: { fechar: () => void }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
           {ESTADOS.map(e => (
             <div key={e.label} className={s.estado} style={{ background: e.bg, borderColor: e.border }}>
-              <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: ".04em", color: e.ink }}>{e.label}</div>
+              <div style={{ fontFamily: "var(--fonte)", fontSize: 12, fontWeight: 700, letterSpacing: ".04em", color: e.ink }}>{e.label}</div>
               <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>{e.nota}</div>
             </div>
           ))}

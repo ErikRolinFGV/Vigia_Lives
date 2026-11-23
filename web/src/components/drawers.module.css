@@ -6,7 +6,7 @@
 .painelAjuda { composes: painel; width: min(560px, 100%); padding: 28px 32px 48px; display: block; }
 
 .topo { display: flex; align-items: center; gap: 14px; padding: 22px 26px 18px; border-bottom: 1px solid var(--div); }
-.topoTitulo { font-family: Figtree, sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.topoTitulo { font-family: var(--fonte); font-size: 19px; font-weight: 600; letter-spacing: -.02em; flex: 1; min-width: 0; }
 .corpo { padding: 22px 26px; display: flex; flex-direction: column; gap: 22px; flex: 1; }
 .rodape { padding: 18px 26px 26px; border-top: 1px solid var(--div); }
 
@@ -20,7 +20,7 @@
 .nome { font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .editar { font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; flex: 0 0 auto; background: none; border: 0; padding: 0; }
 .editar:hover { text-decoration: underline; }
-.emailMono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emailMono { font-family: var(--fonte); font-size: 12.5px; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .remover { display: inline-block; margin-top: 5px; font-size: 12px; color: var(--ink3); cursor: pointer; background: none; border: 0; padding: 0; }
 .remover:hover { color: var(--redInk); text-decoration: underline; }
 
@@ -29,14 +29,14 @@
 .nota { font-size: 12.5px; color: var(--ink3); text-wrap: pretty; }
 
 .plano {
-  background: var(--s2); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+  background: var(--s2); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px;
   display: flex; flex-direction: column; gap: 14px;
 }
 .chipOk {
   font-size: 11.5px; font-weight: 600; color: var(--okInk); background: var(--okT);
   border: 1px solid var(--okLine); border-radius: 99px; padding: 3px 10px;
 }
-.planoNome { font-family: Figtree, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.planoNome { font-family: var(--fonte); font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
 .linhaKV { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
 .linhaKV > span:first-child { color: var(--ink2); }
 .barra { height: 8px; background: var(--line2); border-radius: 4px; overflow: hidden; }
@@ -44,7 +44,7 @@
 .sep { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--div); padding-top: 12px; }
 .fatura {
   display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line);
-  border-radius: 9px; padding: 9px 12px; font-size: 13px;
+  border-radius: 4px; padding: 9px 12px; font-size: 13px;
 }
 .paga { font-size: 11.5px; font-weight: 600; color: var(--okInk); background: var(--okT); border-radius: 99px; padding: 2px 8px; }
 .acao { font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; background: none; border: 0; padding: 0; }
@@ -62,16 +62,16 @@
 
 .seg {
   display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--s3);
-  border: 1px solid var(--line); border-radius: 11px;
+  border: 1px solid var(--line); border-radius: 4px;
 }
 .segOpt {
-  padding: 8px 10px; border-radius: 8px; text-align: center; font-size: 13.5px; font-weight: 600;
+  padding: 8px 10px; border-radius: 4px; text-align: center; font-size: 13.5px; font-weight: 600;
   cursor: pointer; border: 0; transition: background .18s ease;
 }
 .select { appearance: auto; cursor: pointer; }
 .tzEx {
-  font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink3); background: var(--s3);
-  border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px;
+  font-family: var(--fonte); font-size: 12px; color: var(--ink3); background: var(--s3);
+  border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px;
 }
 
 .acesso { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--div); }
@@ -82,30 +82,30 @@
 
 .trocar {
   display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line);
-  border-radius: 12px; cursor: pointer; background: none; width: 100%; text-align: left;
+  border-radius: 6px; cursor: pointer; background: none; width: 100%; text-align: left;
   transition: border-color .18s ease, background .18s ease;
 }
 .trocar:hover { border-color: var(--lineH); background: var(--s2); }
 
-.caixa { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.caixa { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .caixaPerigo { composes: caixa; border-color: var(--redLine); gap: 10px; }
 .okMsg {
   font-size: 12.5px; color: var(--okInk); background: var(--okT); border: 1px solid var(--okLine);
-  border-radius: 8px; padding: 8px 10px; text-wrap: pretty;
+  border-radius: 4px; padding: 8px 10px; text-wrap: pretty;
 }
 .sairConta {
-  width: 100%; padding: 13px; border-radius: 11px; border: 1px solid var(--redLine); background: var(--redT);
+  width: 100%; padding: 13px; border-radius: 4px; border: 1px solid var(--redLine); background: var(--redT);
   text-align: center; font-size: 14.5px; font-weight: 700; color: var(--ink); cursor: pointer;
 }
 
 /* ajuda */
 .ajudaTopo { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
-.ajudaTitulo { font-family: Figtree, sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -.02em; flex: 1; min-width: 0; }
-.alerta { background: var(--redT); border: 1px solid var(--redLine); border-radius: 12px; padding: 17px 19px; margin-bottom: 26px; }
+.ajudaTitulo { font-family: var(--fonte); font-size: 21px; font-weight: 600; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.alerta { background: var(--redT); border: 1px solid var(--redLine); border-radius: 6px; padding: 17px 19px; margin-bottom: 26px; }
 .passo { display: flex; gap: 14px; align-items: flex-start; }
 .passoN {
-  width: 26px; height: 26px; flex: 0 0 26px; border-radius: 8px; background: var(--s3); border: 1px solid var(--line);
-  display: flex; align-items: center; justify-content: center; font-family: Figtree, sans-serif; font-size: 13px;
+  width: 26px; height: 26px; flex: 0 0 26px; border-radius: 4px; background: var(--s3); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-family: var(--fonte); font-size: 13px;
   font-weight: 700; color: var(--ink2);
 }
-.estado { border-radius: 9px; padding: 9px 12px; border: 1px solid; }
+.estado { border-radius: 4px; padding: 9px 12px; border: 1px solid; }

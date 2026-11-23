@@ -21,7 +21,7 @@ export function BotaoYouTube({ url }: { url: string }) {
   return <a href={url} target="_blank" rel="noopener noreferrer" style={pilula} title="Abre o vídeo no YouTube em outra aba">Assistir no YouTube ↗</a>;
 }
 
-const caixa = { background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 16px", marginBottom: 16, display: "flex", flexDirection: "column" as const, gap: 9 };
+const caixa = { background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 6, padding: "13px 16px", marginBottom: 16, display: "flex", flexDirection: "column" as const, gap: 9 };
 
 function hms(s: string): number | null {
   const m = s.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
@@ -69,7 +69,7 @@ function AjustarCorte({ live, pai, fechar }: { live: LiveDetalhe; pai: string; f
 
   return (
     <Modal fechar={fechar} largura={480}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 800, letterSpacing: "-.02em", marginBottom: 4 }}>Ajustar o corte</div>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 4 }}>Ajustar o corte</div>
       <div style={{ fontSize: 13.5, color: "var(--ink3)", marginBottom: 16, textWrap: "pretty" }}>
         O corte foi sugerido na troca de título. Se o jogo acabou antes ou depois, mude a hora. Só a janela de cada trecho muda; nenhum dado é apagado.
       </div>
@@ -77,7 +77,7 @@ function AjustarCorte({ live, pai, fechar }: { live: LiveDetalhe; pai: string; f
         <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, fontSize: 14 }}>
           <span style={{ flex: 1, minWidth: 0, color: "var(--ink2)" }}>Começo de “{apelido(t.titulo, 34)}”</span>
           <input value={valores[i]} onChange={e => setValores(v => v.map((x, j) => (j === i ? e.target.value : x)))}
-            className="mono" style={{ width: 104, fontSize: 14, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" }} />
+            className="mono" style={{ width: 104, fontSize: 14, padding: "8px 10px", borderRadius: 4, border: "1px solid var(--line2)", background: "var(--surface)", color: "var(--ink)" }} />
         </label>
       ))}
       {erro && <div style={{ margin: "6px 0 10px" }}><Erro texto={erro} /></div>}
@@ -211,7 +211,7 @@ export function ContextoLinks({ live }: { live: LiveDetalhe }) {
                   começou como {nomeLink(l.comecou_como, 34)}
                 </div>
               </div>
-              <div style={{ ...faixa, height: 30, background: "var(--s3)", borderRadius: 7 }}>
+              <div style={{ ...faixa, height: 30, background: "var(--s3)", borderRadius: 4 }}>
                 {l.trechos.map(t => {
                   const a = x(ms(t.inicio, agora)), w = Math.max(x(ms(t.fim, agora)) - a, 0.8);
                   const c = cor.get(t.nucleo || t.id)!;

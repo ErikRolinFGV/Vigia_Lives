@@ -17,7 +17,7 @@ function Eixos({ g, max, kind, times, every, fs, showY = true }: {
   });
   const xt: { x: number; label: string }[] = [];
   for (let i = 0; i < times.length; i += every) xt.push({ x: px(i, times.length, g), label: hhmm(times[i]) });
-  const txt = { fontSize: fs, fontFamily: "IBM Plex Mono, monospace", style: { fill: "var(--ink4)" } } as const;
+  const txt = { fontSize: fs, fontFamily: "Segoe UI, system-ui, sans-serif", style: { fill: "var(--ink4)" } } as const;
   return (
     <g>
       {grid.map((gr, i) => <line key={"g" + i} x1={g.L} x2={g.L + g.W} y1={gr.y} y2={gr.y} strokeWidth={1} style={{ stroke: "var(--grid)" }} />)}
@@ -85,7 +85,7 @@ export function BarrasHtml({ itens, altura = 150 }: {
     <div style={{ display: "flex", alignItems: "flex-end", gap: 10, minHeight: altura }}>
       {itens.map((b, i) => (
         <div key={i} title={b.tip} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 7, justifyContent: "flex-end" }}>
-          {b.valor != null && <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 700, color: b.ink }}>{b.valor}</div>}
+          {b.valor != null && <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 13, fontWeight: 700, color: b.ink }}>{b.valor}</div>}
           <div style={{ width: "100%", height: b.h, background: b.fill, border: b.stroke ? `1px solid ${b.stroke}` : undefined, borderRadius: "5px 5px 0 0", animation: "growY .7s cubic-bezier(.2,.8,.2,1) both", transformOrigin: "50% 100%" }} />
           {b.rotulo != null && <div className="mono" style={{ fontSize: 11, color: "var(--ink3)", textAlign: "center" }}>{b.rotulo}</div>}
         </div>

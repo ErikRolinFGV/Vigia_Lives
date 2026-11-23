@@ -17,7 +17,7 @@ export function CanalAvatar({ id, nome, foto, size = 60 }: { id: string; nome: s
   }
   const k = String(id).split("").reduce((a, ch) => a + ch.charCodeAt(0), 0) % PALETA.length;
   return (
-    <span style={{ width: size, height: size, borderRadius: "50%", background: PALETA[k], color: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Figtree, sans-serif", fontWeight: 800, fontSize: Math.round(size * 0.35), letterSpacing: "-.02em" }}>
+    <span style={{ width: size, height: size, borderRadius: "50%", background: PALETA[k], color: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--fonte)", fontWeight: 600, fontSize: Math.round(size * 0.35), letterSpacing: "-.02em" }}>
       {iniciais(nome)}
     </span>
   );

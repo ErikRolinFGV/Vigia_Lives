@@ -112,7 +112,7 @@ export function SecaoMomentos({ live }: { live: LiveDetalhe }) {
               const queda = m.tipo === "queda_audiencia";
               return (
                 <div key={m.t} style={{ display: "grid", gridTemplateColumns: "72px minmax(0,1fr) auto", gap: 18, alignItems: "center", padding: "15px 0", borderTop: "1px solid var(--div)" }}>
-                  <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 21, fontWeight: 700 }}>{hhmm(m.t)}</div>
+                  <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 21, fontWeight: 700 }}>{hhmm(m.t)}</div>
                   <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div className="tnum" style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "var(--ink2)" }}>
                       <span style={{ fontWeight: 600, color: queda ? "var(--redInk)" : "var(--msg)" }}>
@@ -297,7 +297,7 @@ export function SecaoConversa({ live }: { live: LiveDetalhe }) {
                 <Painel titulo="Emojis mais usados">
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>
                     {(d.emojis ?? []).map(e => (
-                      <div key={e.e} title={e.e} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
+                      <div key={e.e} title={e.e} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
                         {e.e.startsWith(":")
                           ? <span className="mono" style={{ fontSize: 10.5, lineHeight: 1.2, color: "var(--ink2)", textAlign: "center", overflowWrap: "anywhere" }}>{e.e.slice(1, -1)}</span>
                           : <span style={{ fontSize: 22, lineHeight: 1 }}>{e.e}</span>}
@@ -407,7 +407,7 @@ export function SecaoPessoas({ live }: { live: LiveDetalhe }) {
         <>
           <Kpis itens={kpis} />
           <Painel titulo="Quem compõe o chat" sub="mensagens por tipo de conta, conforme o YouTube marca cada autor">
-            <div style={{ display: "flex", height: 14, borderRadius: 7, overflow: "hidden", gap: 2, marginBottom: 14 }}>
+            <div style={{ display: "flex", height: 14, borderRadius: 4, overflow: "hidden", gap: 2, marginBottom: 14 }}>
               {d.composicao.map(c => <div key={c.tipo} style={{ width: (c.msgs / d.mensagens) * 100 + "%", minWidth: 3, background: COMP[c.tipo][1] }} />)}
             </div>
             <Tabela colunas={["Tipo", "Pessoas", "Mensagens", "Do chat"]} larguras="minmax(0,1fr) 90px 90px 70px"
@@ -509,8 +509,8 @@ export function SecaoApoio({ live }: { live: LiveDetalhe }) {
                 {d.niveis.length === 0 ? <div style={{ fontSize: 13.5, color: "var(--ink3)" }}>Nenhum novo membro durante a transmissão.</div> : (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {d.niveis.map(v => (
-                      <div key={v.nivel ?? "?"} style={{ flex: 1, minWidth: 120, background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-                        <span style={{ fontSize: 13.5 }}>{v.nivel ?? "nível não registrado"}</span><b className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 19 }}>{n(v.n)}</b>
+                      <div key={v.nivel ?? "?"} style={{ flex: 1, minWidth: 120, background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "11px 13px", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+                        <span style={{ fontSize: 13.5 }}>{v.nivel ?? "nível não registrado"}</span><b className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 19 }}>{n(v.n)}</b>
                       </div>
                     ))}
                   </div>
@@ -547,7 +547,7 @@ export function SecaoComunidade({ live }: { live: LiveDetalhe }) {
             {d.enquetes.map((e, i) => (
               <Painel key={i} estilo={{ display: "flex", flexDirection: "column", gap: 13 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Enquete do canal</div>
+                  <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>Enquete do canal</div>
                   <span className="mono tnum" style={{ fontSize: 12, color: "var(--ink3)" }}>{e.t != null ? `às ${hhmm(e.t)}` : ""}{e.total != null ? ` · ${n(e.total)} votos` : ""}</span>
                 </div>
                 {e.detalhe ? (
@@ -555,7 +555,7 @@ export function SecaoComunidade({ live }: { live: LiveDetalhe }) {
                     <div style={{ fontSize: 15.5, fontWeight: 600, textWrap: "pretty" }}>{e.pergunta ?? "—"}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                       {e.opcoes.map(o => (
-                        <div key={o.texto} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 9, padding: "10px 12px", display: "flex", alignItems: "center", gap: 11 }}>
+                        <div key={o.texto} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "10px 12px", display: "flex", alignItems: "center", gap: 11 }}>
                           <span style={{ flex: 1, minWidth: 0, fontSize: 13.5 }}>{o.texto}</span>
                           <span className="mono tnum" style={{ fontSize: 12, color: "var(--ink3)", flex: "0 0 auto" }}>{o.votos != null && e.total ? `${n(o.votos)} · ${pct((o.votos / e.total) * 100, 0)}` : "—"}</span>
                         </div>
@@ -599,9 +599,9 @@ export function SecaoVideo({ live, s }: { live: LiveDetalhe; s: Serie | null }) 
           <Painel titulo="Horários">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 12 }}>
               {[["Agendada", hora(h.agendada, conta.tz)], ["Começou", hora(h.inicio, conta.tz)], ["Terminou", hora(h.fim, conta.tz)], ["Duração", duracao(h.duracao_s)]].map(([k, v]) => (
-                <div key={k} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+                <div key={k} style={{ background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "12px 14px" }}>
                   <div style={{ fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 5 }}>{k}</div>
-                  <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 22, fontWeight: 700 }}>{v}</div>
+                  <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 22, fontWeight: 700 }}>{v}</div>
                 </div>
               ))}
             </div>
@@ -635,9 +635,9 @@ export function SecaoVideo({ live, s }: { live: LiveDetalhe; s: Serie | null }) 
             <Painel titulo="Inscritos do canal" estilo={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", gap: 10 }}>
                 {[["Antes", d.inscritos.antes], ["Depois", d.inscritos.depois], ["Hoje", d.inscritos.hoje]].map(([k, v]) => (
-                  <div key={k as string} style={{ flex: 1, background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div key={k as string} style={{ flex: 1, background: "var(--s2)", border: "1px solid var(--line)", borderRadius: 4, padding: "12px 14px" }}>
                     <div style={{ fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 5 }}>{k}</div>
-                    <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 22, fontWeight: 700, color: v == null ? "var(--ink4)" : undefined }}>{compacto(v as number | null)}</div>
+                    <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 22, fontWeight: 700, color: v == null ? "var(--ink4)" : undefined }}>{compacto(v as number | null)}</div>
                   </div>
                 ))}
               </div>
@@ -718,14 +718,14 @@ export function SecaoComparacao({ live }: { live: LiveDetalhe }) {
                   </div>
                 </div>
                 <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 12, textWrap: "pretty" }}>
-                  Views, curtidas e comentários vêm do vídeo público e foram contados {d.contadores_em ? `em ${dataCurta(d.contadores_em, conta.tz)}` : "na última leitura"} — não na mesma idade de cada vídeo. Pico de audiência e chat só existem para as lives que o Vigia acompanhou.
+                  Views, curtidas e comentários vêm do vídeo público e foram contados {d.contadores_em ? `em ${dataCurta(d.contadores_em, conta.tz)}` : "na última leitura"} — não na mesma idade de cada vídeo. Pico de audiência e chat só existem para as lives que a Lively acompanhou.
                 </div>
               </Painel>
             </>
           )}
           {d.concorrencia ? (
             <Painel titulo="Concorrência no mesmo horário" sub={`lives na mesma categoria e idioma no ar perto do pico · ${dataHora(d.concorrencia.quando, conta.tz)}`}
-              direita={<span style={{ fontFamily: "Figtree, sans-serif", fontSize: 24, fontWeight: 700, color: "var(--aud)" }}>{pct(((d.concorrencia.lista.find(r => r.esta)?.espectadores ?? 0) / d.concorrencia.total) * 100, 0)}</span>}>
+              direita={<span style={{ fontFamily: "var(--fonte)", fontSize: 24, fontWeight: 700, color: "var(--aud)" }}>{pct(((d.concorrencia.lista.find(r => r.esta)?.espectadores ?? 0) / d.concorrencia.total) * 100, 0)}</span>}>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {d.concorrencia.lista.map(r => (
                   <div key={r.titulo} style={{ display: "grid", gridTemplateColumns: "minmax(0,220px) minmax(0,1fr) 64px", gap: 14, alignItems: "center", fontSize: 13.5 }}>

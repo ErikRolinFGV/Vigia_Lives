@@ -1,0 +1,53 @@
+/* Peças das telas da Lively (v2): cartões brancos, tabelas de cabeçalho cinza, selos retos. */
+.pagina { padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 1440px; box-sizing: border-box; animation: viewIn .3s ease both; }
+.titulo { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.titulo h1 { margin: 0; font-size: 24px; font-weight: 600; }
+.sub { font-size: 12px; color: var(--ink3); }
+.acoes { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.cartao { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--cardShadow); }
+.cab { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--div); flex-wrap: wrap; }
+.cab h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.corpo { padding: 16px; }
+.rolar { overflow-x: auto; }
+
+.tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabela th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink3); background: var(--s2); border-bottom: 1px solid var(--line); padding: 8px 16px; white-space: nowrap; }
+.tabela td { padding: 10px 16px; border-bottom: 1px solid var(--div); vertical-align: middle; }
+.tabela tr:last-child td { border-bottom: 0; }
+.tabela .n { text-align: right; font-variant-numeric: tabular-nums; }
+.linha { cursor: pointer; }
+.linha:hover td { background: var(--s3); }
+.sel td { background: var(--marcaT); }
+.sel:hover td { background: var(--marcaT); }
+.nome { font-weight: 600; color: var(--ink); }
+.apagado { color: var(--ink3); }
+.apagado .nome { font-weight: 400; color: var(--ink3); }
+
+.st { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.st i { width: 7px; height: 7px; border-radius: 50%; }
+.vivo { background: var(--redT); color: var(--redInk); }
+.vivo i { background: var(--red); animation: pulseDot 1.6s infinite; }
+.pronto { background: var(--marcaT); color: var(--marcaInk); }
+.parte { background: var(--ambT); color: var(--ambInk); }
+.cinza { background: var(--s3); color: var(--ink2); }
+
+.kpis { display: flex; gap: 32px; flex-wrap: wrap; }
+.kpi b { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+
+.vazio { padding: 16px; color: var(--ink3); }
+.duas { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.larga { flex: 999 1 560px; min-width: 0; }
+.estreita { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+
+.inp {
+  height: 36px; border: 1px solid var(--line2); border-bottom-color: var(--ink3); border-radius: 4px; padding: 0 10px;
+  background: var(--surface); color: var(--ink); font-size: 14px; min-width: 0;
+}
+.cb { width: 18px; height: 18px; accent-color: #3347C9; cursor: pointer; margin: 0; }
+.canal { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: var(--ink); text-decoration: none; }
+.canal:hover { background: var(--s3); text-decoration: none; }
+
+@media (max-width: 860px) {
+  .pagina { padding: 16px 16px 40px; }
+}

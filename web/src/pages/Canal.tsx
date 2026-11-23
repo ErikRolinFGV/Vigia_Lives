@@ -39,7 +39,7 @@ function Barras({ lives, pico, tz }: { lives: LiveResumo[]; pico: number | null;
           <div key={l.id} className={s.barraCol} title={[l.titulo, l.trecho && origemTrecho(l.trecho.n, l.link.comecou_como, 60),
             l.outro_link === "coletado" && "o mesmo conteúdo foi coletado em outro link do canal",
             l.outro_link === "sem_coleta" && "o mesmo conteúdo também passou em outro link, sem coleta"].filter(Boolean).join(" · ")}>
-            <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: b.ink }}>{b.valor}</div>
+            <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 12, fontWeight: 600, color: b.ink }}>{b.valor}</div>
             <div className={s.barra} style={{ height: b.h, background: b.fill, borderColor: b.stroke }} />
             <div className={s.barraNome}>{b.nome}</div>
             <div className="mono" style={{ fontSize: 10.5, color: "var(--ink4)", textAlign: "center" }}>{dataHora(l.inicio || l.agendada_para, tz)}</div>
@@ -138,7 +138,7 @@ export function CanalPagina() {
             <span style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--s3)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--ok)", animation: "pulseDot 2s infinite" }} />
             </span>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 700, letterSpacing: "-.015em" }}>De pé, esperando a primeira transmissão</div>
+            <div style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 700, letterSpacing: "-.015em" }}>De pé, esperando a primeira transmissão</div>
             <div style={{ fontSize: 14.5, color: "var(--ink2)", maxWidth: "52ch", textWrap: "pretty" }}>
               O vigia já está acompanhando {c.handle || c.nome}. Quando uma live subir, um coletor entra no ar junto com ela e esta tela passa a listar as transmissões.
             </div>
@@ -202,7 +202,7 @@ export function CanalPagina() {
                       {(l.estado === "coletada" || l.estado === "parcial") && (
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontSize: 10.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink4)" }}>pico</div>
-                          <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 15, fontWeight: 700, color: "var(--aud)" }}>{n(l.pico)}</div>
+                          <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 15, fontWeight: 700, color: "var(--aud)" }}>{n(l.pico)}</div>
                         </div>
                       )}
                       <BotaoColetar l={l} mudou={recarregar} />

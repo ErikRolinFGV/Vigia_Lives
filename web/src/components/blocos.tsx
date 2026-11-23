@@ -7,12 +7,12 @@ export type KpiDado = { k: string; v: string; n: string; c?: string; url?: strin
 
 export function Kpi({ k, v, n, c = "var(--ink)", url }: KpiDado) {
   const corpo = (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px", height: "100%", animation: "riseIn .42s cubic-bezier(.2,.8,.2,1) both", transition: "border-color .18s ease, transform .18s ease" }}
+    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, padding: "18px 20px", height: "100%", animation: "riseIn .42s cubic-bezier(.2,.8,.2,1) both", transition: "border-color .18s ease, transform .18s ease" }}
       className={url ? "kpi-link" : undefined}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink3)", marginBottom: 7 }}>
         <span>{k}</span>{url && <span style={{ textTransform: "none", letterSpacing: 0 }}>↗</span>}
       </div>
-      <div className="tnum" style={{ fontFamily: "Figtree, sans-serif", fontSize: 31, lineHeight: 1, fontWeight: 700, letterSpacing: "-.025em", color: c }}>{v}</div>
+      <div className="tnum" style={{ fontFamily: "var(--fonte)", fontSize: 31, lineHeight: 1, fontWeight: 700, letterSpacing: "-.025em", color: c }}>{v}</div>
       <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 6 }}>{n}</div>
     </div>
   );
@@ -31,7 +31,7 @@ export function Kpis({ itens, min = 180 }: { itens: KpiDado[]; min?: number }) {
 export function Secao({ titulo, primeira = false }: { titulo: string; primeira?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: primeira ? 0 : 20 }}>
-      <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 19, fontWeight: 800, letterSpacing: "-.02em", whiteSpace: "nowrap" }}>{titulo}</span>
+      <span style={{ fontFamily: "var(--fonte)", fontSize: 19, fontWeight: 600, letterSpacing: "-.02em", whiteSpace: "nowrap" }}>{titulo}</span>
       <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
     </div>
   );
@@ -51,11 +51,11 @@ export function Painel({ tom = "neutro", children, estilo, titulo, sub, direita 
 }) {
   const [bg, bd] = TONS[tom];
   return (
-    <div style={{ background: bg, border: `1px solid ${bd}`, borderRadius: 14, padding: "18px 20px", minWidth: 0, ...estilo }}>
+    <div style={{ background: bg, border: `1px solid ${bd}`, borderRadius: 6, padding: "18px 20px", minWidth: 0, ...estilo }}>
       {(titulo || direita) && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginBottom: sub ? 0 : 10 }}>
           <div>
-            {titulo && <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>{titulo}</div>}
+            {titulo && <div style={{ fontFamily: "var(--fonte)", fontSize: 15.5, fontWeight: 700, letterSpacing: "-.01em" }}>{titulo}</div>}
             {sub && <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 2, marginBottom: 12 }}>{sub}</div>}
           </div>
           {direita}
@@ -93,8 +93,8 @@ export function BarraH({ rotulo, w, valor, cor, colRotulo = 100, colValor = 40 }
 /** Aviso de campo sem dado: diz por que faltou, nunca estima. */
 export function SemDado({ titulo, texto }: { titulo: string; texto: ReactNode }) {
   return (
-    <div style={{ background: "var(--surface)", border: "1px dashed var(--lineDash)", borderRadius: 14, padding: "26px 24px", textAlign: "center" }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{titulo}</div>
+    <div style={{ background: "var(--surface)", border: "1px dashed var(--lineDash)", borderRadius: 6, padding: "26px 24px", textAlign: "center" }}>
+      <div style={{ fontFamily: "var(--fonte)", fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{titulo}</div>
       <div style={{ fontSize: 13.5, color: "var(--ink3)", maxWidth: "58ch", margin: "0 auto", textWrap: "pretty" }}>{texto}</div>
     </div>
   );
