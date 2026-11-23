@@ -428,7 +428,13 @@ def resolver_canal_id(handle_ou_id):
     with urllib.request.urlopen(req, timeout=30) as resp:
         html = resp.read().decode("utf-8", "replace")
     import re
-    m = re.search(r'"(?:externalId|channelId)":"(UC[\w-]{22})"', html)
+    # O id e o do DONO da pagina: o link canonico, depois o externalId dos
+    # metadados. Nunca o primeiro "channelId" do HTML: em canais com
+    # canal-irmao ele e o do canal em destaque (@CellbitLives devolvia
+    # @cellbits, @LOUDCoringa devolvia o canal de cortes; 23/11/2026).
+    m = (re.search(r'<link rel="canonical" href="https://www\.youtube\.com/channel/(UC[\w-]{22})"', html)
+         or re.search(r'"externalId":"(UC[\w-]{22})"', html)
+         or re.search(r'<meta itemprop="identifier" content="(UC[\w-]{22})"', html))
     if not m:
         raise ErroAPI(f"nao consegui resolver o canal a partir de {handle_ou_id}")
     return m.group(1)
